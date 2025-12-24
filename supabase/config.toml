@@ -1,0 +1,7 @@
+project_id = "erqvlccnuqjyszayxfuc"
+
+[functions.geo-ip]
+verify_jwt = false
+
+[functions.save-postcode]
+verify_jwt = false
