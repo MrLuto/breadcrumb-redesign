@@ -144,7 +144,7 @@ const Assortiment = () => {
             <p className="text-secondary-foreground/80 text-lg mb-8">
               Kom langs in onze winkel of neem contact met ons op voor meer informatie en bestellingen.
             </p>
-            <Button variant="secondary" size="xl" asChild>
+            <Button variant="hero" size="xl" asChild>
               <Link to="/contact">
                 Neem Contact Op
                 <ArrowRight className="w-5 h-5" />
