@@ -28,10 +28,12 @@ interface DeliveryInfo {
 
 interface PostcodeState {
   postcode: string | null;
+  suggestedPostcode: string | null;
   city: string | null;
   deliveryInfo: DeliveryInfo | null;
   isLoading: boolean;
   isChecked: boolean;
+  isSuggestion: boolean;
 }
 
 interface PostcodeContextType {
@@ -52,25 +54,42 @@ export const usePostcode = () => {
   return context;
 };
 
+// Check if a postcode (partial or full) is in delivery area
 const checkPostcodeLocal = (postcode: string): DeliveryInfo => {
   const cleaned = postcode.replace(/\s/g, '').toUpperCase();
-  const match = cleaned.match(/^(\d{4})([A-Z]{2})$/);
   
-  if (!match) {
+  // Try full match first (1234AB format)
+  const fullMatch = cleaned.match(/^(\d{4})([A-Z]{2})$/);
+  if (fullMatch) {
+    const numericPart = parseInt(fullMatch[1], 10);
+    for (const zone of deliveryZones) {
+      if (numericPart >= zone.start && numericPart <= zone.end) {
+        return {
+          inArea: true,
+          minutes: zone.minutes,
+          cost: zone.cost,
+          minimum: zone.minimum,
+        };
+      }
+    }
     return { inArea: false };
   }
   
-  const numericPart = parseInt(match[1], 10);
-  
-  for (const zone of deliveryZones) {
-    if (numericPart >= zone.start && numericPart <= zone.end) {
-      return {
-        inArea: true,
-        minutes: zone.minutes,
-        cost: zone.cost,
-        minimum: zone.minimum,
-      };
+  // Try partial match (just numbers like "3772")
+  const partialMatch = cleaned.match(/^(\d{4})$/);
+  if (partialMatch) {
+    const numericPart = parseInt(partialMatch[1], 10);
+    for (const zone of deliveryZones) {
+      if (numericPart >= zone.start && numericPart <= zone.end) {
+        return {
+          inArea: true,
+          minutes: zone.minutes,
+          cost: zone.cost,
+          minimum: zone.minimum,
+        };
+      }
     }
+    return { inArea: false };
   }
   
   return { inArea: false };
@@ -91,10 +110,12 @@ interface PostcodeProviderProps {
 export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   const [state, setState] = useState<PostcodeState>({
     postcode: null,
+    suggestedPostcode: null,
     city: null,
     deliveryInfo: null,
     isLoading: true,
     isChecked: false,
+    isSuggestion: false,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
@@ -110,10 +131,12 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
           const deliveryInfo = checkPostcodeLocal(parsed.postcode);
           setState({
             postcode: parsed.postcode,
+            suggestedPostcode: null,
             city: parsed.city || null,
             deliveryInfo,
             isLoading: false,
             isChecked: true,
+            isSuggestion: false,
           });
           return;
         } catch {
@@ -124,14 +147,16 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
       // Try geo-ip lookup
       try {
         const { data, error } = await supabase.functions.invoke('geo-ip');
-        if (!error && data?.postcode) {
-          const deliveryInfo = checkPostcodeLocal(data.postcode);
+        if (!error && data) {
+          const deliveryInfo = data.postcode ? checkPostcodeLocal(data.postcode) : { inArea: false };
           setState({
-            postcode: data.postcode,
+            postcode: null,
+            suggestedPostcode: data.postcode || null,
             city: data.city || null,
             deliveryInfo,
             isLoading: false,
-            isChecked: false, // Not confirmed by user yet
+            isChecked: false,
+            isSuggestion: !!data.postcode,
           });
           return;
         }
@@ -158,8 +183,10 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
     setState(prev => ({
       ...prev,
       postcode: cleaned,
+      suggestedPostcode: null,
       deliveryInfo,
       isChecked: true,
+      isSuggestion: false,
     }));
 
     // Save to backend (fire and forget)
@@ -176,10 +203,12 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
     localStorage.removeItem(STORAGE_KEY);
     setState({
       postcode: null,
+      suggestedPostcode: null,
       city: null,
       deliveryInfo: null,
       isLoading: false,
       isChecked: false,
+      isSuggestion: false,
     });
   };
 
@@ -236,21 +265,35 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
 
   useEffect(() => {
     if (open) {
-      setInputPostcode('');
+      // Pre-fill with suggestion if available
+      if (state.suggestedPostcode && !state.postcode) {
+        setInputPostcode(state.suggestedPostcode);
+      } else {
+        setInputPostcode('');
+      }
       setLocalResult(null);
-      setShowInput(!state.postcode);
+      setShowInput(!state.postcode && !state.suggestedPostcode);
     }
-  }, [open, state.postcode]);
+  }, [open, state.postcode, state.suggestedPostcode]);
 
   const handleCheck = () => {
     const trimmed = inputPostcode.trim().slice(0, 7);
-    if (trimmed.length < 6) return;
+    if (trimmed.length < 4) return; // Allow partial (4 digits) or full (6 chars)
     
     const info = checkPostcodeLocal(trimmed);
     setLocalResult(info);
     
-    if (info.inArea) {
+    if (info.inArea && trimmed.length >= 6) {
       savePostcode(trimmed);
+    }
+  };
+
+  const handleUseSuggestion = () => {
+    if (state.suggestedPostcode) {
+      const info = checkPostcodeLocal(state.suggestedPostcode);
+      setLocalResult(info);
+      // Show input so user can complete the full postcode if needed
+      setShowInput(true);
     }
   };
 
@@ -291,6 +334,54 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
               className="flex items-center justify-center py-8"
             >
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </motion.div>
+          ) : state.isSuggestion && state.suggestedPostcode && !showInput && !localResult ? (
+            <motion.div
+              key="suggestion"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Op basis van uw locatie denken wij dat u in de buurt van
+                </p>
+                <p className="text-2xl font-display font-bold text-primary">
+                  {state.suggestedPostcode}
+                  {state.city && <span className="text-lg font-normal text-foreground"> ({state.city})</span>}
+                </p>
+              </div>
+              
+              {state.deliveryInfo?.inArea ? (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <Check className="w-5 h-5" />
+                  <span>Dit gebied valt binnen ons bezorggebied!</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                  <MapPin className="w-5 h-5" />
+                  <span>Controleer uw exacte postcode hieronder</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Voer uw volledige postcode in:</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="1234 AB"
+                    value={inputPostcode}
+                    onChange={(e) => setInputPostcode(e.target.value.slice(0, 7))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
+                    maxLength={7}
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <Button onClick={handleCheck} disabled={inputPostcode.trim().length < 4}>
+                    Controleer
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           ) : state.postcode && !showInput ? (
             <motion.div

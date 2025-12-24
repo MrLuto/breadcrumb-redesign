@@ -101,8 +101,14 @@ serve(async (req) => {
       console.error('Geo IP lookup failed:', geoError);
     }
 
-    // If we got a Dutch postal code from geo IP
-    if (geoData?.status === 'success' && geoData?.zip && geoData?.country === 'Netherlands') {
+    // If we got a postal code from geo IP (check for Netherlands variants)
+    const isNetherlands = geoData?.country === 'Netherlands' || 
+                          geoData?.country === 'The Netherlands' ||
+                          geoData?.country === 'NL';
+    
+    if (geoData?.status === 'success' && geoData?.zip && isNetherlands) {
+      // Dutch postal codes from ip-api might be partial (just numeric, like "3772")
+      // We'll use it as a suggestion
       const postcode = geoData.zip.replace(/\s/g, '');
       const deliveryInfo = checkPostcode(postcode);
       
@@ -119,7 +125,23 @@ serve(async (req) => {
         postcode: postcode,
         city: geoData.city,
         source: 'geo-ip',
+        suggested: true, // Mark as suggestion, not confirmed
         ...deliveryInfo,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Not in Netherlands but got some location data
+    if (geoData?.status === 'success' && geoData?.city) {
+      return new Response(JSON.stringify({
+        ip: clientIP,
+        postcode: null,
+        city: geoData.city,
+        country: geoData.country,
+        source: 'geo-ip',
+        suggested: false,
+        inArea: false,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
