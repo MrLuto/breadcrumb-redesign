@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, Award, Truck, ChefHat, ArrowRight } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import heroBakery from '@/assets/hero-bakery.jpg';
+import heroOriginal from '@/assets/hero-original.jpg';
 import sandwichImg from '@/assets/sandwich.jpg';
 import cheeseImg from '@/assets/cheese.jpg';
 import deliImg from '@/assets/delicatessen.jpg';
@@ -54,7 +54,7 @@ const Index = () => {
       <section className="relative min-h-[80vh] flex items-center">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBakery})` }}
+          style={{ backgroundImage: `url(${heroOriginal})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-transparent" />
         </div>
