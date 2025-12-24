@@ -152,24 +152,6 @@ ${trimmedMessage}`;
                 ))}
               </div>
 
-              {/* WhatsApp */}
-              <div className="bg-secondary rounded-2xl p-6">
-                <h3 className="font-display font-semibold text-secondary-foreground mb-2">
-                  WhatsApp
-                </h3>
-                <p className="text-secondary-foreground/80 mb-4">
-                  Stuur ons een bericht via WhatsApp voor snelle vragen of bestellingen.
-                </p>
-                <Button variant="accent" asChild>
-                  <a 
-                    href="https://wa.me/31642908804?text=Hallo!" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    Chat via WhatsApp
-                  </a>
-                </Button>
-              </div>
             </motion.div>
 
             {/* Contact Form */}
