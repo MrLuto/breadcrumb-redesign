@@ -307,7 +307,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="font-semibold block">U lijkt buiten ons bezorggebied te vallen</span>
+                      <span className="font-semibold block">Alleen ophalen mogelijk</span>
                       {currentState.city && (
                         <span className="text-sm text-muted-foreground">Op basis van uw locatie ({currentState.city})</span>
                       )}
