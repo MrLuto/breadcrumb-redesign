@@ -3,6 +3,14 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
+import categoryAssorti from '@/assets/category-assorti.jpg';
+import categoryBroodjes from '@/assets/category-broodjes.jpg';
+import categoryWarm from '@/assets/category-warm.jpg';
+import productTijgerbol from '@/assets/product-tijgerbol.jpg';
+import productZalmsalade from '@/assets/product-zalmsalade.jpg';
+import delicatessen from '@/assets/delicatessen.jpg';
+import dranken from '@/assets/dranken.jpg';
+import luxeBroodjes from '@/assets/luxe-broodjes.jpg';
 
 const categories = [
   {
@@ -10,7 +18,7 @@ const categories = [
     title: 'Assorti Broodjes',
     description: 'Laat u verrassen met onze heerlijke selectie van belegde broodjes. Kies uit assorti, assorti met rauwkost, dubbel belegd of extra luxe.',
     highlights: ['Assorti broodjes', 'Met rauwkost', 'Dubbel belegd', 'Extra luxe'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/image/upload/w_800,h_600,c_fill,f_jpg/order-website/franchise/slider/518/947b5af1.jpg',
+    image: categoryAssorti,
     priceFrom: '€3,50',
   },
   {
@@ -18,7 +26,7 @@ const categories = [
     title: 'Belegde Broodjes',
     description: 'Ruim 20 soorten broodjes om te kiezen, van petit pain tot ciabatta, van tijgerbol tot waldkornbol. Kies uw broodje en daarna de belegsoort.',
     highlights: ['Petit pain', 'Tijgerbol', 'Ciabatta', 'Croissant', 'Glutenvrij'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/c4b445bb?broodjes',
+    image: categoryBroodjes,
     priceFrom: '€2,95',
   },
   {
@@ -26,7 +34,7 @@ const categories = [
     title: 'Broodjes Onbelegd',
     description: 'Verse afbakbroodjes om zelf af te bakken. Van ciabatta tot stokbrood, van zachte bol tot speltbroodje.',
     highlights: ['Ciabatta', 'Duitse bol', 'Stokbrood', 'Zachte bol', 'Glutenvrij'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/23a5e98e?onbelegd',
+    image: productTijgerbol,
     priceFrom: '€0,49',
   },
   {
@@ -34,7 +42,7 @@ const categories = [
     title: 'Warme Broodjes',
     description: 'Heerlijke warme broodjes zoals croissants met kaas of ham, pizzabroodjes, saucijzenbroodjes en meer.',
     highlights: ['Croissant kaas', 'Pizzabroodje', 'Saucijzenbroodje', 'Frikandel broodje'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/image/upload/w_800,h_600,c_fill,f_jpg/order-website/franchise/slider/518/5344c4e3.jpg',
+    image: categoryWarm,
     priceFrom: '€2,19',
   },
   {
@@ -42,7 +50,7 @@ const categories = [
     title: 'Luxe Hapjes & Salades',
     description: 'Voor een speciale gelegenheid: luxe hapjes op schalen, opgemaakte salades en kaas- en vleeswarenplatters.',
     highlights: ['Luxe hapjes', 'Zalmsalade', 'Rundvleessalade', 'Kaasplatter'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/d3e4f567?luxe',
+    image: luxeBroodjes,
     priceFrom: '€3,95',
   },
   {
@@ -50,7 +58,7 @@ const categories = [
     title: 'Warme Soepen',
     description: 'Huisgemaakte soepen geleverd in warmhoudpannen. Kippensoep, groentesoep, erwtensoep en meer.',
     highlights: ['Kippensoep', 'Groentesoep', 'Erwtensoep', 'Tomatensoep'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/c8d9e012?soepen',
+    image: delicatessen,
     priceFrom: '€3,00',
   },
   {
@@ -58,7 +66,7 @@ const categories = [
     title: 'Zoet & Lekkers',
     description: 'Verwennerijen zoals krentenbollen, spekkoek, dadelbrood, bonbons en Siciliaanse cannoli.',
     highlights: ['Krentenbol', 'Spekkoek', 'Bonbons', 'Cannoli'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/b9c0d123?zoet',
+    image: productZalmsalade,
     priceFrom: '€0,99',
   },
   {
@@ -66,7 +74,7 @@ const categories = [
     title: 'Dranken & Fruit',
     description: 'Gekoelde dranken, vruchtensappen, melkproducten en vers fruit.',
     highlights: ['Frisdrank', 'Vruchtensappen', 'Melk & Chocomel', 'Vers fruit'],
-    image: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_800,h_600,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/d1e2f345?dranken',
+    image: dranken,
     priceFrom: '€1,10',
   },
 ];
