@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import broodjesAssorti from '@/assets/broodjes-assorti.png';
+import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasWinkel from '@/assets/kaas-winkel.jpg';
 import luxeBroodjes from '@/assets/luxe-broodjes.jpg';
 import olijvenTapas from '@/assets/olijven-tapas.jpg';
@@ -14,7 +14,7 @@ const categories = [
   {
     title: 'Belegde Broodjes',
     description: 'Onze broodjes worden altijd vers voor u gebakken in onze eigen oven. Kies uit bijna 1000 verschillende soorten belegde broodjes met een breed assortiment aan kaas, vleeswaren en salades.',
-    image: broodjesAssorti,
+    image: belegdeBroodjes,
     items: ['Broodjes gezond', 'Broodjes kaas', 'Broodjes vlees', 'Luxe broodjes', 'Vegetarische broodjes', 'Warme broodjes'],
   },
   {
