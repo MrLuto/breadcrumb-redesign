@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
+import OrderButton from '@/components/OrderButton';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -71,9 +71,7 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
-            <Button variant="hero" size="lg" asChild>
-              <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">Bestellen</a>
-            </Button>
+            <OrderButton variant="hero" size="lg" />
           </div>
 
           {/* Mobile menu button */}
@@ -110,11 +108,9 @@ const Header = () => {
                     {link.name}
                   </Link>
                 ))}
-                <Button variant="hero" size="lg" asChild className="mt-2">
-                  <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-                    Bestellen
-                  </a>
-                </Button>
+                <div onClick={() => setIsMenuOpen(false)}>
+                  <OrderButton variant="hero" size="lg" className="w-full mt-2" />
+                </div>
               </div>
             </motion.div>
           )}
