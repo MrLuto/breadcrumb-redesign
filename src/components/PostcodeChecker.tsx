@@ -315,7 +315,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
                   </div>
                   
                   <p className="text-sm text-muted-foreground">
-                    U kunt alsnog bestellen - wij bezorgen ook in delen van Waddinxveen, Gouda en omgeving.
+                    U kunt uw bestelling ook afhalen bij onze winkel in Gouda. Of controleer hieronder of wij toch bij u bezorgen.
                   </p>
 
                   <div className="space-y-2">
@@ -379,7 +379,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
                     <span className="font-semibold">Helaas, wij bezorgen niet in dit gebied</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    U kunt wel afhalen bij onze winkel in Gouda of online bestellen en laten verzenden.
+                    Geen probleem! U kunt uw bestelling afhalen bij onze winkel in Gouda.
                   </p>
                   <div className="flex gap-2">
                     <Button onClick={() => setLocalResult(null)} variant="outline" className="flex-1">
