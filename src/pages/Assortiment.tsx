@@ -4,7 +4,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import sandwichImg from '@/assets/sandwich.jpg';
-import cheeseImg from '@/assets/cheese.jpg';
+import kaasOriginal from '@/assets/kaas-original.jpg';
 import deliImg from '@/assets/delicatessen.jpg';
 
 const categories = [
@@ -17,7 +17,7 @@ const categories = [
   {
     title: 'Kaas & Zuivel',
     description: 'Gouda staat bekend om zijn kaas en wij bieden een uitgebreide selectie van lokale en internationale kazen. Van jong tot extra belegen, van boerenkaas tot geitenkaas.',
-    image: cheeseImg,
+    image: kaasOriginal,
     items: ['Goudse kaas', 'Boerenkaas', 'Oude kaas', 'Geitenkaas', 'Buitenlandse kazen', 'Verse zuivel'],
   },
   {
