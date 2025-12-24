@@ -3,28 +3,49 @@ import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import sandwichImg from '@/assets/sandwich.jpg';
-import kaasOriginal from '@/assets/kaas-original.jpg';
-import deliImg from '@/assets/delicatessen.jpg';
+import broodjesAssorti from '@/assets/broodjes-assorti.png';
+import kaasWinkel from '@/assets/kaas-winkel.jpg';
+import luxeBroodjes from '@/assets/luxe-broodjes.jpg';
+import olijvenTapas from '@/assets/olijven-tapas.jpg';
+import dranken from '@/assets/dranken.jpg';
+import noten from '@/assets/noten.jpg';
 
 const categories = [
   {
     title: 'Belegde Broodjes',
     description: 'Onze broodjes worden altijd vers voor u gebakken in onze eigen oven. Kies uit bijna 1000 verschillende soorten belegde broodjes met een breed assortiment aan kaas, vleeswaren en salades.',
-    image: sandwichImg,
+    image: broodjesAssorti,
     items: ['Broodjes gezond', 'Broodjes kaas', 'Broodjes vlees', 'Luxe broodjes', 'Vegetarische broodjes', 'Warme broodjes'],
   },
   {
     title: 'Kaas & Zuivel',
-    description: 'Gouda staat bekend om zijn kaas en wij bieden een uitgebreide selectie van lokale en internationale kazen. Van jong tot extra belegen, van boerenkaas tot geitenkaas.',
-    image: kaasOriginal,
+    description: 'Bij Fris Versshop bent u aan het juiste adres voor de heerlijkste kaassoorten. Ons assortiment kaas is groot en van hoog niveau.',
+    image: kaasWinkel,
     items: ['Goudse kaas', 'Boerenkaas', 'Oude kaas', 'Geitenkaas', 'Buitenlandse kazen', 'Verse zuivel'],
   },
   {
-    title: 'Vleeswaren & Delicatessen',
-    description: 'Premium vleeswaren van de beste kwaliteit. Van klassieke ham tot specialiteiten zoals parmaham en carpaccio. Ook hebben wij een ruime keuze aan verse salades.',
-    image: deliImg,
-    items: ['Ham & rosbief', 'Salami & worst', 'Paté & terrines', 'Verse salades', 'Tapas & antipasti', 'Huisgemaakte specialiteiten'],
+    title: 'Luxe Hapjes',
+    description: 'Voor feesten, vergaderingen of gewoon om te genieten. Onze luxe broodjes en hapjes zijn altijd een succes.',
+    image: luxeBroodjes,
+    items: ['Luxe broodjes', 'Borrelhapjes', 'Feestschotels', 'Catering', 'Vergaderbroodjes', 'Partyschotels'],
+  },
+  {
+    title: 'Olijven & Tapas',
+    description: 'Heerlijke olijven, tapas en antipasti voor de echte fijnproevers.',
+    image: olijvenTapas,
+    items: ['Olijven', 'Tapas', 'Antipasti', 'Zongedroogde tomaten', 'Gevulde paprika', 'Fetakaas'],
+  },
+  {
+    title: 'Noten & Snacks',
+    description: 'Verse noten, gedroogd fruit en heerlijke snacks voor onderweg of thuis.',
+    image: noten,
+    items: ['Gemengde noten', 'Cashewnoten', 'Amandelen', 'Gedroogd fruit', 'Studentenhaver', 'Zoute snacks'],
+  },
+  {
+    title: 'Dranken',
+    description: 'Een uitgebreid assortiment aan dranken om bij uw lunch te serveren.',
+    image: dranken,
+    items: ['Frisdranken', 'Sappen', 'Water', 'Koffie & thee', 'Wijn', 'Bier'],
   },
 ];
 
