@@ -129,7 +129,7 @@ const Assortiment = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-primary rounded-3xl mx-4 md:mx-8 mb-8">
+      <section className="py-20 bg-secondary rounded-3xl mx-4 md:mx-8 mb-8">
         <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -138,10 +138,10 @@ const Assortiment = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-6">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-6">
               Interesse in onze producten?
             </h2>
-            <p className="text-primary-foreground/80 text-lg mb-8">
+            <p className="text-secondary-foreground/80 text-lg mb-8">
               Kom langs in onze winkel of neem contact met ons op voor meer informatie en bestellingen.
             </p>
             <Button variant="secondary" size="xl" asChild>
