@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, Award, ChefHat, ArrowRight } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import PostcodeChecker from '@/components/PostcodeChecker';
+import { DeliveryStatusBanner } from '@/components/PostcodeChecker';
 import OrderButton from '@/components/OrderButton';
 import heroOriginal from '@/assets/hero-original.jpg';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
@@ -202,36 +202,31 @@ const Index = () => {
       {/* Delivery Check + CTA Section */}
       <section className="py-20 bg-secondary rounded-3xl mx-4 md:mx-8 mb-8">
         <div className="container">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-6">
-                Klaar om te Bestellen?
-              </h2>
-              <p className="text-secondary-foreground/80 text-lg mb-8">
-                Bestel je broodjes online en laat ze bezorgen of haal ze op in onze winkel aan de Willem en Marialaan in Gouda.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <OrderButton variant="hero" size="xl" />
-                <Button variant="outline" size="xl" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
-                  <a href="tel:0182524926">Bel: 0182 - 524 926</a>
-                </Button>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <PostcodeChecker />
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-8"
+          >
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-6">
+              Klaar om te Bestellen?
+            </h2>
+            <p className="text-secondary-foreground/80 text-lg mb-8 max-w-2xl mx-auto">
+              Bestel je broodjes online en laat ze bezorgen of haal ze op in onze winkel aan de Willem en Marialaan in Gouda.
+            </p>
+            
+            <div className="max-w-2xl mx-auto mb-8">
+              <DeliveryStatusBanner />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <OrderButton variant="hero" size="xl" />
+              <Button variant="outline" size="xl" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
+                <a href="tel:0182524926">Bel: 0182 - 524 926</a>
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </section>
     </Layout>
