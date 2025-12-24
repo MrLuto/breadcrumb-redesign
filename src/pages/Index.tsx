@@ -5,7 +5,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import heroOriginal from '@/assets/hero-original.jpg';
 import sandwichImg from '@/assets/sandwich.jpg';
-import cheeseImg from '@/assets/cheese.jpg';
+import kaasOriginal from '@/assets/kaas-original.jpg';
 import deliImg from '@/assets/delicatessen.jpg';
 
 const features = [
@@ -36,7 +36,7 @@ const categories = [
   {
     title: 'Kaas & Zuivel',
     description: 'Een breed assortiment aan heerlijke kazen uit de regio.',
-    image: cheeseImg,
+    image: kaasOriginal,
     link: '/assortiment',
   },
   {
