@@ -77,10 +77,10 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button variant="hero" size="xl" asChild>
-                <Link to="/contact">
+                <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">
                   Bestel Nu
                   <ArrowRight className="w-5 h-5" />
-                </Link>
+                </a>
               </Button>
               <Button variant="heroOutline" size="xl" asChild>
                 <Link to="/assortiment">Bekijk Assortiment</Link>
@@ -220,10 +220,10 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="hero" size="xl" asChild>
-                <Link to="/contact">
-                  Neem Contact Op
+                <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">
+                  Bestel Nu
                   <ArrowRight className="w-5 h-5" />
-                </Link>
+                </a>
               </Button>
               <Button variant="outline" size="xl" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
                 <a href="tel:0182524926">Bel: 0182 - 524 926</a>

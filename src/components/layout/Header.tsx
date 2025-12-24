@@ -72,7 +72,7 @@ const Header = () => {
               </Link>
             ))}
             <Button variant="hero" size="lg" asChild>
-              <Link to="/contact">Bestellen</Link>
+              <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">Bestellen</a>
             </Button>
           </div>
 
@@ -111,9 +111,9 @@ const Header = () => {
                   </Link>
                 ))}
                 <Button variant="hero" size="lg" asChild className="mt-2">
-                  <Link to="/contact" onClick={() => setIsMenuOpen(false)}>
+                  <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
                     Bestellen
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </motion.div>
