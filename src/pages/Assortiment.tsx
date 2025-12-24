@@ -53,18 +53,24 @@ const Assortiment = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="bg-muted py-16 md:py-24">
-        <div className="container">
+      <section className="relative py-24 md:py-32">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${belegdeBroodjes})` }}
+        >
+          <div className="absolute inset-0 bg-foreground/70" />
+        </div>
+        <div className="container relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6">
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-card mb-6">
               Ons <span className="text-primary">Assortiment</span>
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-lg text-card/90 leading-relaxed">
               Doordat wij veel soorten brood zelf kunnen bakken en wij u een breed assortiment 
               kaas, vleeswaren en salades kunnen aanbieden, kunt u bij ons kiezen tussen 
               bijna 1000 verschillende soorten belegde broodjes!

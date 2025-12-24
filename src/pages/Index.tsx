@@ -4,7 +4,7 @@ import { Users, Award, Truck, ChefHat, ArrowRight } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import heroOriginal from '@/assets/hero-original.jpg';
-import broodjesAssorti from '@/assets/broodjes-assorti.png';
+import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasOriginal from '@/assets/kaas-original.jpg';
 import olijvenTapas from '@/assets/olijven-tapas.jpg';
 
@@ -30,7 +30,7 @@ const categories = [
   {
     title: 'Belegde Broodjes',
     description: 'Kies tussen bijna 1000 verschillende soorten belegde broodjes.',
-    image: broodjesAssorti,
+    image: belegdeBroodjes,
     link: '/assortiment',
   },
   {

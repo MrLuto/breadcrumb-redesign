@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import heroOriginal from '@/assets/hero-original.jpg';
 
 const contactInfo = [
   {
@@ -59,18 +60,24 @@ const Contact = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="bg-muted py-16 md:py-24">
-        <div className="container">
+      <section className="relative py-24 md:py-32">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroOriginal})` }}
+        >
+          <div className="absolute inset-0 bg-foreground/70" />
+        </div>
+        <div className="container relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6">
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-card mb-6">
               <span className="text-primary">Contact</span>
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-lg text-card/90 leading-relaxed">
               Heeft u een vraag, wilt u bestellen of langskomen? Neem gerust contact met ons op. 
               Wij helpen u graag verder!
             </p>
