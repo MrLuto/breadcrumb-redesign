@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+const WHATSAPP_NUMBER = '31642908804';
 import heroOriginal from '@/assets/hero-original.jpg';
 
 const contactInfo = [
@@ -46,10 +48,34 @@ const Contact = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const trimmedName = formData.name.trim().slice(0, 100);
+    const trimmedEmail = formData.email.trim().slice(0, 255);
+    const trimmedPhone = formData.phone.trim().slice(0, 20);
+    const trimmedSubject = formData.subject.trim().slice(0, 100);
+    const trimmedMessage = formData.message.trim().slice(0, 1000);
+    
+    if (!trimmedName || !trimmedEmail || !trimmedSubject || !trimmedMessage) return;
+    
+    const fullMessage = `*Nieuw bericht via contactformulier*
+
+*Naam:* ${trimmedName}
+*E-mail:* ${trimmedEmail}
+${trimmedPhone ? `*Telefoon:* ${trimmedPhone}\n` : ''}*Onderwerp:* ${trimmedSubject}
+
+*Bericht:*
+${trimmedMessage}`;
+    
+    const encodedMessage = encodeURIComponent(fullMessage);
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    
     toast({
-      title: 'Bericht Verzonden!',
-      description: 'Bedankt voor uw bericht. Wij nemen zo snel mogelijk contact met u op.',
+      title: 'WhatsApp geopend!',
+      description: 'Verstuur het bericht in WhatsApp om uw aanvraag te verzenden.',
     });
+    
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
   };
 
@@ -223,9 +249,9 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full">
-                    Verstuur Bericht
-                    <Send className="w-5 h-5" />
+                  <Button type="submit" size="lg" className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Verstuur via WhatsApp
                   </Button>
                 </form>
               </div>
