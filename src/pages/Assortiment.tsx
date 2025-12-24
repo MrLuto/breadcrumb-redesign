@@ -12,40 +12,49 @@ import noten from '@/assets/noten.jpg';
 
 const categories = [
   {
-    title: 'Belegde Broodjes',
-    description: 'Onze broodjes worden altijd vers voor u gebakken in onze eigen oven. Kies uit bijna 1000 verschillende soorten belegde broodjes met een breed assortiment aan kaas, vleeswaren en salades.',
+    title: 'Laat u verrassen!',
+    description: 'Onze speciale selectie van de dag. Verrassende combinaties die u niet wilt missen.',
     image: belegdeBroodjes,
-    items: ['Broodjes gezond', 'Broodjes kaas', 'Broodjes vlees', 'Luxe broodjes', 'Vegetarische broodjes', 'Warme broodjes'],
   },
   {
-    title: 'Kaas & Zuivel',
-    description: 'Bij Fris Versshop bent u aan het juiste adres voor de heerlijkste kaassoorten. Ons assortiment kaas is groot en van hoog niveau.',
-    image: kaasWinkel,
-    items: ['Goudse kaas', 'Boerenkaas', 'Oude kaas', 'Geitenkaas', 'Buitenlandse kazen', 'Verse zuivel'],
+    title: 'Broodjes',
+    description: 'Kies uit ons uitgebreide assortiment van heerlijk belegde broodjes met verse ingrediënten.',
+    image: belegdeBroodjes,
   },
   {
-    title: 'Luxe Hapjes',
-    description: 'Voor feesten, vergaderingen of gewoon om te genieten. Onze luxe broodjes en hapjes zijn altijd een succes.',
+    title: 'Broodjes onbelegd',
+    description: 'Versgebakken broodjes uit onze eigen oven, klaar om naar wens te beleggen.',
     image: luxeBroodjes,
-    items: ['Luxe broodjes', 'Borrelhapjes', 'Feestschotels', 'Catering', 'Vergaderbroodjes', 'Partyschotels'],
   },
   {
-    title: 'Olijven & Tapas',
-    description: 'Heerlijke olijven, tapas en antipasti voor de echte fijnproevers.',
+    title: 'Warme broodjes',
+    description: 'Heerlijke warme broodjes, vers uit de oven met smeltende kaas en meer.',
+    image: luxeBroodjes,
+  },
+  {
+    title: 'Luxe Hapjes & Maaltijdsalades',
+    description: 'Voor een speciale gelegenheid of een gezonde lunch. Onze luxe hapjes en verse salades.',
     image: olijvenTapas,
-    items: ['Olijven', 'Tapas', 'Antipasti', 'Zongedroogde tomaten', 'Gevulde paprika', 'Fetakaas'],
   },
   {
-    title: 'Noten & Snacks',
-    description: 'Verse noten, gedroogd fruit en heerlijke snacks voor onderweg of thuis.',
+    title: 'Warme soepen',
+    description: 'Huisgemaakte soepen, perfect voor een warme lunch op koude dagen.',
+    image: kaasWinkel,
+  },
+  {
+    title: 'Overig',
+    description: 'Diverse extra\'s om uw bestelling compleet te maken.',
     image: noten,
-    items: ['Gemengde noten', 'Cashewnoten', 'Amandelen', 'Gedroogd fruit', 'Studentenhaver', 'Zoute snacks'],
   },
   {
-    title: 'Dranken',
-    description: 'Een uitgebreid assortiment aan dranken om bij uw lunch te serveren.',
+    title: 'Gekoelde dranken',
+    description: 'Verfrissende drankjes om bij uw lunch te serveren.',
     image: dranken,
-    items: ['Frisdranken', 'Sappen', 'Water', 'Koffie & thee', 'Wijn', 'Bier'],
+  },
+  {
+    title: 'Vers fruit',
+    description: 'Vers en gezond fruit, de perfecte aanvulling op uw maaltijd.',
+    image: noten,
   },
 ];
 
@@ -107,20 +116,9 @@ const Assortiment = () => {
                   <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                     {category.title}
                   </h2>
-                  <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+                  <p className="text-muted-foreground text-lg leading-relaxed">
                     {category.description}
                   </p>
-                  <div className="grid grid-cols-2 gap-3 mb-8">
-                    {category.items.map((item) => (
-                      <div 
-                        key={item}
-                        className="flex items-center gap-2 text-foreground"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        {item}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </motion.div>
             ))}
