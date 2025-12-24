@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import logo from '@/assets/logo.png';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -46,16 +47,13 @@ const Header = () => {
 
       {/* Main navigation */}
       <nav className="bg-card/95 backdrop-blur-md border-b border-border shadow-warm">
-        <div className="container flex items-center justify-between py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <span className="text-2xl font-display font-bold text-foreground">
-                Fris<span className="text-primary">Vers</span>shop
-              </span>
-              <span className="text-xs text-muted-foreground tracking-wider">
-                Gouda sinds 1986
-              </span>
-            </div>
+        <div className="container flex items-center justify-between py-3">
+          <Link to="/" className="flex items-center">
+            <img 
+              src={logo} 
+              alt="FrisVersshop Gouda" 
+              className="h-14 md:h-16 w-auto"
+            />
           </Link>
 
           {/* Desktop nav */}

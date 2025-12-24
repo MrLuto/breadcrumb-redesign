@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Clock, Facebook } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 const Footer = () => {
   return (
@@ -8,9 +9,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-display font-bold mb-4">
-              Fris<span className="text-primary">Vers</span>shop
-            </h3>
+            <Link to="/" className="inline-block mb-4">
+              <img 
+                src={logo} 
+                alt="FrisVersshop Gouda" 
+                className="h-16 w-auto"
+              />
+            </Link>
             <p className="text-secondary-foreground/80 mb-4 leading-relaxed">
               Al meer dan 35 jaar combineren wij onze liefde voor kaas, delicatessen 
               en belegde broodjes in Gouda.
