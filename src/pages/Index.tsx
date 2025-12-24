@@ -4,9 +4,9 @@ import { Users, Award, Truck, ChefHat, ArrowRight } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import heroOriginal from '@/assets/hero-original.jpg';
-import sandwichImg from '@/assets/sandwich.jpg';
+import broodjesAssorti from '@/assets/broodjes-assorti.png';
 import kaasOriginal from '@/assets/kaas-original.jpg';
-import deliImg from '@/assets/delicatessen.jpg';
+import olijvenTapas from '@/assets/olijven-tapas.jpg';
 
 const features = [
   {
@@ -30,7 +30,7 @@ const categories = [
   {
     title: 'Belegde Broodjes',
     description: 'Kies tussen bijna 1000 verschillende soorten belegde broodjes.',
-    image: sandwichImg,
+    image: broodjesAssorti,
     link: '/assortiment',
   },
   {
@@ -40,9 +40,9 @@ const categories = [
     link: '/assortiment',
   },
   {
-    title: 'Vleeswaren & Delicatessen',
-    description: 'Premium vleeswaren en salades van de beste kwaliteit.',
-    image: deliImg,
+    title: 'Olijven & Tapas',
+    description: 'Heerlijke olijven, tapas en delicatessen.',
+    image: olijvenTapas,
     link: '/assortiment',
   },
 ];
