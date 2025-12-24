@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting config
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 20;
+
 // Delivery zones: [startNumeric, endNumeric, deliveryMinutes, cost, minimum]
 const deliveryZones = [
   { start: 2741, end: 2743, minutes: 120, cost: 4.00, minimum: 20.00 },
@@ -16,12 +20,21 @@ const deliveryZones = [
   { start: 2850, end: 2851, minutes: 120, cost: 4.00, minimum: 20.00 },
 ];
 
+// Input validation
+const POSTCODE_REGEX = /^\d{4}[A-Z]{0,2}$/;
+const MAX_CITY_LENGTH = 100;
+
 interface DeliveryInfo {
   inArea: boolean;
   minutes?: number;
   cost?: number;
   minimum?: number;
 }
+
+const sanitizeString = (str: unknown, maxLength: number): string | null => {
+  if (typeof str !== 'string') return null;
+  return str.trim().slice(0, maxLength) || null;
+};
 
 const checkPostcode = (postcode: string): DeliveryInfo => {
   const cleaned = postcode.replace(/\s/g, '').toUpperCase();
@@ -47,11 +60,56 @@ const checkPostcode = (postcode: string): DeliveryInfo => {
   return { inArea: false };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const checkRateLimit = async (supabase: any, ip: string, functionName: string): Promise<{ allowed: boolean; remaining: number }> => {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  
+  // Try to get existing rate limit record
+  const { data: existing } = await supabase
+    .from('rate_limits')
+    .select('*')
+    .eq('ip_address', ip)
+    .eq('function_name', functionName)
+    .gte('window_start', windowStart)
+    .single();
+  
+  if (existing) {
+    if (existing.request_count >= MAX_REQUESTS_PER_WINDOW) {
+      return { allowed: false, remaining: 0 };
+    }
+    
+    // Increment counter
+    await supabase
+      .from('rate_limits')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('id', existing.id);
+    
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - existing.request_count - 1 };
+  }
+  
+  // Create new rate limit record
+  await supabase
+    .from('rate_limits')
+    .upsert({
+      ip_address: ip,
+      function_name: functionName,
+      request_count: 1,
+      window_start: new Date().toISOString(),
+    }, { onConflict: 'ip_address,function_name' });
+  
+  return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1 };
+};
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Initialize Supabase client
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
     // Get client IP from headers (Supabase/Cloudflare provides this)
@@ -62,10 +120,23 @@ serve(async (req) => {
 
     console.log('Client IP:', clientIP);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Check rate limit
+    const { allowed, remaining } = await checkRateLimit(supabase, clientIP, 'geo-ip');
+    
+    if (!allowed) {
+      console.log('Rate limit exceeded for IP:', clientIP);
+      return new Response(JSON.stringify({ 
+        error: 'Too many requests. Please try again later.',
+        inArea: false 
+      }), {
+        status: 429,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': '3600'
+        },
+      });
+    }
 
     // Check if we have a stored postcode for this IP
     const { data: existingData } = await supabase
@@ -80,11 +151,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         ip: clientIP,
         postcode: existingData.postcode,
-        city: existingData.city,
+        city: sanitizeString(existingData.city, MAX_CITY_LENGTH),
         source: 'database',
         ...deliveryInfo,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': remaining.toString()
+        },
       });
     }
 
@@ -108,27 +183,48 @@ serve(async (req) => {
     
     if (geoData?.status === 'success' && geoData?.zip && isNetherlands) {
       // Dutch postal codes from ip-api might be partial (just numeric, like "3772")
-      // We'll use it as a suggestion
-      const postcode = geoData.zip.replace(/\s/g, '');
+      // Sanitize the input
+      const rawPostcode = String(geoData.zip || '').replace(/\s/g, '').slice(0, 10);
+      
+      if (!POSTCODE_REGEX.test(rawPostcode.toUpperCase())) {
+        console.log('Invalid postcode format from geo-ip:', rawPostcode);
+        return new Response(JSON.stringify({
+          ip: clientIP,
+          postcode: null,
+          city: sanitizeString(geoData.city, MAX_CITY_LENGTH),
+          source: 'geo-ip',
+          suggested: false,
+          inArea: false,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      const postcode = rawPostcode.toUpperCase();
+      const city = sanitizeString(geoData.city, MAX_CITY_LENGTH);
       const deliveryInfo = checkPostcode(postcode);
       
       // Store in database for future lookups
       await supabase.from('ip_postcodes').upsert({
         ip_address: clientIP,
         postcode: postcode,
-        city: geoData.city || null,
+        city: city,
         in_delivery_area: deliveryInfo.inArea,
       }, { onConflict: 'ip_address' });
 
       return new Response(JSON.stringify({
         ip: clientIP,
         postcode: postcode,
-        city: geoData.city,
+        city: city,
         source: 'geo-ip',
         suggested: true, // Mark as suggestion, not confirmed
         ...deliveryInfo,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': remaining.toString()
+        },
       });
     }
 
@@ -137,13 +233,17 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         ip: clientIP,
         postcode: null,
-        city: geoData.city,
-        country: geoData.country,
+        city: sanitizeString(geoData.city, MAX_CITY_LENGTH),
+        country: sanitizeString(geoData.country, 100),
         source: 'geo-ip',
         suggested: false,
         inArea: false,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': remaining.toString()
+        },
       });
     }
 
@@ -151,17 +251,23 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ip: clientIP,
       postcode: null,
-      city: geoData?.city || null,
+      city: geoData?.city ? sanitizeString(geoData.city, MAX_CITY_LENGTH) : null,
       source: 'none',
       inArea: false,
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-RateLimit-Remaining': remaining.toString()
+      },
     });
 
   } catch (error) {
     console.error('Error in geo-ip function:', error);
+    // Return generic error message - don't expose internal details
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Unable to process your request. Please try again later.',
+      code: 'ERR_GEO_500',
       inArea: false,
     }), {
       status: 500,
