@@ -205,11 +205,13 @@ interface PostcodeModalProps {
 const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendingRedirect, currentState }: PostcodeModalProps) => {
   const [inputPostcode, setInputPostcode] = useState('');
   const [localResult, setLocalResult] = useState<DeliveryInfo | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
 
   useEffect(() => {
     if (open) {
       setInputPostcode('');
       setLocalResult(null);
+      setShowManualInput(false);
     }
   }, [open]);
 
@@ -225,18 +227,109 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
     }
   };
 
+  // Show geo-ip suggestion if available and no manual check done yet
+  const showGeoSuggestion = currentState.isChecked && currentState.deliveryInfo && !localResult && !showManualInput;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
-            Bezorggebied Controleren
+            Bezorggebied
           </DialogTitle>
         </DialogHeader>
 
         <AnimatePresence mode="wait">
-          {localResult ? (
+          {currentState.isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center py-8"
+            >
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </motion.div>
+          ) : showGeoSuggestion ? (
+            <motion.div
+              key="suggestion"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {currentState.deliveryInfo?.inArea ? (
+                <>
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <Check className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="font-semibold block">Wij kunnen bij u bezorgen!</span>
+                      {currentState.city && (
+                        <span className="text-sm text-muted-foreground">Op basis van uw locatie ({currentState.city})</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <Clock className="w-5 h-5 text-primary mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Bezorgtijd</p>
+                      <p className="font-semibold text-foreground">{currentState.deliveryInfo.minutes} min</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <Truck className="w-5 h-5 text-primary mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Kosten</p>
+                      <p className="font-semibold text-foreground">€{currentState.deliveryInfo.cost?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-xl">
+                      <MapPin className="w-5 h-5 text-primary mx-auto mb-1" />
+                      <p className="text-xs text-muted-foreground">Minimum</p>
+                      <p className="font-semibold text-foreground">€{currentState.deliveryInfo.minimum?.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Button onClick={onConfirm} className="w-full" size="lg">
+                      Ga naar Bestellen
+                    </Button>
+                    <Button onClick={() => setShowManualInput(true)} variant="ghost" size="sm" className="w-full text-muted-foreground">
+                      Niet correct? Voer postcode in
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="font-semibold block">U lijkt buiten ons bezorggebied te vallen</span>
+                      {currentState.city && (
+                        <span className="text-sm text-muted-foreground">Op basis van uw locatie ({currentState.city})</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    U kunt alsnog bestellen - wij bezorgen ook in delen van Waddinxveen, Gouda en omgeving.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Button onClick={() => setShowManualInput(true)} variant="outline" className="w-full">
+                      Controleer met mijn postcode
+                    </Button>
+                    <Button onClick={onConfirm} variant="secondary" className="w-full">
+                      Toch bestellen
+                    </Button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          ) : localResult ? (
             <motion.div
               key="result"
               initial={{ opacity: 0, y: 10 }}
