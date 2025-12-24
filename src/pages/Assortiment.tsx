@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
+import OrderButton from '@/components/OrderButton';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import categoryAssorti from '@/assets/category-assorti.jpg';
 import categoryBroodjes from '@/assets/category-broodjes.jpg';
@@ -159,16 +159,10 @@ const Assortiment = () => {
                     </div>
                   </div>
                   
-                  <Button variant="hero" className="mt-4 w-full md:w-auto" asChild>
-                    <a 
-                      href="https://bestellen.frisversbroodjes.nl/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      Bekijk & Bestel
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </a>
-                  </Button>
+                  <OrderButton variant="hero" className="mt-4 w-full md:w-auto" showArrow={false}>
+                    Bekijk & Bestel
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </OrderButton>
                 </div>
               </motion.div>
             ))}
@@ -192,16 +186,10 @@ const Assortiment = () => {
             <p className="text-secondary-foreground/80 text-lg mb-8">
               Bekijk ons volledige assortiment en bestel eenvoudig online!
             </p>
-            <Button variant="default" size="lg" asChild>
-              <a 
-                href="https://bestellen.frisversbroodjes.nl/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                Direct bestellen
-                <ExternalLink className="w-5 h-5 ml-2" />
-              </a>
-            </Button>
+            <OrderButton variant="default" size="lg" showArrow={false}>
+              Direct bestellen
+              <ExternalLink className="w-5 h-5 ml-2" />
+            </OrderButton>
           </motion.div>
         </div>
       </section>

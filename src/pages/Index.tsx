@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Award, Truck, ChefHat, ArrowRight } from 'lucide-react';
+import { Users, Award, ChefHat, ArrowRight } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import PostcodeChecker from '@/components/PostcodeChecker';
+import OrderButton from '@/components/OrderButton';
 import heroOriginal from '@/assets/hero-original.jpg';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasOriginal from '@/assets/kaas-original.jpg';
@@ -77,12 +78,7 @@ const Index = () => {
               winkel of laat je lunch duurzaam bezorgen.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="xl" asChild>
-                <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">
-                  Bestel Nu
-                  <ArrowRight className="w-5 h-5" />
-                </a>
-              </Button>
+              <OrderButton variant="hero" size="xl" />
               <Button variant="heroOutline" size="xl" asChild>
                 <Link to="/assortiment">Bekijk Assortiment</Link>
               </Button>
@@ -220,12 +216,7 @@ const Index = () => {
                 Bestel je broodjes online en laat ze bezorgen of haal ze op in onze winkel aan de Willem en Marialaan in Gouda.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="hero" size="xl" asChild>
-                  <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">
-                    Bestel Nu
-                    <ArrowRight className="w-5 h-5" />
-                  </a>
-                </Button>
+                <OrderButton variant="hero" size="xl" />
                 <Button variant="outline" size="xl" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
                   <a href="tel:0182524926">Bel: 0182 - 524 926</a>
                 </Button>
