@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, Truck, Check, X, RefreshCw, Loader2 } from 'lucide-react';
+import { MapPin, Clock, Truck, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 const STORAGE_KEY = 'frisvers_postcode';
 const ORDER_URL = 'https://bestellen.frisversbroodjes.nl/';
 
-// Delivery zones for client-side validation
+// Delivery zones - only need 4 digit numbers
 const deliveryZones = [
   { start: 2741, end: 2743, minutes: 120, cost: 4.00, minimum: 20.00 },
   { start: 2800, end: 2811, minutes: 90, cost: 4.00, minimum: 20.00 },
@@ -28,19 +28,15 @@ interface DeliveryInfo {
 
 interface PostcodeState {
   postcode: string | null;
-  suggestedPostcode: string | null;
   city: string | null;
   deliveryInfo: DeliveryInfo | null;
   isLoading: boolean;
   isChecked: boolean;
-  isSuggestion: boolean;
 }
 
 interface PostcodeContextType {
   state: PostcodeState;
   checkPostcode: (postcode: string) => DeliveryInfo;
-  savePostcode: (postcode: string) => Promise<void>;
-  clearPostcode: () => void;
   openOrderModal: () => void;
 }
 
@@ -54,53 +50,29 @@ export const usePostcode = () => {
   return context;
 };
 
-// Check if a postcode (partial or full) is in delivery area
+// Check postcode (4 digits is enough)
 const checkPostcodeLocal = (postcode: string): DeliveryInfo => {
   const cleaned = postcode.replace(/\s/g, '').toUpperCase();
   
-  // Try full match first (1234AB format)
-  const fullMatch = cleaned.match(/^(\d{4})([A-Z]{2})$/);
-  if (fullMatch) {
-    const numericPart = parseInt(fullMatch[1], 10);
-    for (const zone of deliveryZones) {
-      if (numericPart >= zone.start && numericPart <= zone.end) {
-        return {
-          inArea: true,
-          minutes: zone.minutes,
-          cost: zone.cost,
-          minimum: zone.minimum,
-        };
-      }
-    }
+  // Extract 4 digits
+  const match = cleaned.match(/^(\d{4})/);
+  if (!match) {
     return { inArea: false };
   }
   
-  // Try partial match (just numbers like "3772")
-  const partialMatch = cleaned.match(/^(\d{4})$/);
-  if (partialMatch) {
-    const numericPart = parseInt(partialMatch[1], 10);
-    for (const zone of deliveryZones) {
-      if (numericPart >= zone.start && numericPart <= zone.end) {
-        return {
-          inArea: true,
-          minutes: zone.minutes,
-          cost: zone.cost,
-          minimum: zone.minimum,
-        };
-      }
+  const numericPart = parseInt(match[1], 10);
+  for (const zone of deliveryZones) {
+    if (numericPart >= zone.start && numericPart <= zone.end) {
+      return {
+        inArea: true,
+        minutes: zone.minutes,
+        cost: zone.cost,
+        minimum: zone.minimum,
+      };
     }
-    return { inArea: false };
   }
   
   return { inArea: false };
-};
-
-const formatPostcode = (postcode: string): string => {
-  const cleaned = postcode.replace(/\s/g, '').toUpperCase();
-  if (cleaned.length === 6) {
-    return `${cleaned.slice(0, 4)} ${cleaned.slice(4)}`;
-  }
-  return cleaned;
 };
 
 interface PostcodeProviderProps {
@@ -110,17 +82,15 @@ interface PostcodeProviderProps {
 export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   const [state, setState] = useState<PostcodeState>({
     postcode: null,
-    suggestedPostcode: null,
     city: null,
     deliveryInfo: null,
     isLoading: true,
     isChecked: false,
-    isSuggestion: false,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
-  // Load postcode on mount
+  // Load postcode on mount via geo-ip
   useEffect(() => {
     const loadPostcode = async () => {
       // First check localStorage
@@ -131,12 +101,10 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
           const deliveryInfo = checkPostcodeLocal(parsed.postcode);
           setState({
             postcode: parsed.postcode,
-            suggestedPostcode: null,
             city: parsed.city || null,
             deliveryInfo,
             isLoading: false,
             isChecked: true,
-            isSuggestion: false,
           });
           return;
         } catch {
@@ -149,14 +117,21 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
         const { data, error } = await supabase.functions.invoke('geo-ip');
         if (!error && data) {
           const deliveryInfo = data.postcode ? checkPostcodeLocal(data.postcode) : { inArea: false };
+          
+          // Save to localStorage for future visits
+          if (data.postcode) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+              postcode: data.postcode, 
+              city: data.city 
+            }));
+          }
+          
           setState({
-            postcode: null,
-            suggestedPostcode: data.postcode || null,
+            postcode: data.postcode || null,
             city: data.city || null,
             deliveryInfo,
             isLoading: false,
-            isChecked: false,
-            isSuggestion: !!data.postcode,
+            isChecked: true,
           });
           return;
         }
@@ -170,72 +145,38 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
     loadPostcode();
   }, []);
 
-  const savePostcode = async (postcode: string) => {
-    const cleaned = postcode.replace(/\s/g, '').toUpperCase();
-    const deliveryInfo = checkPostcodeLocal(cleaned);
-    
-    // Save to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
-      postcode: cleaned, 
-      city: state.city 
-    }));
-
-    setState(prev => ({
-      ...prev,
-      postcode: cleaned,
-      suggestedPostcode: null,
-      deliveryInfo,
-      isChecked: true,
-      isSuggestion: false,
-    }));
-
-    // Save to backend (fire and forget)
-    try {
-      await supabase.functions.invoke('save-postcode', {
-        body: { postcode: cleaned, city: state.city },
-      });
-    } catch (err) {
-      console.error('Failed to save postcode to backend:', err);
-    }
-  };
-
-  const clearPostcode = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setState({
-      postcode: null,
-      suggestedPostcode: null,
-      city: null,
-      deliveryInfo: null,
-      isLoading: false,
-      isChecked: false,
-      isSuggestion: false,
-    });
-  };
-
   const openOrderModal = () => {
     // If already checked and in area, redirect directly
     if (state.isChecked && state.deliveryInfo?.inArea) {
       window.open(ORDER_URL, '_blank', 'noopener,noreferrer');
       return;
     }
+    // If not in area or unknown, show modal
     setModalOpen(true);
     setPendingRedirect(true);
   };
 
   const handleModalConfirm = () => {
-    if (state.deliveryInfo?.inArea && pendingRedirect) {
-      window.open(ORDER_URL, '_blank', 'noopener,noreferrer');
-    }
+    window.open(ORDER_URL, '_blank', 'noopener,noreferrer');
     setModalOpen(false);
     setPendingRedirect(false);
+  };
+
+  const handlePostcodeUpdate = (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ postcode, city }));
+    setState({
+      postcode,
+      city,
+      deliveryInfo,
+      isLoading: false,
+      isChecked: true,
+    });
   };
 
   return (
     <PostcodeContext.Provider value={{
       state,
       checkPostcode: checkPostcodeLocal,
-      savePostcode,
-      clearPostcode,
       openOrderModal,
     }}>
       {children}
@@ -243,7 +184,9 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
         open={modalOpen} 
         onOpenChange={setModalOpen}
         onConfirm={handleModalConfirm}
+        onPostcodeUpdate={handlePostcodeUpdate}
         pendingRedirect={pendingRedirect}
+        currentState={state}
       />
     </PostcodeContext.Provider>
   );
@@ -254,64 +197,32 @@ interface PostcodeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  onPostcodeUpdate: (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => void;
   pendingRedirect: boolean;
+  currentState: PostcodeState;
 }
 
-const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: PostcodeModalProps) => {
-  const { state, savePostcode, clearPostcode } = usePostcode();
+const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendingRedirect, currentState }: PostcodeModalProps) => {
   const [inputPostcode, setInputPostcode] = useState('');
   const [localResult, setLocalResult] = useState<DeliveryInfo | null>(null);
-  const [showInput, setShowInput] = useState(false);
 
   useEffect(() => {
     if (open) {
-      // Pre-fill with suggestion if available
-      if (state.suggestedPostcode && !state.postcode) {
-        setInputPostcode(state.suggestedPostcode);
-      } else {
-        setInputPostcode('');
-      }
+      setInputPostcode('');
       setLocalResult(null);
-      setShowInput(!state.postcode && !state.suggestedPostcode);
     }
-  }, [open, state.postcode, state.suggestedPostcode]);
+  }, [open]);
 
   const handleCheck = () => {
-    const trimmed = inputPostcode.trim().slice(0, 7);
-    if (trimmed.length < 4) return; // Allow partial (4 digits) or full (6 chars)
+    const trimmed = inputPostcode.trim();
+    if (trimmed.length < 4) return;
     
     const info = checkPostcodeLocal(trimmed);
     setLocalResult(info);
     
-    if (info.inArea && trimmed.length >= 6) {
-      savePostcode(trimmed);
+    if (info.inArea) {
+      onPostcodeUpdate(trimmed, null, info);
     }
-  };
-
-  const handleUseSuggestion = () => {
-    if (state.suggestedPostcode) {
-      const info = checkPostcodeLocal(state.suggestedPostcode);
-      setLocalResult(info);
-      // Show input so user can complete the full postcode if needed
-      setShowInput(true);
-    }
-  };
-
-  const handleConfirmSaved = () => {
-    if (state.postcode) {
-      savePostcode(state.postcode);
-      onConfirm();
-    }
-  };
-
-  const handleChange = () => {
-    setShowInput(true);
-    setLocalResult(null);
-    clearPostcode();
-  };
-
-  const handleContinue = () => {
-    onConfirm();
   };
 
   return (
@@ -325,102 +236,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
         </DialogHeader>
 
         <AnimatePresence mode="wait">
-          {state.isLoading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center justify-center py-8"
-            >
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </motion.div>
-          ) : state.isSuggestion && state.suggestedPostcode && !showInput && !localResult ? (
-            <motion.div
-              key="suggestion"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Op basis van uw locatie denken wij dat u in de buurt van
-                </p>
-                <p className="text-2xl font-display font-bold text-primary">
-                  {state.suggestedPostcode}
-                  {state.city && <span className="text-lg font-normal text-foreground"> ({state.city})</span>}
-                </p>
-              </div>
-              
-              {state.deliveryInfo?.inArea ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <Check className="w-5 h-5" />
-                  <span>Dit gebied valt binnen ons bezorggebied!</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
-                  <MapPin className="w-5 h-5" />
-                  <span>Controleer uw exacte postcode hieronder</span>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Voer uw volledige postcode in:</p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="1234 AB"
-                    value={inputPostcode}
-                    onChange={(e) => setInputPostcode(e.target.value.slice(0, 7))}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
-                    maxLength={7}
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <Button onClick={handleCheck} disabled={inputPostcode.trim().length < 4}>
-                    Controleer
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          ) : state.postcode && !showInput ? (
-            <motion.div
-              key="confirm"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
-              <p className="text-foreground">
-                Is uw postcode nog steeds{' '}
-                <span className="font-semibold text-primary">{formatPostcode(state.postcode)}</span>
-                {state.city && <span className="text-muted-foreground"> ({state.city})</span>}?
-              </p>
-              
-              {state.deliveryInfo?.inArea ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <Check className="w-5 h-5" />
-                  <span>Wij bezorgen in uw gebied!</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-lg">
-                  <X className="w-5 h-5" />
-                  <span>Helaas, wij bezorgen niet in dit gebied</span>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button onClick={handleConfirmSaved} className="flex-1">
-                  <Check className="w-4 h-4 mr-1" />
-                  Ja, ga door
-                </Button>
-                <Button onClick={handleChange} variant="outline" className="flex-1">
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Wijzigen
-                </Button>
-              </div>
-            </motion.div>
-          ) : localResult ? (
+          {localResult ? (
             <motion.div
               key="result"
               initial={{ opacity: 0, y: 10 }}
@@ -456,7 +272,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
                   </div>
 
                   {pendingRedirect && (
-                    <Button onClick={handleContinue} className="w-full" size="lg">
+                    <Button onClick={onConfirm} className="w-full" size="lg">
                       Ga naar Bestellen
                     </Button>
                   )}
@@ -474,10 +290,9 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
                   </p>
                   <div className="flex gap-2">
                     <Button onClick={() => setLocalResult(null)} variant="outline" className="flex-1">
-                      <RefreshCw className="w-4 h-4 mr-2" />
                       Andere postcode
                     </Button>
-                    <Button onClick={handleContinue} variant="secondary" className="flex-1">
+                    <Button onClick={onConfirm} variant="secondary" className="flex-1">
                       Toch bestellen
                     </Button>
                   </div>
@@ -497,7 +312,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="1234 AB"
+                  placeholder="1234"
                   value={inputPostcode}
                   onChange={(e) => setInputPostcode(e.target.value.slice(0, 7))}
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
@@ -505,7 +320,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
                   className="flex-1"
                   autoFocus
                 />
-                <Button onClick={handleCheck} disabled={inputPostcode.trim().length < 6}>
+                <Button onClick={handleCheck} disabled={inputPostcode.trim().length < 4}>
                   Controleer
                 </Button>
               </div>
@@ -517,186 +332,72 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, pendingRedirect }: Postc
   );
 };
 
-// Standalone PostcodeChecker component (for homepage)
-interface PostcodeCheckerProps {
-  variant?: 'inline' | 'card';
-}
-
-const PostcodeChecker = ({ variant = 'card' }: PostcodeCheckerProps) => {
-  const { state, savePostcode, clearPostcode, checkPostcode } = usePostcode();
-  const [inputPostcode, setInputPostcode] = useState('');
-  const [result, setResult] = useState<DeliveryInfo | null>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  useEffect(() => {
-    if (state.postcode && !state.isChecked) {
-      setShowConfirm(true);
-    } else if (state.isChecked && state.deliveryInfo) {
-      setResult(state.deliveryInfo);
-    }
-  }, [state]);
-
-  const handleCheck = () => {
-    const trimmed = inputPostcode.trim().slice(0, 7);
-    if (trimmed.length < 6) return;
-    
-    const info = checkPostcode(trimmed);
-    setResult(info);
-    
-    if (info.inArea) {
-      savePostcode(trimmed);
-    }
-  };
-
-  const handleConfirmSaved = () => {
-    if (state.postcode) {
-      savePostcode(state.postcode);
-      setResult(state.deliveryInfo);
-      setShowConfirm(false);
-    }
-  };
-
-  const handleChangeSaved = () => {
-    setShowConfirm(false);
-    setResult(null);
-    clearPostcode();
-  };
-
-  const containerClass = variant === 'card' 
-    ? 'bg-card rounded-2xl p-6 shadow-card border border-border'
-    : '';
+// Delivery status banner component for homepage
+const DeliveryStatusBanner = () => {
+  const { state } = usePostcode();
 
   if (state.isLoading) {
     return (
-      <div className={containerClass}>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
+      <div className="flex items-center justify-center gap-2 py-3 px-4 bg-muted/50 rounded-xl">
+        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Bezorgmogelijkheid controleren...</span>
       </div>
     );
   }
 
+  if (!state.isChecked || !state.deliveryInfo) {
+    return null;
+  }
+
+  if (state.deliveryInfo.inArea) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4"
+      >
+        <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-2">
+          <Check className="w-5 h-5" />
+          <span className="font-semibold">
+            Op basis van uw locatie{state.city ? ` (${state.city})` : ''} denken wij bij u te kunnen bezorgen!
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-4 text-sm text-green-600 dark:text-green-400">
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            <span>Bezorgtijd: <strong>{state.deliveryInfo.minutes} min</strong></span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Truck className="w-4 h-4" />
+            <span>Bezorgkosten: <strong>€{state.deliveryInfo.cost?.toFixed(2)}</strong></span>
+          </div>
+          <div className="flex items-center gap-1">
+            <MapPin className="w-4 h-4" />
+            <span>Minimum: <strong>€{state.deliveryInfo.minimum?.toFixed(2)}</strong></span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
-    <div className={containerClass}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <MapPin className="w-5 h-5 text-primary" />
-        </div>
-        <div>
-          <h3 className="font-display font-semibold text-foreground">Bezorggebied Check</h3>
-          <p className="text-sm text-muted-foreground">Controleer of wij bij u bezorgen</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4"
+    >
+      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+        <MapPin className="w-5 h-5" />
+        <span className="font-medium">
+          Op basis van uw locatie{state.city ? ` (${state.city})` : ''} lijkt u buiten ons bezorggebied te vallen.
+        </span>
       </div>
-
-      <AnimatePresence mode="wait">
-        {showConfirm && state.postcode ? (
-          <motion.div
-            key="confirm"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-3"
-          >
-            <p className="text-sm text-foreground">
-              Is uw postcode nog steeds <span className="font-semibold text-primary">{formatPostcode(state.postcode)}</span>?
-            </p>
-            <div className="flex gap-2">
-              <Button onClick={handleConfirmSaved} size="sm" className="flex-1">
-                <Check className="w-4 h-4 mr-1" />
-                Ja, klopt
-              </Button>
-              <Button onClick={handleChangeSaved} variant="outline" size="sm" className="flex-1">
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Wijzigen
-              </Button>
-            </div>
-          </motion.div>
-        ) : result ? (
-          <motion.div
-            key="result"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            {result.inArea ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <Check className="w-5 h-5" />
-                  </div>
-                  <span className="font-semibold">Wij bezorgen bij u!</span>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  <div className="text-center p-3 bg-muted/50 rounded-xl">
-                    <Clock className="w-5 h-5 text-primary mx-auto mb-1" />
-                    <p className="text-xs text-muted-foreground">Bezorgtijd</p>
-                    <p className="font-semibold text-foreground">{result.minutes} min</p>
-                  </div>
-                  <div className="text-center p-3 bg-muted/50 rounded-xl">
-                    <Truck className="w-5 h-5 text-primary mx-auto mb-1" />
-                    <p className="text-xs text-muted-foreground">Kosten</p>
-                    <p className="font-semibold text-foreground">€{result.cost?.toFixed(2)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-muted/50 rounded-xl">
-                    <MapPin className="w-5 h-5 text-primary mx-auto mb-1" />
-                    <p className="text-xs text-muted-foreground">Minimum</p>
-                    <p className="font-semibold text-foreground">€{result.minimum?.toFixed(2)}</p>
-                  </div>
-                </div>
-
-                <Button onClick={handleChangeSaved} variant="ghost" size="sm" className="w-full mt-2">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Andere postcode checken
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-destructive">
-                  <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <X className="w-5 h-5" />
-                  </div>
-                  <span className="font-semibold">Helaas, wij bezorgen niet in dit gebied</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  U kunt wel afhalen bij onze winkel in Gouda of online bestellen.
-                </p>
-                <Button onClick={handleChangeSaved} variant="outline" size="sm" className="w-full">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Andere postcode proberen
-                </Button>
-              </div>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="input"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-3"
-          >
-            <div className="flex gap-2">
-              <Input
-                placeholder="1234 AB"
-                value={inputPostcode}
-                onChange={(e) => setInputPostcode(e.target.value.slice(0, 7))}
-                onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
-                maxLength={7}
-                className="flex-1"
-              />
-              <Button onClick={handleCheck} disabled={inputPostcode.trim().length < 6}>
-                Controleer
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Voer uw postcode in om te zien of wij bij u bezorgen
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+        U kunt nog steeds bestellen - wij controleren dit bij uw bestelling.
+      </p>
+    </motion.div>
   );
 };
 
-export default PostcodeChecker;
+export { DeliveryStatusBanner };
+export default DeliveryStatusBanner;
