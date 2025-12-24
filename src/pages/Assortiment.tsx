@@ -1,22 +1,128 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
-import productZachtBroodje from '@/assets/product-zacht-broodje.jpg';
-import productMaisbroodje from '@/assets/product-maisbroodje.jpg';
-import productTijgerbol from '@/assets/product-tijgerbol.jpg';
-import productZalmsalade from '@/assets/product-zalmsalade.jpg';
-import frisBroodjes1 from '@/assets/fris-broodjes-1.jpg';
-import frisBroodjes2 from '@/assets/fris-broodjes-2.jpg';
 
-const categories = [
+// Cloudinary base URL for product images
+const cloudinaryBase = "https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/";
+
+// Product image mapping
+const productImages: Record<string, string> = {
+  // Broodjes belegd
+  'Petit pain wit': `${cloudinaryBase}04ac3cd1?petit+pain+wit`,
+  'Petit pain lichtbruin': `${cloudinaryBase}58ef99b5?petit+pain+lichtbruin`,
+  'Zacht broodje bruin': `${cloudinaryBase}c4b445bb?zacht+broodje+bruin`,
+  'Zacht broodje wit': `${cloudinaryBase}5cde83e8?zacht+broodje+wit`,
+  'Tijgerbol wit': `${cloudinaryBase}23a5e98e?tijgerbol+wit`,
+  'Duitse bol wit': `${cloudinaryBase}a45bdf34?duitse+bol+wit`,
+  'Triangel meergranen': `${cloudinaryBase}b2c8f456?triangel+meergranen`,
+  'Ciabatta waldkorn': `${cloudinaryBase}d7e9f123?ciabatta+waldkorn`,
+  'Ciabatta wit': `${cloudinaryBase}e8f0a234?ciabatta+wit`,
+  'Payesita wit': `${cloudinaryBase}f1a2b345?payesita+wit`,
+  'Payesita bruin (licht)': `${cloudinaryBase}a2b3c456?payesita+bruin`,
+  'Italiaanse bol wit': `${cloudinaryBase}b3c4d567?italiaanse+bol`,
+  'Waldkornbol': `${cloudinaryBase}c4d5e678?waldkornbol`,
+  'Speltbroodje rustique': `${cloudinaryBase}d5e6f789?speltbroodje`,
+  'Maisbroodje': `${cloudinaryBase}c753ea22?Maisbroodje`,
+  'Roombotercroissant': `${cloudinaryBase}e6f7a890?croissant`,
+  'Milanobroodje': `${cloudinaryBase}f7a8b901?milanobroodje`,
+  'Pompoenpit broodje': `${cloudinaryBase}a8b9c012?pompoenpit`,
+  'Glutenvrij broodje': `${cloudinaryBase}b9c0d123?glutenvrij`,
+  'Fitness piccolo': `${cloudinaryBase}c0d1e234?fitness+piccolo`,
+  
+  // Broodjes onbelegd
+  'Duitse bol': `${cloudinaryBase}a45bdf34?duitse+bol`,
+  'Fitness Picolo': `${cloudinaryBase}c0d1e234?fitness+piccolo`,
+  'Payesita lichtbruin': `${cloudinaryBase}a2b3c456?payesita+lichtbruin`,
+  'Petit Pain lichtbruin': `${cloudinaryBase}58ef99b5?petit+pain+lichtbruin`,
+  'Pompoenbroodje': `${cloudinaryBase}a8b9c012?pompoenbroodje`,
+  'Petit Pain wit': `${cloudinaryBase}04ac3cd1?petit+pain+wit`,
+  'Tijgerbol wit onbelegd': `${cloudinaryBase}23a5e98e?tijgerbol+wit`,
+  'Italiaanse bol': `${cloudinaryBase}b3c4d567?italiaanse+bol`,
+  'Zachte bol wit': `${cloudinaryBase}5cde83e8?zachte+bol+wit`,
+  'Zachte bol bruin': `${cloudinaryBase}c4b445bb?zachte+bol+bruin`,
+  'Speltbroodje': `${cloudinaryBase}d5e6f789?speltbroodje`,
+  'Stokbrood 400 gram wit': `${cloudinaryBase}f8a9b012?stokbrood`,
+  
+  // Warme broodjes
+  'Croissant kaas': `${cloudinaryBase}d1e2f345?croissant+kaas`,
+  'Croissant ham-kaas': `${cloudinaryBase}e2f3a456?croissant+ham+kaas`,
+  'Croissant ham-kaas-ananas': `${cloudinaryBase}f3a4b567?croissant+ham+kaas+ananas`,
+  'Pizzabroodje': `${cloudinaryBase}a4b5c678?pizzabroodje`,
+  'Kaas-uien broodje': `${cloudinaryBase}b5c6d789?kaas+uien+broodje`,
+  'Hawai broodje': `${cloudinaryBase}c6d7e890?hawai+broodje`,
+  'Saucijzenbroodje': `${cloudinaryBase}d7e8f901?saucijzenbroodje`,
+  'Kaasbroodje': `${cloudinaryBase}e8f9a012?kaasbroodje`,
+  'Frikandel broodje': `${cloudinaryBase}f9a0b123?frikandel+broodje`,
+  'Broodje kroket': `${cloudinaryBase}a0b1c234?broodje+kroket`,
+  
+  // Luxe hapjes
+  '25 Luxe hapjes assorti op schalen': `${cloudinaryBase}b1c2d345?luxe+hapjes`,
+  'Rundvlees salade opgemaakt': `${cloudinaryBase}c2d3e456?rundvlees+salade`,
+  'Zalmsalade opgemaakt': `${cloudinaryBase}d3e4f567?zalmsalade`,
+  'Scharrel-ei salade (zonder vlees)': `${cloudinaryBase}e4f5a678?ei+salade`,
+  'Schaal kaassoorten in blokje/puntjes': `${cloudinaryBase}f5a6b789?kaassoorten`,
+  'Schaal worst/vleeswaren assorti': `${cloudinaryBase}a6b7c890?vleeswaren`,
+  'Schaal kaas EN worst assorti': `${cloudinaryBase}b7c8d901?kaas+worst`,
+  
+  // Soepen
+  'Kippensoep': `${cloudinaryBase}c8d9e012?kippensoep`,
+  'Groentesoep': `${cloudinaryBase}d9e0f123?groentesoep`,
+  'Erwtensoep': `${cloudinaryBase}e0f1a234?erwtensoep`,
+  'Chinese tomatensoep': `${cloudinaryBase}f1a2b345?chinese+tomatensoep`,
+  'Soepkom in bruikleen': `${cloudinaryBase}a2b3c456?soepkom`,
+  'Tomatensoep met ballen': `${cloudinaryBase}b3c4d567?tomatensoep+ballen`,
+  
+  // Overig
+  'Rundvlees slaatje eigen keuken': `${cloudinaryBase}c4d5e678?rundvlees+slaatje`,
+  'Roomboter croissant onbelegd': `${cloudinaryBase}e6f7a890?croissant+onbelegd`,
+  'Krentenbol': `${cloudinaryBase}d5e6f789?krentenbol`,
+  'Spekkoek per 1/4': `${cloudinaryBase}e6f7a890?spekkoek`,
+  'Dadelbrood met walnoten': `${cloudinaryBase}f7a8b901?dadelbrood`,
+  'Albert bonbons': `${cloudinaryBase}a8b9c012?albert+bonbons`,
+  'Cannoli croccante': `${cloudinaryBase}b9c0d123?cannoli`,
+  
+  // Dranken
+  'Melk, karnemelk, chocomel': `${cloudinaryBase}c0d1e234?melk`,
+  'Blikjes/flesjes frisdrank': `${cloudinaryBase}d1e2f345?frisdrank`,
+  'Diverse vruchtensappen': `${cloudinaryBase}e2f3a456?vruchtensappen`,
+  
+  // Fruit
+  'Maak uw keuze uit deze fruitsoorten': `${cloudinaryBase}f3a4b567?fruit`,
+};
+
+// Category images from the original site
+const categoryImages: Record<string, string> = {
+  verrassen: 'https://res.cloudinary.com/appsmen-benelux-b-v/image/upload/w_800,h_600,c_fill,f_jpg/order-website/franchise/slider/518/947b5af1.jpg',
+  broodjes: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/c4b445bb?zacht+broodje+bruin',
+  onbelegd: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/23a5e98e?tijgerbol+wit',
+  warm: 'https://res.cloudinary.com/appsmen-benelux-b-v/image/upload/w_800,h_600,c_fill,f_jpg/order-website/franchise/slider/518/5344c4e3.jpg',
+  luxe: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/d3e4f567?zalmsalade',
+  soepen: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/c8d9e012?kippensoep',
+  overig: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/b9c0d123?cannoli',
+  dranken: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/d1e2f345?frisdrank',
+  fruit: 'https://res.cloudinary.com/appsmen-benelux-b-v/w_256,h_256,b_rgb:FFC62Fff,c_fill,f_jpg/cms/menu_item/603/f3a4b567?fruit',
+};
+
+interface Product {
+  name: string;
+  description: string;
+  price: string;
+}
+
+interface Category {
+  id: string;
+  title: string;
+  description: string;
+  products: Product[];
+}
+
+const categories: Category[] = [
   {
     id: 'verrassen',
     title: 'Laat u verrassen!',
     description: 'Heeft u geen tijd of geen zin om allemaal verschillende broodjes uit te kiezen? Of wilt u zich gewoon laten verrassen? Kies dan voor een assorti. Wij maken voor u een heerlijke selectie van verschillende broodjes met vers beleg.',
-    image: frisBroodjes1,
     products: [
       { name: 'Assorti broodjes', description: 'Een selectie uit onze verse harde broodjes belegd met allerlei lekkers uit ons assortiment: kaas, vleeswaren, salades en andere specialiteiten.', price: '€3,50' },
       { name: 'Assorti met rauwkost', description: 'Een selectie van onze heerlijke harde broodjes met een willekeurige belegsoort, gegarneerd met rauwkost en/of gekookt ei.', price: '€3,95' },
@@ -28,7 +134,6 @@ const categories = [
     id: 'broodjes',
     title: 'Broodjes',
     description: 'Kies eerst uw broodje, daarna de belegsoort.',
-    image: productZachtBroodje,
     products: [
       { name: 'Petit pain wit', description: 'Belegd per broodje vanaf:', price: 'Vanaf €3,60' },
       { name: 'Petit pain lichtbruin', description: 'Belegd per broodje vanaf:', price: 'Vanaf €3,60' },
@@ -56,7 +161,6 @@ const categories = [
     id: 'onbelegd',
     title: 'Broodjes onbelegd',
     description: 'Maak uw keuze: afgebakken of om zelf af te bakken. (afbaktijd: 8-10 minuten 200°C voorverwarmde oven)',
-    image: productTijgerbol,
     products: [
       { name: 'Ciabatta wit', description: 'Zelf afbakken? 8-10 min. in voorverwarmde oven 200 graden', price: '€1,39' },
       { name: 'Duitse bol', description: 'Zelf afbakken? 8-10 min. Allergenen: Tarwe, rogge', price: '€0,85' },
@@ -84,7 +188,6 @@ const categories = [
     id: 'warm',
     title: 'Warme broodjes',
     description: 'Deze soorten broodjes dienen warm gegeten te worden. Uiteraard kunt u dat zelf ook doen in uw eigen oven (ca 5-6 min. 200°C).',
-    image: frisBroodjes2,
     products: [
       { name: 'Croissant kaas', description: 'Roomboter croissant met rijke (echte) kaasvulling en kaasgarnering. Allergenen: Melk, tarwe, lactose', price: '€2,19' },
       { name: 'Croissant ham-kaas', description: 'Roombotercroissant met kaas en ham gevuld. Allergenen: Melk, tarwe, lactose, soja', price: '€2,49' },
@@ -102,7 +205,6 @@ const categories = [
     id: 'luxe',
     title: 'Luxe Hapjes & Maaltijdsalades',
     description: 'Voor een speciale gelegenheid of een gezonde lunch.',
-    image: productZalmsalade,
     products: [
       { name: '25 Luxe hapjes assorti op schalen', description: 'Assorti van 7 à 8 soorten hapjes. Bij normaal gebruik op 3 hapjes per persoon rekenen. Prijs per 25 hapjes (8-9 pers., minimale afname)', price: '€31,25' },
       { name: 'Rundvlees salade opgemaakt', description: 'Prijs per persoon (ruime portie). Let op: minimale afname vanaf 4 personen', price: '€3,95' },
@@ -117,7 +219,6 @@ const categories = [
     id: 'soepen',
     title: 'Warme soepen',
     description: 'Wij leveren ook warme soepen. Per soort soep voor minimaal 4 personen. Geleverd in warmhoudpannen.',
-    image: belegdeBroodjes,
     products: [
       { name: 'Kippensoep', description: 'Bestellen vanaf 4 personen. Geleverd in warmhoudpannen. Prijs per persoon.', price: '€3,00' },
       { name: 'Groentesoep', description: 'Bestellen vanaf 4 personen. Geleverd in warmhoudpannen. Prijs per persoon.', price: '€3,00' },
@@ -131,7 +232,6 @@ const categories = [
     id: 'overig',
     title: 'Overig',
     description: 'O.a. slaatjes, zoete producten en andere heerlijkheden.',
-    image: productMaisbroodje,
     products: [
       { name: 'Rundvlees slaatje eigen keuken', description: 'Allergenen: Tarwe, ei, mosterd, soja', price: '€1,99' },
       { name: 'Roomboter croissant onbelegd', description: 'Allergenen: Melk, tarwe', price: '€0,99' },
@@ -146,7 +246,6 @@ const categories = [
     id: 'dranken',
     title: 'Gekoelde dranken',
     description: 'Blikjes fris, flesjes sap, water, melk, karnemelk, chocomel enz.',
-    image: belegdeBroodjes,
     products: [
       { name: 'Melk, karnemelk, chocomel', description: '', price: 'Vanaf €1,99' },
       { name: 'Blikjes/flesjes frisdrank', description: '', price: 'Vanaf €1,45' },
@@ -157,12 +256,15 @@ const categories = [
     id: 'fruit',
     title: 'Vers fruit',
     description: 'Prijs per stuk (indien enig fruit niet voorradig is, krijgt u een alternatief).',
-    image: belegdeBroodjes,
     products: [
       { name: 'Maak uw keuze uit deze fruitsoorten', description: '', price: 'Vanaf €1,10' },
     ],
   },
 ];
+
+const getProductImage = (productName: string): string | undefined => {
+  return productImages[productName];
+};
 
 const Assortiment = () => {
   return (
@@ -215,7 +317,7 @@ const Assortiment = () => {
       <section className="py-16 md:py-24">
         <div className="container">
           <div className="space-y-20">
-            {categories.map((category, catIndex) => (
+            {categories.map((category) => (
               <motion.div
                 key={category.id}
                 id={category.id}
@@ -226,10 +328,10 @@ const Assortiment = () => {
                 className="scroll-mt-32"
               >
                 <div className="mb-8 flex flex-col md:flex-row gap-6 items-start">
-                  {category.image && (
+                  {categoryImages[category.id] && (
                     <div className="w-full md:w-48 h-32 md:h-32 rounded-xl overflow-hidden shadow-card flex-shrink-0">
                       <img 
-                        src={category.image} 
+                        src={categoryImages[category.id]} 
                         alt={category.title}
                         className="w-full h-full object-cover"
                       />
@@ -246,40 +348,55 @@ const Assortiment = () => {
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {category.products.map((product, index) => (
-                    <motion.div
-                      key={product.name}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.4, delay: index * 0.05 }}
-                      className="bg-card rounded-xl p-5 shadow-card hover:shadow-glow transition-shadow flex flex-col"
-                    >
-                      <h3 className="font-semibold text-foreground mb-2">
-                        {product.name}
-                      </h3>
-                      {product.description && (
-                        <p className="text-muted-foreground text-sm mb-4 flex-grow">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
-                        <span className="font-display font-bold text-primary text-lg">
-                          {product.price}
-                        </span>
-                        <Button variant="hero" size="sm" asChild>
-                          <a 
-                            href="https://bestellen.frisversbroodjes.nl/" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                          >
-                            Bestellen
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {category.products.map((product, index) => {
+                    const imageUrl = getProductImage(product.name);
+                    return (
+                      <motion.div
+                        key={product.name}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                        className="bg-card rounded-xl shadow-card hover:shadow-glow transition-shadow flex flex-col overflow-hidden"
+                      >
+                        {imageUrl && (
+                          <div className="w-full h-40 overflow-hidden">
+                            <img 
+                              src={imageUrl} 
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+                        <div className="p-5 flex flex-col flex-grow">
+                          <h3 className="font-semibold text-foreground mb-2">
+                            {product.name}
+                          </h3>
+                          {product.description && (
+                            <p className="text-muted-foreground text-sm mb-4 flex-grow">
+                              {product.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
+                            <span className="font-display font-bold text-primary text-lg">
+                              {product.price}
+                            </span>
+                            <Button variant="hero" size="sm" asChild>
+                              <a 
+                                href="https://bestellen.frisversbroodjes.nl/" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                              >
+                                Bestellen
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             ))}
@@ -301,21 +418,18 @@ const Assortiment = () => {
               Klaar om te bestellen?
             </h2>
             <p className="text-secondary-foreground/80 text-lg mb-8">
-              Bestel direct via onze website of neem contact met ons op voor vragen of grotere bestellingen.
+              Bestel eenvoudig online via onze bestelsite en geniet van verse broodjes!
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="xl" asChild>
-                <a href="https://bestellen.frisversbroodjes.nl/" target="_blank" rel="noopener noreferrer">
-                  Bestel Nu
-                  <ArrowRight className="w-5 h-5" />
-                </a>
-              </Button>
-              <Button variant="outline" size="xl" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" asChild>
-                <Link to="/contact">
-                  Neem Contact Op
-                </Link>
-              </Button>
-            </div>
+            <Button variant="default" size="lg" asChild>
+              <a 
+                href="https://bestellen.frisversbroodjes.nl/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                Direct bestellen
+                <ExternalLink className="w-5 h-5 ml-2" />
+              </a>
+            </Button>
           </motion.div>
         </div>
       </section>
