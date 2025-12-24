@@ -29,7 +29,7 @@ const contactInfo = [
   {
     icon: Clock,
     title: 'Openingstijden',
-    details: ['Ma - Vr: 08:00 - 18:00', 'Za: 08:00 - 17:00', 'Zo: Gesloten'],
+    details: ['Ma - Vr: 08:00 - 18:00', 'Za: 07:30 - 16:00', 'Zo: Gesloten'],
   },
 ];
 
