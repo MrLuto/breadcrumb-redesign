@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Heart, Users, Award, Leaf } from 'lucide-react';
-import heroBakery from '@/assets/hero-bakery.jpg';
+import heroOriginal from '@/assets/hero-original.jpg';
 
 const values = [
   {
@@ -58,7 +58,7 @@ const OverOns = () => {
       <section className="relative py-24 md:py-32">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBakery})` }}
+          style={{ backgroundImage: `url(${heroOriginal})` }}
         >
           <div className="absolute inset-0 bg-foreground/70" />
         </div>
@@ -120,7 +120,7 @@ const OverOns = () => {
             >
               <div className="overflow-hidden rounded-2xl shadow-card">
                 <img 
-                  src={heroBakery} 
+                  src={heroOriginal} 
                   alt="FrisVersshop winkel"
                   className="w-full h-96 object-cover"
                 />
