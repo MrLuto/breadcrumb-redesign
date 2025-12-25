@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button, ButtonProps } from '@/components/ui/button';
 import { usePostcode } from '@/components/PostcodeChecker';
 
@@ -8,13 +8,28 @@ interface OrderButtonProps extends Omit<ButtonProps, 'onClick'> {
 }
 
 const OrderButton = forwardRef<HTMLButtonElement, OrderButtonProps>(
-  ({ children = 'Bestel Nu', showArrow = true, ...props }, ref) => {
-    const { openOrderModal } = usePostcode();
+  ({ children = 'Bestel Nu', showArrow = true, disabled, ...props }, ref) => {
+    const { openOrderModal, state } = usePostcode();
+    const isLoading = state.isLoading;
 
     return (
-      <Button ref={ref} onClick={openOrderModal} {...props}>
-        {children}
-        {showArrow && <ArrowRight className="w-5 h-5" />}
+      <Button 
+        ref={ref} 
+        onClick={openOrderModal} 
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Laden...
+          </>
+        ) : (
+          <>
+            {children}
+            {showArrow && <ArrowRight className="w-5 h-5" />}
+          </>
+        )}
       </Button>
     );
   }
