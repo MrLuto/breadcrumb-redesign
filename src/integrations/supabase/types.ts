@@ -14,6 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          postcode: string | null
+          preferred_payment_method:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          preferred_payment_method?:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postcode?: string | null
+          preferred_payment_method?:
+            | Database["public"]["Enums"]["payment_method_type"]
+            | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          company_id: string | null
+          company_name: string
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["invoice_status_type"]
+          subtotal: number
+          total: number
+          updated_at: string
+          vat_amount: number
+        }
+        Insert: {
+          company_id?: string | null
+          company_name: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status_type"]
+          subtotal: number
+          total: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Update: {
+          company_id?: string | null
+          company_name?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["invoice_status_type"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ip_postcodes: {
         Row: {
           city: string | null
@@ -43,6 +219,206 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          city: string
+          company_id: string | null
+          company_name: string
+          contact_person: string
+          created_at: string
+          delivery_address: string
+          delivery_cost: number
+          delivery_date: string
+          delivery_time: string | null
+          delivery_zone: string | null
+          email: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          order_number: string
+          order_status: Database["public"]["Enums"]["order_status_type"]
+          payment_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method_type"]
+          payment_status: Database["public"]["Enums"]["payment_status_type"]
+          phone: string
+          postcode: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          company_id?: string | null
+          company_name: string
+          contact_person: string
+          created_at?: string
+          delivery_address: string
+          delivery_cost?: number
+          delivery_date: string
+          delivery_time?: string | null
+          delivery_zone?: string | null
+          email: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          order_number: string
+          order_status?: Database["public"]["Enums"]["order_status_type"]
+          payment_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method_type"]
+          payment_status?: Database["public"]["Enums"]["payment_status_type"]
+          phone: string
+          postcode: string
+          subtotal: number
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          company_id?: string | null
+          company_name?: string
+          contact_person?: string
+          created_at?: string
+          delivery_address?: string
+          delivery_cost?: number
+          delivery_date?: string
+          delivery_time?: string | null
+          delivery_zone?: string | null
+          email?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          order_number?: string
+          order_status?: Database["public"]["Enums"]["order_status_type"]
+          payment_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method_type"]
+          payment_status?: Database["public"]["Enums"]["payment_status_type"]
+          phone?: string
+          postcode?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          dietary_info: Json | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_available: boolean
+          name: string
+          price: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dietary_info?: Json | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
+          price: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dietary_info?: Json | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+          price?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
@@ -79,7 +455,16 @@ export type Database = {
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      invoice_status_type: "draft" | "sent" | "paid" | "overdue" | "cancelled"
+      order_status_type:
+        | "new"
+        | "confirmed"
+        | "preparing"
+        | "out_for_delivery"
+        | "delivered"
+        | "cancelled"
+      payment_method_type: "direct" | "invoice" | "monthly_invoice"
+      payment_status_type: "pending" | "paid" | "invoiced" | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -206,6 +591,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      invoice_status_type: ["draft", "sent", "paid", "overdue", "cancelled"],
+      order_status_type: [
+        "new",
+        "confirmed",
+        "preparing",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+      ],
+      payment_method_type: ["direct", "invoice", "monthly_invoice"],
+      payment_status_type: ["pending", "paid", "invoiced", "refunded"],
+    },
   },
 } as const
