@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import logo from '@/assets/logo.png';
 
@@ -13,9 +13,11 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   
-  const { signIn, isAdmin, user } = useAuth();
+  const { signIn, signUp, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -30,30 +32,55 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Onjuiste e-mail of wachtwoord');
-        } else {
-          setError(error.message);
+      if (isRegisterMode) {
+        // Registration
+        const { error } = await signUp(email, password);
+        
+        if (error) {
+          if (error.message.includes('already registered')) {
+            setError('Dit e-mailadres is al geregistreerd');
+          } else {
+            setError(error.message);
+          }
+          setIsSubmitting(false);
+          return;
         }
-        setIsSubmitting(false);
-        return;
-      }
 
-      // The auth state change will handle the redirect via isAdmin check
-      // We need to wait a moment for the admin check to complete
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
+        setSuccess('Account aangemaakt! Een beheerder moet je account nog activeren als admin.');
+        setIsSubmitting(false);
+      } else {
+        // Login
+        const { error } = await signIn(email, password);
+        
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            setError('Onjuiste e-mail of wachtwoord');
+          } else {
+            setError(error.message);
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        // The auth state change will handle the redirect via isAdmin check
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 500);
+      }
     } catch (err) {
       setError('Er is een fout opgetreden. Probeer het opnieuw.');
       setIsSubmitting(false);
     }
+  };
+
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setError(null);
+    setSuccess(null);
   };
 
   return (
@@ -63,9 +90,14 @@ export default function AdminLogin() {
           <div className="flex justify-center mb-4">
             <img src={logo} alt="FrisVersshop" className="h-12" />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardTitle className="text-2xl">
+            {isRegisterMode ? 'Admin Registratie' : 'Admin Login'}
+          </CardTitle>
           <CardDescription>
-            Log in om toegang te krijgen tot het beheerdersdashboard
+            {isRegisterMode 
+              ? 'Maak een nieuw account aan voor het beheerdersdashboard'
+              : 'Log in om toegang te krijgen tot het beheerdersdashboard'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,6 +106,13 @@ export default function AdminLogin() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert className="border-green-500 text-green-700 bg-green-50">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
             
@@ -99,8 +138,14 @@ export default function AdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 disabled={isSubmitting}
               />
+              {isRegisterMode && (
+                <p className="text-xs text-muted-foreground">
+                  Minimaal 6 tekens
+                </p>
+              )}
             </div>
             
             <Button 
@@ -111,13 +156,26 @@ export default function AdminLogin() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Inloggen...
+                  {isRegisterMode ? 'Registreren...' : 'Inloggen...'}
                 </>
               ) : (
-                'Inloggen'
+                isRegisterMode ? 'Registreren' : 'Inloggen'
               )}
             </Button>
           </form>
+          
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm text-primary hover:underline"
+            >
+              {isRegisterMode 
+                ? 'Al een account? Log in'
+                : 'Nog geen account? Registreer'
+              }
+            </button>
+          </div>
           
           <div className="mt-6 text-center">
             <a href="/" className="text-sm text-muted-foreground hover:text-primary">
