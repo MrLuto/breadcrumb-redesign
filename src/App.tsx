@@ -4,11 +4,24 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PostcodeProvider } from "@/components/PostcodeChecker";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
+
+// Public pages
 import Index from "./pages/Index";
 import Assortiment from "./pages/Assortiment";
 import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+
+// Admin pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminCompanies from "./pages/admin/AdminCompanies";
+import AdminInvoices from "./pages/admin/AdminInvoices";
 
 const queryClient = new QueryClient();
 
@@ -18,15 +31,53 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <PostcodeProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/assortiment" element={<Assortiment />} />
-            <Route path="/over-ons" element={<OverOns />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </PostcodeProvider>
+        <AuthProvider>
+          <PostcodeProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/assortiment" element={<Assortiment />} />
+              <Route path="/over-ons" element={<OverOns />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Admin routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/categories" element={
+                <ProtectedRoute>
+                  <AdminCategories />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/products" element={
+                <ProtectedRoute>
+                  <AdminProducts />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/orders" element={
+                <ProtectedRoute>
+                  <AdminOrders />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/companies" element={
+                <ProtectedRoute>
+                  <AdminCompanies />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/invoices" element={
+                <ProtectedRoute>
+                  <AdminInvoices />
+                </ProtectedRoute>
+              } />
+              
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </PostcodeProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
