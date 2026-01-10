@@ -67,8 +67,8 @@ export default function AdminLogin() {
           return;
         }
 
-        // The useEffect will handle redirect once isAdmin is updated
-        setIsSubmitting(false);
+        // Keep submitting state true - the useEffect will handle redirect 
+        // once auth state updates. Don't set isSubmitting to false here.
       }
     } catch (err) {
       setError('Er is een fout opgetreden. Probeer het opnieuw.');
