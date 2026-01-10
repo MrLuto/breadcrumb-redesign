@@ -3,11 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
-import OrderButton from '@/components/OrderButton';
+import { Button } from '@/components/ui/button';
+import { CartSheet } from '@/components/cart/CartSheet';
 
 const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Assortiment', path: '/assortiment' },
+  { name: 'Bestellen', path: '/bestellen' },
   { name: 'Over Ons', path: '/over-ons' },
   { name: 'Contact', path: '/contact' },
 ];
@@ -71,7 +73,12 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
-            <OrderButton variant="hero" size="lg" />
+            <CartSheet />
+            <Link to="/bestellen">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                Bestellen
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -108,8 +115,13 @@ const Header = () => {
                     {link.name}
                   </Link>
                 ))}
-                <div onClick={() => setIsMenuOpen(false)}>
-                  <OrderButton variant="hero" size="lg" className="w-full mt-2" />
+                <div className="flex items-center gap-3 mt-4" onClick={() => setIsMenuOpen(false)}>
+                  <CartSheet />
+                  <Link to="/bestellen" className="flex-1">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                      Bestellen
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </motion.div>

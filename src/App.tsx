@@ -5,11 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PostcodeProvider } from "@/components/PostcodeChecker";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
 
 // Public pages
 import Index from "./pages/Index";
 import Assortiment from "./pages/Assortiment";
+import Bestellen from "./pages/Bestellen";
+import Checkout from "./pages/Checkout";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -32,51 +36,56 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <PostcodeProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/assortiment" element={<Assortiment />} />
-              <Route path="/over-ons" element={<OverOns />} />
-              <Route path="/contact" element={<Contact />} />
-              
-              {/* Admin routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/categories" element={
-                <ProtectedRoute>
-                  <AdminCategories />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/products" element={
-                <ProtectedRoute>
-                  <AdminProducts />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/orders" element={
-                <ProtectedRoute>
-                  <AdminOrders />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/companies" element={
-                <ProtectedRoute>
-                  <AdminCompanies />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/invoices" element={
-                <ProtectedRoute>
-                  <AdminInvoices />
-                </ProtectedRoute>
-              } />
-              
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </PostcodeProvider>
+          <CartProvider>
+            <PostcodeProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/assortiment" element={<Assortiment />} />
+                <Route path="/bestellen" element={<Bestellen />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/bestelling-bevestigd/:orderId" element={<OrderConfirmation />} />
+                <Route path="/over-ons" element={<OverOns />} />
+                <Route path="/contact" element={<Contact />} />
+                
+                {/* Admin routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/categories" element={
+                  <ProtectedRoute>
+                    <AdminCategories />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/products" element={
+                  <ProtectedRoute>
+                    <AdminProducts />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/orders" element={
+                  <ProtectedRoute>
+                    <AdminOrders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/companies" element={
+                  <ProtectedRoute>
+                    <AdminCompanies />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/invoices" element={
+                  <ProtectedRoute>
+                    <AdminInvoices />
+                  </ProtectedRoute>
+                } />
+                
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </PostcodeProvider>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
