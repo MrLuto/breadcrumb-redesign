@@ -1,35 +1,25 @@
 import { forwardRef } from 'react';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { Button, ButtonProps } from '@/components/ui/button';
-import { usePostcode } from '@/components/PostcodeChecker';
 
 interface OrderButtonProps extends Omit<ButtonProps, 'onClick'> {
   showArrow?: boolean;
 }
 
 const OrderButton = forwardRef<HTMLButtonElement, OrderButtonProps>(
-  ({ children = 'Bestel Nu', showArrow = true, disabled, ...props }, ref) => {
-    const { openOrderModal, state } = usePostcode();
-    const isLoading = state.isLoading;
-
+  ({ children = 'Bestel Nu', showArrow = true, className, ...props }, ref) => {
     return (
       <Button 
         ref={ref} 
-        onClick={openOrderModal} 
-        disabled={disabled || isLoading}
+        asChild
+        className={className}
         {...props}
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Laden...
-          </>
-        ) : (
-          <>
-            {children}
-            {showArrow && <ArrowRight className="w-5 h-5" />}
-          </>
-        )}
+        <Link to="/assortiment">
+          {children}
+          {showArrow && <ArrowRight className="w-5 h-5" />}
+        </Link>
       </Button>
     );
   }
