@@ -11,7 +11,8 @@ import {
   FileText, 
   LogOut,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Bedrijven', href: '/admin/companies', icon: Building2 },
   { name: 'Facturen', href: '/admin/invoices', icon: FileText },
+  { name: 'Instellingen', href: '/admin/settings', icon: Settings },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
