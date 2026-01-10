@@ -75,8 +75,8 @@ const OrderConfirmation = () => {
             <p className="text-muted-foreground mb-6">
               We konden deze bestelling niet vinden.
             </p>
-            <Link to="/bestellen">
-              <Button>Terug naar bestellen</Button>
+            <Link to="/assortiment">
+              <Button>Terug naar assortiment</Button>
             </Link>
           </div>
         </div>
@@ -215,7 +215,7 @@ const OrderConfirmation = () => {
               <Link to="/">
                 <Button variant="outline">Terug naar home</Button>
               </Link>
-              <Link to="/bestellen">
+              <Link to="/assortiment">
                 <Button>Nog een bestelling plaatsen</Button>
               </Link>
             </div>

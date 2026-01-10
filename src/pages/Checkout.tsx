@@ -190,7 +190,7 @@ const Checkout = () => {
             <p className="text-muted-foreground mb-6">
               Voeg producten toe voordat je kunt afrekenen.
             </p>
-            <Link to="/bestellen">
+            <Link to="/assortiment">
               <Button>Bekijk assortiment</Button>
             </Link>
           </div>
@@ -208,11 +208,11 @@ const Checkout = () => {
           transition={{ duration: 0.5 }}
         >
           <Link
-            to="/bestellen"
+            to="/assortiment"
             className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Terug naar bestellen
+            Terug naar assortiment
           </Link>
 
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-8">

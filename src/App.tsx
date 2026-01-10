@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PostcodeProvider } from "@/components/PostcodeChecker";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
@@ -11,7 +11,6 @@ import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
 // Public pages
 import Index from "./pages/Index";
 import Assortiment from "./pages/Assortiment";
-import Bestellen from "./pages/Bestellen";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import OverOns from "./pages/OverOns";
@@ -42,7 +41,7 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/assortiment" element={<Assortiment />} />
-                <Route path="/bestellen" element={<Bestellen />} />
+                <Route path="/bestellen" element={<Navigate to="/assortiment" replace />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/bestelling-bevestigd/:orderId" element={<OrderConfirmation />} />
                 <Route path="/over-ons" element={<OverOns />} />

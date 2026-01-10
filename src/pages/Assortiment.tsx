@@ -1,90 +1,34 @@
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
-import { ExternalLink } from 'lucide-react';
-import OrderButton from '@/components/OrderButton';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProductCard } from '@/components/ProductCard';
+import { useCategories } from '@/hooks/useCategories';
+import { useProducts } from '@/hooks/useProducts';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
-import categoryAssorti from '@/assets/category-assorti.jpg';
-import categoryBroodjes from '@/assets/category-broodjes.jpg';
-import categoryWarm from '@/assets/category-warm.jpg';
-import productTijgerbol from '@/assets/product-tijgerbol.jpg';
-import productZalmsalade from '@/assets/product-zalmsalade.jpg';
-import delicatessen from '@/assets/delicatessen.jpg';
-import dranken from '@/assets/dranken.jpg';
-import luxeBroodjes from '@/assets/luxe-broodjes.jpg';
-
-const categories = [
-  {
-    id: 'assorti',
-    title: 'Assorti Broodjes',
-    description: 'Laat u verrassen met onze heerlijke selectie van belegde broodjes. Kies uit assorti, assorti met rauwkost, dubbel belegd of extra luxe.',
-    highlights: ['Assorti broodjes', 'Met rauwkost', 'Dubbel belegd', 'Extra luxe'],
-    image: categoryAssorti,
-    priceFrom: '€3,50',
-  },
-  {
-    id: 'broodjes',
-    title: 'Belegde Broodjes',
-    description: 'Ruim 20 soorten broodjes om te kiezen, van petit pain tot ciabatta, van tijgerbol tot waldkornbol. Kies uw broodje en daarna de belegsoort.',
-    highlights: ['Petit pain', 'Tijgerbol', 'Ciabatta', 'Croissant', 'Glutenvrij'],
-    image: categoryBroodjes,
-    priceFrom: '€2,95',
-  },
-  {
-    id: 'onbelegd',
-    title: 'Broodjes Onbelegd',
-    description: 'Verse afbakbroodjes om zelf af te bakken. Van ciabatta tot stokbrood, van zachte bol tot speltbroodje.',
-    highlights: ['Ciabatta', 'Duitse bol', 'Stokbrood', 'Zachte bol', 'Glutenvrij'],
-    image: productTijgerbol,
-    priceFrom: '€0,49',
-  },
-  {
-    id: 'warm',
-    title: 'Warme Broodjes',
-    description: 'Heerlijke warme broodjes zoals croissants met kaas of ham, pizzabroodjes, saucijzenbroodjes en meer.',
-    highlights: ['Croissant kaas', 'Pizzabroodje', 'Saucijzenbroodje', 'Frikandel broodje'],
-    image: categoryWarm,
-    priceFrom: '€2,19',
-  },
-  {
-    id: 'luxe',
-    title: 'Luxe Hapjes & Salades',
-    description: 'Voor een speciale gelegenheid: luxe hapjes op schalen, opgemaakte salades en kaas- en vleeswarenplatters.',
-    highlights: ['Luxe hapjes', 'Zalmsalade', 'Rundvleessalade', 'Kaasplatter'],
-    image: luxeBroodjes,
-    priceFrom: '€3,95',
-  },
-  {
-    id: 'soepen',
-    title: 'Warme Soepen',
-    description: 'Huisgemaakte soepen geleverd in warmhoudpannen. Kippensoep, groentesoep, erwtensoep en meer.',
-    highlights: ['Kippensoep', 'Groentesoep', 'Erwtensoep', 'Tomatensoep'],
-    image: delicatessen,
-    priceFrom: '€3,00',
-  },
-  {
-    id: 'zoet',
-    title: 'Zoet & Lekkers',
-    description: 'Verwennerijen zoals krentenbollen, spekkoek, dadelbrood, bonbons en Siciliaanse cannoli.',
-    highlights: ['Krentenbol', 'Spekkoek', 'Bonbons', 'Cannoli'],
-    image: productZalmsalade,
-    priceFrom: '€0,99',
-  },
-  {
-    id: 'dranken',
-    title: 'Dranken & Fruit',
-    description: 'Gekoelde dranken, vruchtensappen, melkproducten en vers fruit.',
-    highlights: ['Frisdrank', 'Vruchtensappen', 'Melk & Chocomel', 'Vers fruit'],
-    image: dranken,
-    priceFrom: '€1,10',
-  },
-];
 
 const Assortiment = () => {
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { data: products, isLoading: productsLoading } = useProducts();
+
+  const isLoading = categoriesLoading || productsLoading;
+
+  // Group products by category
+  const productsByCategory = categories
+    ?.filter((cat) => cat.is_active)
+    ?.sort((a, b) => a.display_order - b.display_order)
+    ?.map((category) => ({
+      category,
+      products: products
+        ?.filter((p) => p.category_id === category.id && p.is_available)
+        ?.sort((a, b) => a.display_order - b.display_order) || [],
+    }))
+    ?.filter((group) => group.products.length > 0);
+
   return (
     <Layout>
       {/* Hero */}
-      <section className="relative py-24 md:py-32">
-        <div 
+      <section className="relative py-20 md:py-28">
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${belegdeBroodjes})` }}
         >
@@ -101,96 +45,74 @@ const Assortiment = () => {
               Ons <span className="text-primary">Assortiment</span>
             </h1>
             <p className="text-lg text-card/90 leading-relaxed">
-              Doordat wij veel soorten brood zelf kunnen bakken en wij u een breed assortiment 
-              kaas, vleeswaren en salades kunnen aanbieden, kunt u bij ons kiezen tussen 
-              bijna 1000 verschillende soorten belegde broodjes!
+              Kies uit ons uitgebreide assortiment verse broodjes, luxe hapjes en meer.
+              Voeg producten toe aan je winkelwagen en bestel eenvoudig online!
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Categories Grid */}
-      <section className="py-16 md:py-24">
+      {/* Products by Category */}
+      <section className="py-12 md:py-16">
         <div className="container">
-          <div className="grid md:grid-cols-2 gap-8">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group relative rounded-2xl overflow-hidden shadow-card hover:shadow-glow transition-shadow"
-              >
-                {/* Image */}
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img 
-                    src={category.image} 
-                    alt={category.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/40 to-transparent" />
-                </div>
-
-                {/* Content */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-display font-bold text-card mb-2">
-                        {category.title}
-                      </h2>
-                      <p className="text-card/80 text-sm md:text-base mb-4 line-clamp-2">
-                        {category.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {category.highlights.map((item) => (
-                          <span 
-                            key={item}
-                            className="px-3 py-1 bg-card/20 backdrop-blur-sm rounded-full text-card text-xs font-medium"
-                          >
-                            {item}
-                          </span>
-                        ))}
+          {isLoading ? (
+            <div className="space-y-12">
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <Skeleton className="h-8 w-48 mb-6" />
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    {[1, 2, 3, 4].map((j) => (
+                      <div key={j} className="space-y-3">
+                        <Skeleton className="aspect-square rounded-xl" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
                       </div>
-                      <p className="text-primary font-display font-bold text-lg">
-                        Vanaf {category.priceFrom}
-                      </p>
-                    </div>
+                    ))}
                   </div>
-                  
-                  <OrderButton variant="hero" className="mt-4 w-full md:w-auto" showArrow={false}>
-                    Bekijk & Bestel
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </OrderButton>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+              ))}
+            </div>
+          ) : productsByCategory?.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">
+                Er zijn momenteel geen producten beschikbaar.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Neem contact met ons op voor meer informatie over ons assortiment.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-16">
+              {productsByCategory?.map((group, index) => (
+                <motion.div
+                  key={group.category.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  {/* Category Header */}
+                  <div className="mb-8">
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-2">
+                      {group.category.name}
+                    </h2>
+                    {group.category.description && (
+                      <p className="text-muted-foreground max-w-2xl">
+                        {group.category.description}
+                      </p>
+                    )}
+                  </div>
 
-      {/* CTA */}
-      <section className="py-20 bg-secondary rounded-3xl mx-4 md:mx-8 mb-8">
-        <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-6">
-              Klaar om te bestellen?
-            </h2>
-            <p className="text-secondary-foreground/80 text-lg mb-8">
-              Bekijk ons volledige assortiment en bestel eenvoudig online!
-            </p>
-            <OrderButton variant="default" size="lg" showArrow={false}>
-              Direct bestellen
-              <ExternalLink className="w-5 h-5 ml-2" />
-            </OrderButton>
-          </motion.div>
+                  {/* Products Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    {group.products.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </Layout>
