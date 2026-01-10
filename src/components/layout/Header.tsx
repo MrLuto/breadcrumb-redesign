@@ -9,7 +9,6 @@ import { CartSheet } from '@/components/cart/CartSheet';
 const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Assortiment', path: '/assortiment' },
-  { name: 'Bestellen', path: '/bestellen' },
   { name: 'Over Ons', path: '/over-ons' },
   { name: 'Contact', path: '/contact' },
 ];

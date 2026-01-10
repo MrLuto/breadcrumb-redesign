@@ -51,7 +51,7 @@ export function CartSheet() {
               Voeg producten toe om te beginnen met bestellen
             </p>
             <SheetTrigger asChild>
-              <Link to="/bestellen">
+              <Link to="/assortiment">
                 <Button>Bekijk assortiment</Button>
               </Link>
             </SheetTrigger>
