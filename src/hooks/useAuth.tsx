@@ -7,7 +7,10 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ error: Error | null; isAdmin?: boolean }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -105,16 +108,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    
-    // If login successful, immediately check admin status and update state
-    if (data.user && !error) {
-      setUser(data.user);
-      setSession(data.session);
-      const adminStatus = await checkAdminStatus(data.user.id);
-      setIsAdmin(adminStatus);
+
+    if (error || !data.user) {
+      return { error };
     }
-    
-    return { error };
+
+    // If login successful, immediately check admin status and update state
+    setUser(data.user);
+    setSession(data.session);
+
+    const adminStatus = await checkAdminStatus(data.user.id);
+    setIsAdmin(adminStatus);
+    setIsLoading(false);
+
+    return { error: null, isAdmin: adminStatus };
   };
 
   const signUp = async (email: string, password: string) => {
