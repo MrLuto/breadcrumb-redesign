@@ -21,29 +21,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // IMPORTANT: listener first, then getSession (prevents missed state changes)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setIsLoading(true);
+    console.debug('[auth] init start');
+
+    const hardTimeout = window.setTimeout(() => {
       if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
+      console.warn('[auth] init timeout -> forcing unauth');
+      setSession(null);
+      setUser(null);
       setIsLoading(false);
+    }, 5000);
+
+    const finish = (nextSession: Session | null) => {
+      if (!mounted) return;
+      window.clearTimeout(hardTimeout);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setIsLoading(false);
+    };
+
+    // IMPORTANT: listener first, then getSession (prevents missed state changes)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      console.debug('[auth] onAuthStateChange', event, !!nextSession);
+      finish(nextSession);
     });
 
     supabase.auth
       .getSession()
-      .then(({ data }) => {
-        if (!mounted) return;
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        setIsLoading(false);
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[auth] getSession error:', error);
+          finish(null);
+          return;
+        }
+
+        console.debug('[auth] getSession resolved', !!data.session);
+        finish(data.session);
       })
       .catch((error) => {
-        console.error('Auth initialization error:', error);
-        if (mounted) setIsLoading(false);
+        console.error('[auth] getSession threw:', error);
+        finish(null);
       });
 
     return () => {
       mounted = false;
+      window.clearTimeout(hardTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -51,21 +75,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        return { error };
+      }
+
+      setSession(data.session);
+      setUser(data.user ?? null);
+
+      return { error: null };
+    } finally {
       setIsLoading(false);
-      return { error };
     }
-
-    setSession(data.session);
-    setUser(data.user ?? null);
-    setIsLoading(false);
-
-    return { error: null };
   };
 
   const signUp = async (email: string, password: string) => {
@@ -81,10 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     setIsLoading(true);
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setIsLoading(false);
+
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
