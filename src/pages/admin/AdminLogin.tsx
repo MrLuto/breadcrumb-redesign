@@ -23,10 +23,18 @@ export default function AdminLogin() {
   
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/admin';
 
-  // Redirect when user is logged in as admin
+  // Redirect when user is logged in as admin (or show message if logged in but not admin)
   useEffect(() => {
-    if (!isLoading && user && isAdmin) {
+    if (isLoading) return;
+
+    if (user && isAdmin) {
       navigate(from, { replace: true });
+      return;
+    }
+
+    if (user && !isAdmin) {
+      setIsSubmitting(false);
+      setError((prev) => prev ?? 'Je account heeft geen admin rechten om in te loggen.');
     }
   }, [user, isAdmin, isLoading, navigate, from]);
 
@@ -40,7 +48,7 @@ export default function AdminLogin() {
       if (isRegisterMode) {
         // Registration
         const { error } = await signUp(email, password);
-        
+
         if (error) {
           if (error.message.includes('already registered')) {
             setError('Dit e-mailadres is al geregistreerd');
@@ -55,8 +63,8 @@ export default function AdminLogin() {
         setIsSubmitting(false);
       } else {
         // Login
-        const { error } = await signIn(email, password);
-        
+        const { error, isAdmin: adminStatus } = await signIn(email, password);
+
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
             setError('Onjuiste e-mail of wachtwoord');
@@ -67,8 +75,14 @@ export default function AdminLogin() {
           return;
         }
 
-        // Keep submitting state true - the useEffect will handle redirect 
-        // once auth state updates. Don't set isSubmitting to false here.
+        if (adminStatus) {
+          navigate(from, { replace: true });
+          setIsSubmitting(false);
+          return;
+        }
+
+        setError('Je account heeft geen admin rechten om in te loggen.');
+        setIsSubmitting(false);
       }
     } catch (err) {
       setError('Er is een fout opgetreden. Probeer het opnieuw.');
