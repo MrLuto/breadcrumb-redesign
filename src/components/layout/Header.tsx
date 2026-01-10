@@ -73,11 +73,6 @@ const Header = () => {
               </Link>
             ))}
             <CartSheet />
-            <Link to="/bestellen">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Bestellen
-              </Button>
-            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -114,13 +109,8 @@ const Header = () => {
                     {link.name}
                   </Link>
                 ))}
-                <div className="flex items-center gap-3 mt-4" onClick={() => setIsMenuOpen(false)}>
+                <div className="mt-4" onClick={() => setIsMenuOpen(false)}>
                   <CartSheet />
-                  <Link to="/bestellen" className="flex-1">
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                      Bestellen
-                    </Button>
-                  </Link>
                 </div>
               </div>
             </motion.div>
