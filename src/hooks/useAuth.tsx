@@ -20,76 +20,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let initialLoadDone = false;
 
-    const safeFinish = (nextSession: Session | null) => {
-      if (!mounted) return;
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-      setIsLoading(false);
-    };
-
-    // Always end loading, even if something (storage, privacy settings) blocks auth init.
-    setIsLoading(true);
-
-    const hardTimeout = window.setTimeout(() => {
-      console.warn('[auth] init timeout -> forcing unauth');
-      safeFinish(null);
-    }, 5000);
-
-    const cleanupTimeout = () => window.clearTimeout(hardTimeout);
-
-    // Detect blocked storage (common in strict privacy / some iframe contexts)
+    // Detect blocked storage first
     try {
       const k = '__auth_storage_test__';
       localStorage.setItem(k, '1');
       localStorage.removeItem(k);
     } catch (err) {
       console.warn('[auth] localStorage blocked', err);
-      cleanupTimeout();
-      safeFinish(null);
+      setIsLoading(false);
       return;
     }
 
-    let subscription: { unsubscribe: () => void } | null = null;
+    // Set up auth state listener - this handles future changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      console.debug('[auth] onAuthStateChange', event, !!nextSession);
+      
+      if (!mounted) return;
+      
+      // Only update state after initial load, or for sign-in/sign-out events
+      if (initialLoadDone || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+        setIsLoading(false);
+      }
+    });
 
-    try {
-      const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
-        console.debug('[auth] onAuthStateChange', event, !!nextSession);
-        cleanupTimeout();
-        safeFinish(nextSession);
-      });
-      subscription = data.subscription;
-    } catch (err) {
-      console.error('[auth] onAuthStateChange failed', err);
-      cleanupTimeout();
-      safeFinish(null);
-      return;
-    }
-
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('[auth] getSession error:', error);
-          cleanupTimeout();
-          safeFinish(null);
-          return;
-        }
-
+    // Get initial session - this is the primary way to restore session
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      
+      initialLoadDone = true;
+      
+      if (error) {
+        console.error('[auth] getSession error:', error);
+      } else {
         console.debug('[auth] getSession resolved', !!data.session);
-        cleanupTimeout();
-        safeFinish(data.session);
-      })
-      .catch((error) => {
-        console.error('[auth] getSession threw:', error);
-        cleanupTimeout();
-        safeFinish(null);
-      });
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      }
+      
+      setIsLoading(false);
+    });
+
+    // Safety timeout - should never be needed but prevents infinite loading
+    const timeout = window.setTimeout(() => {
+      if (!mounted || initialLoadDone) return;
+      console.warn('[auth] init timeout -> forcing unauth');
+      initialLoadDone = true;
+      setIsLoading(false);
+    }, 3000);
 
     return () => {
       mounted = false;
-      cleanupTimeout();
-      subscription?.unsubscribe();
+      window.clearTimeout(timeout);
+      subscription.unsubscribe();
     };
   }, []);
 
