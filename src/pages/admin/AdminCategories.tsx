@@ -26,7 +26,7 @@ export default function AdminCategories() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-  const { data: categories, isLoading } = useCategories();
+  const { data: categories, isLoading, error } = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
@@ -104,20 +104,26 @@ export default function AdminCategories() {
                 <TableHead className="w-[100px]">Acties</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    Laden...
-                  </TableCell>
-                </TableRow>
-              ) : categories?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Nog geen categorieën. Maak je eerste categorie aan.
-                  </TableCell>
-                </TableRow>
-              ) : (
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      Laden...
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-destructive">
+                      {(error as { message?: string })?.message ?? 'Fout bij laden'}
+                    </TableCell>
+                  </TableRow>
+                ) : categories?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Nog geen categorieën. Maak je eerste categorie aan.
+                    </TableCell>
+                  </TableRow>
+                ) : (
                 categories?.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>

@@ -23,10 +23,12 @@ export default function AdminDashboard() {
     openInvoices: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
       try {
+        setError(null);
         const today = new Date().toISOString().split('T')[0];
 
         const [
@@ -45,6 +47,18 @@ export default function AdminDashboard() {
           supabase.from('invoices').select('id', { count: 'exact', head: true }).in('status', ['draft', 'sent']),
         ]);
 
+        const responses = [
+          productsRes,
+          ordersRes,
+          companiesRes,
+          pendingOrdersRes,
+          todayOrdersRes,
+          openInvoicesRes,
+        ];
+
+        const firstError = responses.find((r) => r.error)?.error;
+        if (firstError) throw firstError;
+
         setStats({
           totalProducts: productsRes.count || 0,
           totalOrders: ordersRes.count || 0,
@@ -55,6 +69,7 @@ export default function AdminDashboard() {
         });
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
+        setError((error as { message?: string })?.message ?? 'Fout bij laden van dashboard data');
       } finally {
         setIsLoading(false);
       }
@@ -115,6 +130,13 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Welkom bij het FrisVersshop beheerdersdashboard</p>
         </div>
+
+        {error && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+            <p className="font-medium">Kon dashboard data niet laden</p>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {statCards.map((stat) => (

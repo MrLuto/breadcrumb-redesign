@@ -27,7 +27,7 @@ export default function AdminProducts() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const { data: products, isLoading } = useProducts();
+  const { data: products, isLoading, error } = useProducts();
   const { data: categories = [] } = useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -126,6 +126,12 @@ export default function AdminProducts() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     Laden...
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-destructive">
+                    {(error as { message?: string })?.message ?? 'Fout bij laden'}
                   </TableCell>
                 </TableRow>
               ) : products?.length === 0 ? (
