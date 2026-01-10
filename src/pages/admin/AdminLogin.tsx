@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -17,17 +17,18 @@ export default function AdminLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   
-  const { signIn, signUp, isAdmin, user } = useAuth();
+  const { signIn, signUp, isAdmin, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/admin';
 
-  // If already logged in as admin, redirect
-  if (user && isAdmin) {
-    navigate(from, { replace: true });
-    return null;
-  }
+  // Redirect when user is logged in as admin
+  useEffect(() => {
+    if (!isLoading && user && isAdmin) {
+      navigate(from, { replace: true });
+    }
+  }, [user, isAdmin, isLoading, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,10 +67,8 @@ export default function AdminLogin() {
           return;
         }
 
-        // The auth state change will handle the redirect via isAdmin check
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 500);
+        // The useEffect will handle redirect once isAdmin is updated
+        setIsSubmitting(false);
       }
     } catch (err) {
       setError('Er is een fout opgetreden. Probeer het opnieuw.');
