@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.save-postcode]
 verify_jwt = false
+
+[functions.create-admin]
+verify_jwt = false
+
+[functions.create-order]
+verify_jwt = false
