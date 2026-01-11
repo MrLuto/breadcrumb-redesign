@@ -33,19 +33,22 @@ const categories = [
     title: 'Belegde Broodjes',
     description: 'Kies tussen bijna 1000 verschillende soorten belegde broodjes.',
     image: belegdeBroodjes,
-    link: '/assortiment',
+    link: 'https://bestellen.frisversbroodjes.nl/',
+    external: true,
   },
   {
     title: 'Kaas & Zuivel',
     description: 'Een breed assortiment aan heerlijke kazen uit de regio.',
     image: kaasOriginal,
-    link: '/assortiment',
+    link: 'https://bestellen.frisversbroodjes.nl/',
+    external: true,
   },
   {
     title: 'Olijven & Tapas',
     description: 'Heerlijke olijven, tapas en delicatessen.',
     image: olijvenTapas,
-    link: '/assortiment',
+    link: 'https://bestellen.frisversbroodjes.nl/',
+    external: true,
   },
 ];
 
@@ -157,27 +160,53 @@ const Index = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Link 
-                  to={category.link}
-                  className="group block overflow-hidden rounded-2xl shadow-card hover:shadow-glow transition-all duration-300"
-                >
-                  <div className="relative h-64 overflow-hidden">
-                    <img 
-                      src={category.image} 
-                      alt={category.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-2xl font-display font-bold text-card mb-2">
-                        {category.title}
-                      </h3>
-                      <p className="text-card/80">
-                        {category.description}
-                      </p>
+                {category.external ? (
+                  <a 
+                    href={category.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block overflow-hidden rounded-2xl shadow-card hover:shadow-glow transition-all duration-300"
+                  >
+                    <div className="relative h-64 overflow-hidden">
+                      <img 
+                        src={category.image} 
+                        alt={category.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <h3 className="text-2xl font-display font-bold text-card mb-2">
+                          {category.title}
+                        </h3>
+                        <p className="text-card/80">
+                          {category.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </a>
+                ) : (
+                  <Link 
+                    to={category.link}
+                    className="group block overflow-hidden rounded-2xl shadow-card hover:shadow-glow transition-all duration-300"
+                  >
+                    <div className="relative h-64 overflow-hidden">
+                      <img 
+                        src={category.image} 
+                        alt={category.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <h3 className="text-2xl font-display font-bold text-card mb-2">
+                          {category.title}
+                        </h3>
+                        <p className="text-card/80">
+                          {category.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                )}
               </motion.div>
             ))}
           </div>
