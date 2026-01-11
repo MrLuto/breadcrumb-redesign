@@ -98,6 +98,39 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_zones: {
+        Row: {
+          created_at: string
+          delivery_cost: number
+          id: string
+          is_active: boolean
+          min_order_amount: number | null
+          postcode_prefix: string
+          updated_at: string
+          zone_name: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_cost?: number
+          id?: string
+          is_active?: boolean
+          min_order_amount?: number | null
+          postcode_prefix: string
+          updated_at?: string
+          zone_name: string
+        }
+        Update: {
+          created_at?: string
+          delivery_cost?: number
+          id?: string
+          is_active?: boolean
+          min_order_amount?: number | null
+          postcode_prefix?: string
+          updated_at?: string
+          zone_name?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           company_id: string | null
