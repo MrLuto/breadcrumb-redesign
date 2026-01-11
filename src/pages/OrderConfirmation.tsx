@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -7,7 +7,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle, Package, Calendar, MapPin, Phone, Mail } from 'lucide-react';
+import { CheckCircle, Package, Calendar, MapPin, Phone, Mail, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -20,29 +20,58 @@ type OrderWithItems = Order & {
 
 const OrderConfirmation = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const [searchParams] = useSearchParams();
+  const confirmationToken = searchParams.get('token');
   const [order, setOrder] = useState<OrderWithItems | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId) return;
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('id', orderId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching order:', error);
-      } else {
-        setOrder(data as OrderWithItems);
+      // Require confirmation token for security
+      if (!confirmationToken) {
+        setAccessDenied(true);
+        setIsLoading(false);
+        return;
       }
+
+      try {
+        // Use fetch with custom headers to pass the confirmation token for RLS verification
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*)`,
+          {
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'Content-Type': 'application/json',
+              'x-confirmation-token': confirmationToken,
+            },
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch order');
+        }
+        
+        const orders = await response.json();
+        
+        if (orders.length === 0) {
+          setAccessDenied(true);
+        } else {
+          setOrder(orders[0] as OrderWithItems);
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error);
+        setAccessDenied(true);
+      }
+      
       setIsLoading(false);
     };
 
     fetchOrder();
-  }, [orderId]);
+  }, [orderId, confirmationToken]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -66,14 +95,22 @@ const OrderConfirmation = () => {
     );
   }
 
-  if (!order) {
+  if (accessDenied || !order) {
     return (
       <Layout>
         <div className="container py-16">
           <div className="max-w-md mx-auto text-center">
-            <h1 className="text-2xl font-bold mb-4">Bestelling niet gevonden</h1>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 text-amber-600 rounded-full mb-6">
+              <ShieldAlert className="h-8 w-8" />
+            </div>
+            <h1 className="text-2xl font-bold mb-4">
+              {accessDenied ? 'Toegang geweigerd' : 'Bestelling niet gevonden'}
+            </h1>
             <p className="text-muted-foreground mb-6">
-              We konden deze bestelling niet vinden.
+              {accessDenied 
+                ? 'Deze bestellingslink is ongeldig of verlopen. Gebruik de link uit je bevestigingsmail.'
+                : 'We konden deze bestelling niet vinden.'
+              }
             </p>
             <Link to="/assortiment">
               <Button>Terug naar assortiment</Button>

@@ -188,13 +188,13 @@ const Checkout = () => {
         return;
       }
 
-      if (!orderResult?.orderId) {
-        throw new Error('No order ID returned');
+      if (!orderResult?.orderId || !orderResult?.confirmationToken) {
+        throw new Error('No order ID or confirmation token returned');
       }
 
-      // Clear cart and redirect to confirmation
+      // Clear cart and redirect to confirmation with secure token
       clearCart();
-      navigate(`/bestelling-bevestigd/${orderResult.orderId}`);
+      navigate(`/bestelling-bevestigd/${orderResult.orderId}?token=${orderResult.confirmationToken}`);
     } catch (error) {
       console.error('Checkout error:', error);
       toast({

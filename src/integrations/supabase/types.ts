@@ -279,6 +279,7 @@ export type Database = {
           city: string
           company_id: string | null
           company_name: string
+          confirmation_token: string | null
           contact_person: string
           created_at: string
           delivery_address: string
@@ -305,6 +306,7 @@ export type Database = {
           city: string
           company_id?: string | null
           company_name: string
+          confirmation_token?: string | null
           contact_person: string
           created_at?: string
           delivery_address: string
@@ -331,6 +333,7 @@ export type Database = {
           city?: string
           company_id?: string | null
           company_name?: string
+          confirmation_token?: string | null
           contact_person?: string
           created_at?: string
           delivery_address?: string
@@ -485,6 +488,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      verify_order_token: {
+        Args: { order_id: string; token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator"

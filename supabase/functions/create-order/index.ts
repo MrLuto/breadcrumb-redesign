@@ -314,6 +314,7 @@ Deno.serve(async (req) => {
         success: true, 
         orderId: order.id,
         orderNumber: order.order_number,
+        confirmationToken: order.confirmation_token,
         total
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
