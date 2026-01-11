@@ -5,26 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface OpenKVKResult {
-  kvkNumber: string;
-  branchNumber: string;
-  name: string;
-  tradeNames: {
-    businessName?: string;
-    shortBusinessName?: string;
-    currentTradeNames?: string[];
-  };
-  addresses: Array<{
-    type: string;
-    street: string;
-    houseNumber: string;
-    houseNumberAddition?: string;
-    postalCode: string;
-    city: string;
-    country: string;
-  }>;
-}
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -41,12 +21,9 @@ serve(async (req) => {
       );
     }
 
-    // Search OpenKVK API (free alternative)
-    const searchUrl = `https://api.kvk.nl/api/v1/zoeken?naam=${encodeURIComponent(query)}&pagina=1&resultatenPerPagina=10`;
-    
-    // Note: OpenKVK is a free alternative, but for production you might want the official KVK API
-    // For now, we'll use a workaround with openkvk.nl
-    const openKvkUrl = `https://api.openkvk.nl/api/v1/bv?naam=${encodeURIComponent(query)}`;
+    // Use the KVK Open Data API (free, no key required)
+    // This searches the public trade register
+    const kvkSearchUrl = `https://zoeken.kvk.nl/search.ashx?handelsnaam=${encodeURIComponent(query)}&kvknummer=&straat=&postcode=&huisnummer=&plaats=&hoofdvestiging=1&rechtspersoon=1&nevenvestiging=0&zoekvervallen=0&zoekuitgeschreven=1&start=0&searchfield=uitgebreidzoeken&_=${Date.now()}`;
     
     let companies: Array<{
       name: string;
@@ -57,36 +34,57 @@ serve(async (req) => {
     }> = [];
 
     try {
-      // Try OpenKVK API
-      const response = await fetch(openKvkUrl, {
+      const response = await fetch(kvkSearchUrl, {
         headers: {
           "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0 (compatible; FrisVersshop/1.0)",
         },
       });
 
       if (response.ok) {
         const data = await response.json();
         
-        if (Array.isArray(data)) {
-          companies = data.slice(0, 10).map((item: any) => ({
-            name: item.handelsnaam || item.naam || "",
-            kvkNumber: item.kvknummer || item.kvk || "",
+        if (data.resultaten && Array.isArray(data.resultaten)) {
+          companies = data.resultaten.slice(0, 10).map((item: any) => ({
+            name: item.handelsnaam || "",
+            kvkNumber: item.kvkNummer || "",
             address: item.straat ? `${item.straat} ${item.huisnummer || ""}`.trim() : "",
             postcode: item.postcode || "",
             city: item.plaats || "",
           }));
         }
+      } else {
+        console.error("KVK API response not OK:", response.status);
       }
     } catch (apiError) {
-      console.error("OpenKVK API error:", apiError);
-      // Continue with empty results - we'll fall back to manual entry
+      console.error("KVK API error:", apiError);
+      // Fall through to return empty results
     }
 
-    // If OpenKVK didn't work, try a basic search simulation for testing
-    // In production, you'd want to use the official KVK API with a key
+    // If KVK search didn't work, try a simpler approach with companies house NL
     if (companies.length === 0) {
-      // Return empty but valid response
-      console.log("No results from OpenKVK, returning empty array");
+      try {
+        // Try alternative: handelsregister.online (public data)
+        const altUrl = `https://handelsregister.online/api/v1/search?q=${encodeURIComponent(query)}`;
+        const altResponse = await fetch(altUrl, {
+          headers: { "Accept": "application/json" },
+        });
+        
+        if (altResponse.ok) {
+          const altData = await altResponse.json();
+          if (Array.isArray(altData)) {
+            companies = altData.slice(0, 10).map((item: any) => ({
+              name: item.name || item.handelsnaam || "",
+              kvkNumber: item.kvk || item.kvkNumber || "",
+              address: item.address || item.straat || "",
+              postcode: item.postcode || item.zipcode || "",
+              city: item.city || item.plaats || "",
+            }));
+          }
+        }
+      } catch (altError) {
+        console.error("Alternative API error:", altError);
+      }
     }
 
     return new Response(
@@ -100,8 +98,8 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in lookup-company:", error);
     return new Response(
-      JSON.stringify({ error: "Er is een fout opgetreden bij het zoeken" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Er is een fout opgetreden bij het zoeken", companies: [] }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
