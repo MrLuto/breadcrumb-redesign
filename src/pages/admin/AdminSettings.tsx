@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, CheckCircle2 } from 'lucide-react';
 
 export default function AdminSettings() {
@@ -16,7 +17,7 @@ export default function AdminSettings() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { signUp } = useAuth();
+  const { session } = useAuth();
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,26 +34,44 @@ export default function AdminSettings() {
       return;
     }
 
+    if (!session?.access_token) {
+      setError('Je moet ingelogd zijn om admin accounts aan te maken');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await signUp(email, password);
+      // Call the secure edge function to create admin user with role assignment
+      const { data, error: functionError } = await supabase.functions.invoke('create-admin', {
+        body: { email, password },
+      });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
+      if (functionError) {
+        console.error('Create admin error:', functionError);
+        setError('Er is een fout opgetreden. Probeer het opnieuw.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (data?.error) {
+        if (data.error.includes('already registered') || data.error.includes('duplicate')) {
           setError('Dit e-mailadres is al geregistreerd');
+        } else if (data.error.includes('Unauthorized')) {
+          setError('Je hebt geen rechten om admin accounts aan te maken');
         } else {
-          setError(error.message);
+          setError(data.error);
         }
         setIsSubmitting(false);
         return;
       }
 
-      setSuccess(`Account voor ${email} is aangemaakt! De gebruiker kan nu inloggen.`);
+      setSuccess(`Account voor ${email} is aangemaakt met admin rechten! De gebruiker kan nu inloggen.`);
       setEmail('');
       setPassword('');
       setConfirmPassword('');
     } catch (err) {
+      console.error('Unexpected error:', err);
       setError('Er is een fout opgetreden. Probeer het opnieuw.');
     } finally {
       setIsSubmitting(false);
@@ -72,6 +91,7 @@ export default function AdminSettings() {
             </CardTitle>
             <CardDescription>
               Maak een nieuw account aan voor een medewerker om toegang te krijgen tot het admin paneel.
+              Het account krijgt automatisch admin rechten.
             </CardDescription>
           </CardHeader>
           <CardContent>
