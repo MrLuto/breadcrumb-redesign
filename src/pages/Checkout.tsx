@@ -38,10 +38,8 @@ import { toast } from '@/hooks/use-toast';
 import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { CompanySearch } from '@/components/checkout/CompanySearch';
 import { DeliveryZoneInfo } from '@/components/checkout/DeliveryZoneInfo';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
-import { CompanyResult } from '@/hooks/useCompanyLookup';
 
 const checkoutSchema = z.object({
   company_name: z.string().min(1, 'Bedrijfsnaam is verplicht'),
@@ -119,12 +117,6 @@ const Checkout = () => {
 
   const total = subtotal + deliveryCost;
 
-  const handleCompanySelect = (company: CompanyResult) => {
-    form.setValue('company_name', company.name);
-    if (company.address) form.setValue('delivery_address', company.address);
-    if (company.postcode) form.setValue('postcode', company.postcode);
-    if (company.city) form.setValue('city', company.city);
-  };
 
   const handleSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
@@ -271,11 +263,7 @@ const Checkout = () => {
                           <FormItem>
                             <FormLabel>Bedrijfsnaam *</FormLabel>
                             <FormControl>
-                              <CompanySearch
-                                value={field.value}
-                                onChange={field.onChange}
-                                onCompanySelect={handleCompanySelect}
-                              />
+                              <Input {...field} placeholder="Uw bedrijfsnaam" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
