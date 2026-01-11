@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,6 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 
 const Assortiment = () => {
+  const location = useLocation();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
 
@@ -23,6 +26,19 @@ const Assortiment = () => {
         ?.sort((a, b) => a.display_order - b.display_order) || [],
     }))
     ?.filter((group) => group.products.length > 0);
+
+  // Scroll to section when hash changes
+  useEffect(() => {
+    if (location.hash && !isLoading) {
+      const id = decodeURIComponent(location.hash.slice(1));
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [location.hash, isLoading]);
 
   return (
     <Layout>
@@ -86,10 +102,12 @@ const Assortiment = () => {
               {productsByCategory?.map((group, index) => (
                 <motion.div
                   key={group.category.id}
+                  id={group.category.name}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="scroll-mt-24"
                 >
                   {/* Category Header */}
                   <div className="mb-8">
