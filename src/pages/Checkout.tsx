@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,6 +38,10 @@ import { toast } from '@/hooks/use-toast';
 import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { CompanySearch } from '@/components/checkout/CompanySearch';
+import { DeliveryZoneInfo } from '@/components/checkout/DeliveryZoneInfo';
+import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
+import { CompanyResult } from '@/hooks/useCompanyLookup';
 
 const checkoutSchema = z.object({
   company_name: z.string().min(1, 'Bedrijfsnaam is verplicht'),
@@ -70,12 +74,13 @@ const PAYMENT_METHODS = [
   { value: 'monthly_invoice', label: 'Verzamelfactuur (maandelijks)' },
 ];
 
-const DELIVERY_COST = 7.50;
+const DEFAULT_DELIVERY_COST = 7.50;
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: deliveryZones } = useActiveDeliveryZones();
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -93,6 +98,12 @@ const Checkout = () => {
     },
   });
 
+  const watchedPostcode = form.watch('postcode');
+  const currentZone = getDeliveryZoneForPostcode(deliveryZones, watchedPostcode);
+  const deliveryCost = currentZone?.delivery_cost ?? DEFAULT_DELIVERY_COST;
+  const canDeliver = !watchedPostcode || watchedPostcode.replace(/\s/g, '').length < 4 || currentZone !== null;
+  const meetsMinimum = !currentZone?.min_order_amount || subtotal >= currentZone.min_order_amount;
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
@@ -106,13 +117,38 @@ const Checkout = () => {
     return isBefore(date, tomorrow) || isWeekend(date);
   };
 
-  const total = subtotal + DELIVERY_COST;
+  const total = subtotal + deliveryCost;
+
+  const handleCompanySelect = (company: CompanyResult) => {
+    form.setValue('company_name', company.name);
+    if (company.address) form.setValue('delivery_address', company.address);
+    if (company.postcode) form.setValue('postcode', company.postcode);
+    if (company.city) form.setValue('city', company.city);
+  };
 
   const handleSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
       toast({
         title: 'Winkelwagen is leeg',
         description: 'Voeg producten toe voordat je afrekent.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!canDeliver) {
+      toast({
+        title: 'Bezorgen niet mogelijk',
+        description: 'Wij bezorgen helaas niet op dit adres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!meetsMinimum && currentZone) {
+      toast({
+        title: 'Minimale bestelling niet bereikt',
+        description: `Voeg nog ${formatPrice(currentZone.min_order_amount! - subtotal)} toe aan je bestelling.`,
         variant: 'destructive',
       });
       return;
@@ -138,7 +174,7 @@ const Checkout = () => {
           payment_method: data.payment_method,
           notes: data.notes || null,
           subtotal: subtotal,
-          delivery_cost: DELIVERY_COST,
+          delivery_cost: deliveryCost,
           total: total,
           order_status: 'new' as const,
           payment_status: 'pending' as const,
@@ -235,7 +271,11 @@ const Checkout = () => {
                           <FormItem>
                             <FormLabel>Bedrijfsnaam *</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <CompanySearch
+                                value={field.value}
+                                onChange={field.onChange}
+                                onCompanySelect={handleCompanySelect}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -326,6 +366,15 @@ const Checkout = () => {
                               <FormMessage />
                             </FormItem>
                           )}
+                        />
+                      </div>
+                      
+                      {/* Delivery Zone Info */}
+                      <div className="mt-4">
+                        <DeliveryZoneInfo 
+                          zone={currentZone} 
+                          postcode={watchedPostcode} 
+                          subtotal={subtotal} 
                         />
                       </div>
                     </div>
@@ -501,7 +550,7 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Bezorgkosten</span>
-                    <span>{formatPrice(DELIVERY_COST)}</span>
+                    <span>{formatPrice(deliveryCost)}</span>
                   </div>
                 </div>
 

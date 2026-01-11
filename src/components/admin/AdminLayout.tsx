@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  Settings
+  Settings,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Bedrijven', href: '/admin/companies', icon: Building2 },
   { name: 'Facturen', href: '/admin/invoices', icon: FileText },
+  { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
   { name: 'Instellingen', href: '/admin/settings', icon: Settings },
 ];
 
