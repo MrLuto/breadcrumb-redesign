@@ -124,6 +124,7 @@ const Checkout = () => {
       delivery_address: '',
       postcode: '',
       city: '',
+      delivery_date: new Date(),
       delivery_asap: false,
       delivery_time: '',
       payment_method: 'invoice', // Default for business
