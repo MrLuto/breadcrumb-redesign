@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useOpeningHours, getDayName } from '@/hooks/useOpeningHours';
+import { useActiveClosedDays } from '@/hooks/useClosedDays';
 
 const Footer = () => {
-  const { data: openingHours, isLoading } = useOpeningHours();
+  const { data: openingHours, isLoading: loadingHours } = useOpeningHours();
+  const { data: closedDays, isLoading: loadingClosed } = useActiveClosedDays();
 
   // Reorder days: Monday (1) to Sunday (0)
   const orderedDays = [1, 2, 3, 4, 5, 6, 0];
@@ -12,6 +14,49 @@ const Footer = () => {
   const formatTime = (time: string) => {
     return time.substring(0, 5);
   };
+
+  // Get the dates for this week (Monday to Sunday)
+  const getWeekDates = () => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday
+    const monday = new Date(today);
+    // Adjust to get Monday of current week
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
+    monday.setDate(today.getDate() - daysFromMonday);
+    
+    const weekDates: { [key: number]: Date } = {};
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      // Map: 0=Monday -> dayOfWeek 1, 1=Tuesday -> dayOfWeek 2, ..., 6=Sunday -> dayOfWeek 0
+      const dayOfWeek = i === 6 ? 0 : i + 1;
+      weekDates[dayOfWeek] = date;
+    }
+    return weekDates;
+  };
+
+  // Check if a specific date has a closed day exception
+  const getClosedDayForDate = (date: Date) => {
+    if (!closedDays) return null;
+    
+    const dateString = date.toISOString().split('T')[0];
+    const dayOfWeek = date.getDay();
+
+    for (const closedDay of closedDays) {
+      // Check specific date closures
+      if (!closedDay.is_recurring && closedDay.date === dateString) {
+        return closedDay;
+      }
+      // Check recurring day closures (but these are already in opening_hours as is_closed)
+      if (closedDay.is_recurring && closedDay.day_of_week === dayOfWeek) {
+        return closedDay;
+      }
+    }
+    return null;
+  };
+
+  const weekDates = getWeekDates();
+  const isLoading = loadingHours || loadingClosed;
 
   return (
     <footer className="bg-secondary text-secondary-foreground">
@@ -92,12 +137,21 @@ const Footer = () => {
               ) : (
                 orderedDays.map((dayIndex) => {
                   const dayHours = openingHours?.find((h) => h.day_of_week === dayIndex);
+                  const weekDate = weekDates[dayIndex];
+                  const closedDay = weekDate ? getClosedDayForDate(weekDate) : null;
+                  
+                  // Check if there's a special closed day this week
+                  const isSpecialClosed = closedDay && !closedDay.is_recurring;
+                  const isClosed = dayHours?.is_closed || isSpecialClosed;
+                  
                   return (
                     <li key={dayIndex} className="flex justify-between">
                       <span>{getDayName(dayIndex)}</span>
-                      <span>
-                        {dayHours?.is_closed 
-                          ? 'Gesloten' 
+                      <span className={isSpecialClosed ? 'text-destructive' : ''}>
+                        {isClosed 
+                          ? isSpecialClosed && closedDay?.reason 
+                            ? `Gesloten (${closedDay.reason})`
+                            : 'Gesloten'
                           : dayHours 
                             ? `${formatTime(dayHours.open_time)} - ${formatTime(dayHours.close_time)}`
                             : '-'
