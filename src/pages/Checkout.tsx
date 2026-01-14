@@ -409,6 +409,38 @@ const Checkout = () => {
             <div className="lg:col-span-2">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                  {/* Login/Register Block for Guests */}
+                  {!user && (
+                    <div className="bg-card rounded-xl p-6 shadow-card border-2 border-primary/20">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-semibold">Heb je al een account?</h2>
+                          <p className="text-sm text-muted-foreground">Log in voor sneller afrekenen</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button asChild variant="default" className="flex-1">
+                          <Link to="/login?redirect=/checkout">
+                            <User className="h-4 w-4 mr-2" />
+                            Inloggen
+                          </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="flex-1">
+                          <Link to="/registreren?redirect=/checkout">
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Registreren
+                          </Link>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-4 text-center">
+                        Of bestel als gast hieronder
+                      </p>
+                    </div>
+                  )}
+
                   {/* Customer Type */}
                   <div className="bg-card rounded-xl p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Klanttype</h2>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,11 +31,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  const redirectUrl = searchParams.get('redirect');
+  const from = redirectUrl || (location.state as any)?.from?.pathname || '/';
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -214,7 +216,7 @@ export default function Login() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Nog geen account? </span>
-              <Link to="/registreren" className="text-primary hover:underline font-medium">
+              <Link to={redirectUrl ? `/registreren?redirect=${encodeURIComponent(redirectUrl)}` : '/registreren'} className="text-primary hover:underline font-medium">
                 Registreren
               </Link>
             </div>
