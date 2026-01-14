@@ -5,9 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminUsers, useRemoveAdminRole } from '@/hooks/useAdminUsers';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, CheckCircle2 } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle2, Trash2, Users, Shield } from 'lucide-react';
+import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
+import { format } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 export default function AdminSettings() {
   const [email, setEmail] = useState('');
@@ -16,8 +29,12 @@ export default function AdminSettings() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
   
-  const { session } = useAuth();
+  const { session, user } = useAuth();
+  const { data: adminUsers, isLoading: loadingAdmins } = useAdminUsers();
+  const removeAdminMutation = useRemoveAdminRole();
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +59,6 @@ export default function AdminSettings() {
     setIsSubmitting(true);
 
     try {
-      // Call the secure edge function to create admin user with role assignment
       const { data, error: functionError } = await supabase.functions.invoke('create-admin', {
         body: { email, password },
       });
@@ -66,7 +82,7 @@ export default function AdminSettings() {
         return;
       }
 
-      setSuccess(`Account voor ${email} is aangemaakt met admin rechten! De gebruiker kan nu inloggen.`);
+      setSuccess(`Account voor ${email} is aangemaakt met admin rechten!`);
       setEmail('');
       setPassword('');
       setConfirmPassword('');
@@ -78,11 +94,101 @@ export default function AdminSettings() {
     }
   };
 
+  const handleDeleteClick = (userId: string, email: string) => {
+    setUserToDelete({ id: userId, email });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    await removeAdminMutation.mutateAsync(userToDelete.id);
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
   return (
     <AdminLayout>
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6">Instellingen</h1>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Accounts</h1>
+          <p className="text-muted-foreground mt-1">
+            Beheer admin accounts voor het admin paneel.
+          </p>
+        </div>
 
+        {/* Existing Admins */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Admin Accounts
+            </CardTitle>
+            <CardDescription>
+              Overzicht van alle gebruikers met admin toegang.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Toegevoegd op</TableHead>
+                  <TableHead className="w-[100px]">Acties</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loadingAdmins ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : adminUsers?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      Geen admin accounts gevonden.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  adminUsers?.map((adminUser) => (
+                    <TableRow key={adminUser.id}>
+                      <TableCell className="font-medium">
+                        {adminUser.email}
+                        {adminUser.user_id === user?.id && (
+                          <Badge variant="outline" className="ml-2">Jij</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default" className="flex items-center gap-1 w-fit">
+                          <Shield className="h-3 w-3" />
+                          {adminUser.role === 'admin' ? 'Admin' : 'Moderator'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(adminUser.created_at), 'PPP', { locale: nl })}
+                      </TableCell>
+                      <TableCell>
+                        {adminUser.user_id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(adminUser.user_id, adminUser.email || '')}
+                            disabled={removeAdminMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Create New Admin */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -91,7 +197,6 @@ export default function AdminSettings() {
             </CardTitle>
             <CardDescription>
               Maak een nieuw account aan voor een medewerker om toegang te krijgen tot het admin paneel.
-              Het account krijgt automatisch admin rechten.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -109,43 +214,45 @@ export default function AdminSettings() {
                 </Alert>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="medewerker@voorbeeld.nl"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="medewerker@voorbeeld.nl"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Wachtwoord</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Wachtwoord</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Bevestig Wachtwoord</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Bevestig Wachtwoord</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
 
               <Button
@@ -168,6 +275,15 @@ export default function AdminSettings() {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Admin verwijderen"
+        description={`Weet je zeker dat je de admin rechten van ${userToDelete?.email} wilt intrekken? De gebruiker kan dan niet meer inloggen in het admin paneel.`}
+        isLoading={removeAdminMutation.isPending}
+      />
     </AdminLayout>
   );
 }
