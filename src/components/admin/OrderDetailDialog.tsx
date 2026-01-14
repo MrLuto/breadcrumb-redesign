@@ -68,6 +68,18 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
                 <span className="text-muted-foreground">Contactpersoon:</span>
                 <p className="font-medium">{order.contact_person}</p>
               </div>
+              {order.kvk_number && (
+                <div>
+                  <span className="text-muted-foreground">KvK-nummer:</span>
+                  <p className="font-medium">{order.kvk_number}</p>
+                </div>
+              )}
+              {order.department && (
+                <div>
+                  <span className="text-muted-foreground">Afdeling:</span>
+                  <p className="font-medium">{order.department}</p>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground">E-mail:</span>
                 <p className="font-medium">{order.email}</p>
@@ -92,6 +104,20 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
               <p className="text-sm text-muted-foreground mt-1">Zone: {order.delivery_zone}</p>
             )}
           </div>
+
+          {/* Billing Address */}
+          {order.billing_address && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold mb-3">Facturatieadres</h3>
+                <p className="text-sm">
+                  {order.billing_address}<br />
+                  {order.billing_postcode} {order.billing_city}
+                </p>
+              </div>
+            </>
+          )}
 
           <Separator />
 
