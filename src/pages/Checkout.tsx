@@ -523,6 +523,54 @@ const Checkout = () => {
                     </div>
                   </div>
 
+                  {/* Address / Postcode */}
+                  <div className="bg-card rounded-xl p-6 shadow-card">
+                    <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="delivery_address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Straat en huisnummer *</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="postcode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Postcode *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="1234 AB" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Plaats *</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Order Type */}
                   <div className="bg-card rounded-xl p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Bezorgen of afhalen</h2>
@@ -542,87 +590,40 @@ const Checkout = () => {
                       )}
                     />
 
-                    {/* Delivery Address (only for delivery) */}
-                    {watchedOrderType === 'delivery' && (
-                      <div className="mt-6 space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="delivery_address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Straat en huisnummer *</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="postcode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Postcode *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="1234 AB" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="city"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Plaats *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                    {/* Delivery Zone Warning */}
+                    {watchedOrderType === 'delivery' && postcodeHas4Digits && !canDeliver && (
+                      <div className="mt-6 flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-destructive">Bezorgen niet mogelijk</p>
+                          <p className="text-sm text-muted-foreground">
+                            Helaas bezorgen wij niet in deze postcode. Kies voor afhalen of neem contact met ons op.
+                          </p>
                         </div>
+                      </div>
+                    )}
 
-                        {/* Delivery Zone Warning */}
-                        {postcodeHas4Digits && !canDeliver && (
-                          <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-medium text-destructive">Bezorgen niet mogelijk</p>
+                    {/* Free delivery info */}
+                    {watchedOrderType === 'delivery' && canDeliver && shopSettings && (
+                      <div className={cn(
+                        "mt-6 flex items-start gap-3 p-4 rounded-lg border",
+                        isFreeDelivery 
+                          ? "bg-primary/5 border-primary/20" 
+                          : "bg-muted/50 border-border"
+                      )}>
+                        <Truck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          {isFreeDelivery ? (
+                            <p className="font-medium text-primary">Gratis bezorging! 🎉</p>
+                          ) : (
+                            <>
+                              <p className="font-medium">Bezorgkosten: {formatPrice(shopSettings.delivery_cost)}</p>
                               <p className="text-sm text-muted-foreground">
-                                Helaas bezorgen wij niet in deze postcode. Kies voor afhalen of neem contact met ons op.
+                                Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
                               </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Free delivery info */}
-                        {canDeliver && shopSettings && (
-                          <div className={cn(
-                            "flex items-start gap-3 p-4 rounded-lg border",
-                            isFreeDelivery 
-                              ? "bg-primary/5 border-primary/20" 
-                              : "bg-muted/50 border-border"
-                          )}>
-                            <Truck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                            <div>
-                              {isFreeDelivery ? (
-                                <p className="font-medium text-primary">Gratis bezorging! 🎉</p>
-                              ) : (
-                                <>
-                                  <p className="font-medium">Bezorgkosten: {formatPrice(shopSettings.delivery_cost)}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
-                                  </p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
 
