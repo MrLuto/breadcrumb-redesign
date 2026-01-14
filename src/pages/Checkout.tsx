@@ -97,7 +97,6 @@ const PAYMENT_METHODS = [
   { value: 'ideal', label: 'iDEAL' },
   { value: 'pin', label: 'PIN (bij bezorgen/afhalen)' },
   { value: 'invoice', label: 'Op factuur' },
-  { value: 'monthly_invoice', label: 'Verzamelfactuur (maandelijks)' },
   { value: 'cash', label: 'Contant' },
 ];
 
