@@ -12,16 +12,19 @@ interface OrderItem {
 }
 
 interface OrderFormData {
-  company_name: string;
+  customer_type: 'private' | 'business';
+  order_type: 'delivery' | 'pickup';
+  company_name?: string;
   contact_person: string;
   email: string;
   phone: string;
-  delivery_address: string;
-  postcode: string;
-  city: string;
+  delivery_address?: string;
+  postcode?: string;
+  city?: string;
   delivery_date: string;
+  delivery_asap: boolean;
   delivery_time?: string;
-  payment_method: 'direct' | 'invoice' | 'monthly_invoice';
+  payment_method: 'ideal' | 'pin' | 'invoice' | 'monthly_invoice' | 'cash';
   notes?: string;
 }
 
@@ -38,7 +41,6 @@ async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean
 
   const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
 
-  // Get existing rate limit record
   const { data: existing } = await supabase
     .from('rate_limits')
     .select('id, request_count, window_start')
@@ -49,15 +51,13 @@ async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean
 
   if (existing) {
     if (existing.request_count >= maxRequests) {
-      return false; // Rate limited
+      return false;
     }
-    // Increment counter
     await supabase
       .from('rate_limits')
       .update({ request_count: existing.request_count + 1 })
       .eq('id', existing.id);
   } else {
-    // Create new rate limit record
     await supabase
       .from('rate_limits')
       .insert({
@@ -71,8 +71,63 @@ async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean
   return true;
 }
 
+// Get shop settings
+async function getShopSettings(supabase: any) {
+  const { data } = await supabase
+    .from('shop_settings')
+    .select('key, value');
+
+  const settings = {
+    delivery_cost: 4,
+    free_delivery_threshold: 40,
+    min_preparation_time_minutes: 60,
+  };
+
+  data?.forEach((row: any) => {
+    const value = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+    switch (row.key) {
+      case 'delivery_cost':
+        settings.delivery_cost = parseFloat(value);
+        break;
+      case 'free_delivery_threshold':
+        settings.free_delivery_threshold = parseFloat(value);
+        break;
+      case 'min_preparation_time_minutes':
+        settings.min_preparation_time_minutes = parseInt(value);
+        break;
+    }
+  });
+
+  return settings;
+}
+
+// Check if date is closed
+async function isDateClosed(supabase: any, dateString: string): Promise<{ isClosed: boolean; reason?: string }> {
+  const date = new Date(dateString);
+  const dayOfWeek = date.getDay();
+
+  const { data: closedDays } = await supabase
+    .from('closed_days')
+    .select('*')
+    .eq('is_active', true);
+
+  if (!closedDays) return { isClosed: false };
+
+  for (const closedDay of closedDays) {
+    // Check recurring days
+    if (closedDay.is_recurring && closedDay.day_of_week === dayOfWeek) {
+      return { isClosed: true, reason: closedDay.reason };
+    }
+    // Check specific dates
+    if (!closedDay.is_recurring && closedDay.date === dateString) {
+      return { isClosed: true, reason: closedDay.reason };
+    }
+  }
+
+  return { isClosed: false };
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -85,7 +140,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
@@ -96,12 +150,11 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Get client IP for rate limiting
+    // Rate limiting
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
       || req.headers.get('cf-connecting-ip') 
       || 'unknown';
 
-    // Check rate limit
     const withinLimit = await checkRateLimit(supabase, clientIP);
     if (!withinLimit) {
       return new Response(
@@ -110,11 +163,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request
     const body: CreateOrderRequest = await req.json();
     const { items, formData } = body;
 
-    // Validate items array
+    // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Cart is empty' }),
@@ -124,18 +177,57 @@ Deno.serve(async (req) => {
 
     // Validate form data
     if (!formData || 
-        !formData.company_name || 
         !formData.contact_person || 
         !formData.email || 
         !formData.phone ||
-        !formData.delivery_address ||
-        !formData.postcode ||
-        !formData.city ||
         !formData.delivery_date) {
       return new Response(
         JSON.stringify({ error: 'Missing required order information' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Validate customer type
+    if (!['private', 'business'].includes(formData.customer_type)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid customer type' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate business has company name
+    if (formData.customer_type === 'business' && !formData.company_name?.trim()) {
+      return new Response(
+        JSON.stringify({ error: 'Company name is required for business orders' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate order type
+    if (!['delivery', 'pickup'].includes(formData.order_type)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid order type' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate delivery address for delivery orders
+    if (formData.order_type === 'delivery') {
+      if (!formData.delivery_address || !formData.postcode || !formData.city) {
+        return new Response(
+          JSON.stringify({ error: 'Delivery address is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate postcode format
+      const postcodeRegex = /^\d{4}\s?[A-Za-z]{2}$/;
+      if (!postcodeRegex.test(formData.postcode)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid postcode' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Validate email format
@@ -147,17 +239,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate postcode format (Dutch)
-    const postcodeRegex = /^\d{4}\s?[A-Za-z]{2}$/;
-    if (!postcodeRegex.test(formData.postcode)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid postcode' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Validate payment method
-    const validPaymentMethods = ['direct', 'invoice', 'monthly_invoice'];
+    const validPaymentMethods = ['ideal', 'pin', 'invoice', 'monthly_invoice', 'cash'];
     if (!validPaymentMethods.includes(formData.payment_method)) {
       return new Response(
         JSON.stringify({ error: 'Invalid payment method' }),
@@ -165,7 +248,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch products from database to validate prices
+    // Check if date is closed
+    const closedCheck = await isDateClosed(supabase, formData.delivery_date);
+    if (closedCheck.isClosed) {
+      return new Response(
+        JSON.stringify({ error: `Gesloten op deze dag: ${closedCheck.reason || 'Kies een andere datum'}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get shop settings
+    const shopSettings = await getShopSettings(supabase);
+
+    // Validate delivery time
+    if (!formData.delivery_asap && formData.delivery_time) {
+      const now = new Date();
+      const deliveryDate = new Date(formData.delivery_date);
+      const isToday = deliveryDate.toDateString() === now.toDateString();
+
+      if (isToday) {
+        const [hours, minutes] = formData.delivery_time.split(':').map(Number);
+        const selectedTime = new Date(deliveryDate);
+        selectedTime.setHours(hours, minutes, 0, 0);
+        
+        const minTime = new Date(now.getTime() + shopSettings.min_preparation_time_minutes * 60 * 1000);
+        
+        if (selectedTime < minTime) {
+          return new Response(
+            JSON.stringify({ error: `Tijd moet minimaal ${shopSettings.min_preparation_time_minutes} minuten in de toekomst zijn` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // Fetch products
     const productIds = items.map(item => item.product_id);
     const { data: products, error: productsError } = await supabase
       .from('products')
@@ -180,7 +297,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate all products exist and are available
+    // Validate products
     const productMap = new Map(products.map(p => [p.id, p]));
     
     for (const item of items) {
@@ -205,61 +322,66 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Calculate subtotal from database prices (not client prices!)
+    // Calculate subtotal
     let subtotal = 0;
     for (const item of items) {
       const product = productMap.get(item.product_id)!;
       subtotal += product.price * item.quantity;
     }
 
-    // Normalize postcode
-    const normalizedPostcode = formData.postcode.toUpperCase().replace(/\s/g, '');
-    const postcodePrefix = normalizedPostcode.slice(0, 4);
+    // Calculate delivery cost
+    let deliveryCost = 0;
+    let deliveryZone = null;
 
-    // Fetch delivery zone to validate delivery cost
-    const { data: deliveryZone } = await supabase
-      .from('delivery_zones')
-      .select('delivery_cost, min_order_amount, is_active')
-      .eq('postcode_prefix', postcodePrefix)
-      .eq('is_active', true)
-      .maybeSingle();
+    if (formData.order_type === 'delivery') {
+      const normalizedPostcode = formData.postcode!.toUpperCase().replace(/\s/g, '');
+      const postcodePrefix = normalizedPostcode.slice(0, 4);
 
-    // Check if delivery is available
-    if (!deliveryZone) {
-      return new Response(
-        JSON.stringify({ error: 'Delivery not available to this postcode' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Check if delivery is available for this postcode
+      const { data: zone } = await supabase
+        .from('delivery_zones')
+        .select('postcode_prefix, is_active')
+        .eq('postcode_prefix', postcodePrefix)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!zone) {
+        return new Response(
+          JSON.stringify({ error: 'Delivery not available to this postcode' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      deliveryZone = postcodePrefix;
+      
+      // Apply delivery cost (free if above threshold)
+      if (subtotal >= shopSettings.free_delivery_threshold) {
+        deliveryCost = 0;
+      } else {
+        deliveryCost = shopSettings.delivery_cost;
+      }
     }
 
-    // Check minimum order amount
-    if (deliveryZone.min_order_amount && subtotal < deliveryZone.min_order_amount) {
-      return new Response(
-        JSON.stringify({ 
-          error: `Minimum order amount is €${deliveryZone.min_order_amount.toFixed(2)}` 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const deliveryCost = deliveryZone.delivery_cost;
     const total = subtotal + deliveryCost;
 
-    // Create the order with server-calculated prices
+    // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        order_number: 'TEMP', // Will be replaced by database trigger
-        company_name: formData.company_name.trim(),
+        order_number: 'TEMP',
+        customer_type: formData.customer_type,
+        order_type: formData.order_type,
+        company_name: formData.company_name?.trim() || (formData.customer_type === 'private' ? formData.contact_person.trim() : 'Particulier'),
         contact_person: formData.contact_person.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
-        delivery_address: formData.delivery_address.trim(),
-        postcode: normalizedPostcode,
-        city: formData.city.trim(),
+        delivery_address: formData.delivery_address?.trim() || null,
+        postcode: formData.postcode?.toUpperCase().replace(/\s/g, '') || null,
+        city: formData.city?.trim() || null,
         delivery_date: formData.delivery_date,
+        delivery_asap: formData.delivery_asap,
         delivery_time: formData.delivery_time || null,
-        delivery_zone: postcodePrefix,
+        delivery_zone: deliveryZone,
         payment_method: formData.payment_method,
         notes: formData.notes?.trim() || null,
         subtotal,
@@ -279,7 +401,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create order items with database prices
+    // Create order items
     const orderItems = items.map(item => {
       const product = productMap.get(item.product_id)!;
       return {
@@ -299,7 +421,6 @@ Deno.serve(async (req) => {
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError);
-      // Cleanup: delete the order
       await supabase.from('orders').delete().eq('id', order.id);
       return new Response(
         JSON.stringify({ error: 'Failed to create order items' }),

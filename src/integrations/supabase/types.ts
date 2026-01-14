@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      closed_days: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          day_of_week: number | null
+          id: string
+          is_active: boolean | null
+          is_recurring: boolean | null
+          reason: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string | null
+          day_of_week?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          reason: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string | null
+          day_of_week?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          reason?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -282,7 +315,9 @@ export type Database = {
           confirmation_token: string | null
           contact_person: string
           created_at: string
+          customer_type: string | null
           delivery_address: string
+          delivery_asap: boolean | null
           delivery_cost: number
           delivery_date: string
           delivery_time: string | null
@@ -293,11 +328,14 @@ export type Database = {
           notes: string | null
           order_number: string
           order_status: Database["public"]["Enums"]["order_status_type"]
+          order_type: string | null
           payment_id: string | null
           payment_method: Database["public"]["Enums"]["payment_method_type"]
           payment_status: Database["public"]["Enums"]["payment_status_type"]
           phone: string
           postcode: string
+          print_count: number | null
+          printed_at: string | null
           subtotal: number
           total: number
           updated_at: string
@@ -309,7 +347,9 @@ export type Database = {
           confirmation_token?: string | null
           contact_person: string
           created_at?: string
+          customer_type?: string | null
           delivery_address: string
+          delivery_asap?: boolean | null
           delivery_cost?: number
           delivery_date: string
           delivery_time?: string | null
@@ -320,11 +360,14 @@ export type Database = {
           notes?: string | null
           order_number: string
           order_status?: Database["public"]["Enums"]["order_status_type"]
+          order_type?: string | null
           payment_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method_type"]
           payment_status?: Database["public"]["Enums"]["payment_status_type"]
           phone: string
           postcode: string
+          print_count?: number | null
+          printed_at?: string | null
           subtotal: number
           total: number
           updated_at?: string
@@ -336,7 +379,9 @@ export type Database = {
           confirmation_token?: string | null
           contact_person?: string
           created_at?: string
+          customer_type?: string | null
           delivery_address?: string
+          delivery_asap?: boolean | null
           delivery_cost?: number
           delivery_date?: string
           delivery_time?: string | null
@@ -347,11 +392,14 @@ export type Database = {
           notes?: string | null
           order_number?: string
           order_status?: Database["public"]["Enums"]["order_status_type"]
+          order_type?: string | null
           payment_id?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method_type"]
           payment_status?: Database["public"]["Enums"]["payment_status_type"]
           phone?: string
           postcode?: string
+          print_count?: number | null
+          printed_at?: string | null
           subtotal?: number
           total?: number
           updated_at?: string
@@ -450,6 +498,30 @@ export type Database = {
           ip_address?: string
           request_count?: number
           window_start?: string
+        }
+        Relationships: []
+      }
+      shop_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: Json
         }
         Relationships: []
       }

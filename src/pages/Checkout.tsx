@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion } from 'framer-motion';
-import { format, addDays, isBefore, isWeekend, startOfDay } from 'date-fns';
+import { format, addDays, addMinutes, isBefore, startOfDay, isToday, parse } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -35,54 +35,83 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/hooks/useCart';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { DeliveryZoneInfo } from '@/components/checkout/DeliveryZoneInfo';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
+import { useShopSettings, calculateDeliveryCost } from '@/hooks/useShopSettings';
+import { useActiveClosedDays, isDateClosed } from '@/hooks/useClosedDays';
+import { CustomerTypeToggle } from '@/components/checkout/CustomerTypeToggle';
+import { OrderTypeSelector } from '@/components/checkout/OrderTypeSelector';
+import { DeliveryTimeInput } from '@/components/checkout/DeliveryTimeInput';
 
 const checkoutSchema = z.object({
-  company_name: z.string().min(1, 'Bedrijfsnaam is verplicht'),
-  contact_person: z.string().min(1, 'Contactpersoon is verplicht'),
+  customer_type: z.enum(['private', 'business']),
+  order_type: z.enum(['delivery', 'pickup']),
+  company_name: z.string().optional(),
+  contact_person: z.string().min(1, 'Naam is verplicht'),
   email: z.string().email('Ongeldig e-mailadres'),
   phone: z.string().min(10, 'Telefoonnummer is verplicht'),
-  delivery_address: z.string().min(1, 'Bezorgadres is verplicht'),
-  postcode: z.string().regex(/^\d{4}\s?[A-Za-z]{2}$/, 'Ongeldige postcode'),
-  city: z.string().min(1, 'Plaats is verplicht'),
-  delivery_date: z.date({ required_error: 'Bezorgdatum is verplicht' }),
+  delivery_address: z.string().optional(),
+  postcode: z.string().optional(),
+  city: z.string().optional(),
+  delivery_date: z.date({ required_error: 'Datum is verplicht' }),
+  delivery_asap: z.boolean(),
   delivery_time: z.string().optional(),
-  payment_method: z.enum(['direct', 'invoice', 'monthly_invoice']),
+  payment_method: z.enum(['ideal', 'pin', 'invoice', 'monthly_invoice', 'cash']),
   notes: z.string().optional(),
+}).refine((data) => {
+  // For delivery, address fields are required
+  if (data.order_type === 'delivery') {
+    return data.delivery_address && data.postcode && data.city;
+  }
+  return true;
+}, {
+  message: 'Bezorgadres is verplicht',
+  path: ['delivery_address'],
+}).refine((data) => {
+  // For business, company name is required
+  if (data.customer_type === 'business') {
+    return data.company_name && data.company_name.trim().length > 0;
+  }
+  return true;
+}, {
+  message: 'Bedrijfsnaam is verplicht',
+  path: ['company_name'],
+}).refine((data) => {
+  // Postcode validation for delivery
+  if (data.order_type === 'delivery' && data.postcode) {
+    return /^\d{4}\s?[A-Za-z]{2}$/.test(data.postcode);
+  }
+  return true;
+}, {
+  message: 'Ongeldige postcode',
+  path: ['postcode'],
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
-const DELIVERY_TIMES = [
-  '07:00 - 08:00',
-  '08:00 - 09:00',
-  '09:00 - 10:00',
-  '10:00 - 11:00',
-  '11:00 - 12:00',
-  '12:00 - 13:00',
-];
-
 const PAYMENT_METHODS = [
-  { value: 'direct', label: 'Direct betalen (iDEAL)' },
+  { value: 'ideal', label: 'iDEAL' },
+  { value: 'pin', label: 'PIN (bij bezorgen/afhalen)' },
   { value: 'invoice', label: 'Op factuur' },
   { value: 'monthly_invoice', label: 'Verzamelfactuur (maandelijks)' },
+  { value: 'cash', label: 'Contant' },
 ];
-
-const DEFAULT_DELIVERY_COST = 7.50;
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: deliveryZones } = useActiveDeliveryZones();
+  const { data: shopSettings } = useShopSettings();
+  const { data: closedDays } = useActiveClosedDays();
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
+      customer_type: 'business',
+      order_type: 'delivery',
       company_name: '',
       contact_person: '',
       email: '',
@@ -90,17 +119,33 @@ const Checkout = () => {
       delivery_address: '',
       postcode: '',
       city: '',
+      delivery_asap: false,
       delivery_time: '',
-      payment_method: 'direct',
+      payment_method: 'ideal',
       notes: '',
     },
   });
 
-  const watchedPostcode = form.watch('postcode');
+  const watchedPostcode = form.watch('postcode') || '';
+  const watchedOrderType = form.watch('order_type');
+  const watchedCustomerType = form.watch('customer_type');
+  const watchedDeliveryDate = form.watch('delivery_date');
+  const watchedDeliveryAsap = form.watch('delivery_asap');
+  const watchedDeliveryTime = form.watch('delivery_time') || '';
+
+  // Check if postcode is in delivery zone
   const currentZone = getDeliveryZoneForPostcode(deliveryZones, watchedPostcode);
-  const deliveryCost = currentZone?.delivery_cost ?? DEFAULT_DELIVERY_COST;
-  const canDeliver = !watchedPostcode || watchedPostcode.replace(/\s/g, '').length < 4 || currentZone !== null;
-  const meetsMinimum = !currentZone?.min_order_amount || subtotal >= currentZone.min_order_amount;
+  const postcodeHas4Digits = watchedPostcode.replace(/\s/g, '').length >= 4;
+  const canDeliver = !postcodeHas4Digits || currentZone !== null;
+
+  // Calculate delivery cost
+  const deliveryCost = useMemo(() => {
+    if (watchedOrderType === 'pickup' || !shopSettings) return 0;
+    return calculateDeliveryCost(subtotal, shopSettings);
+  }, [subtotal, shopSettings, watchedOrderType]);
+
+  const isFreeDelivery = shopSettings && subtotal >= shopSettings.free_delivery_threshold && watchedOrderType === 'delivery';
+  const amountUntilFreeDelivery = shopSettings ? shopSettings.free_delivery_threshold - subtotal : 0;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -109,14 +154,55 @@ const Checkout = () => {
     }).format(price);
   };
 
-  // Disable weekends and dates before tomorrow
+  // Disable closed days and past dates
   const disabledDays = (date: Date) => {
     const tomorrow = addDays(startOfDay(new Date()), 1);
-    return isBefore(date, tomorrow) || isWeekend(date);
+    
+    // Disable past dates (must be at least tomorrow)
+    if (isBefore(date, tomorrow)) {
+      return true;
+    }
+
+    // Disable closed days
+    if (closedDays) {
+      const { isClosed } = isDateClosed(date, closedDays);
+      if (isClosed) return true;
+    }
+
+    return false;
   };
 
-  const total = subtotal + deliveryCost;
+  // Get closure reason for a date (for tooltip)
+  const getClosureReason = (date: Date): string | undefined => {
+    if (closedDays) {
+      const { isClosed, reason } = isDateClosed(date, closedDays);
+      if (isClosed) return reason;
+    }
+    return undefined;
+  };
 
+  // Validate delivery time
+  const validateDeliveryTime = (): string | null => {
+    if (!watchedDeliveryDate) return null;
+    if (watchedDeliveryAsap) return null;
+    if (!watchedDeliveryTime) return null;
+
+    if (isToday(watchedDeliveryDate)) {
+      const now = new Date();
+      const selectedTime = parse(watchedDeliveryTime, 'HH:mm', watchedDeliveryDate);
+      const minPrepTime = shopSettings?.min_preparation_time_minutes || 60;
+      const earliestTime = addMinutes(now, minPrepTime);
+
+      if (isBefore(selectedTime, earliestTime)) {
+        return `Tijd moet minimaal ${minPrepTime} minuten in de toekomst zijn`;
+      }
+    }
+
+    return null;
+  };
+
+  const timeError = validateDeliveryTime();
+  const total = subtotal + deliveryCost;
 
   const handleSubmit = async (data: CheckoutFormData) => {
     if (items.length === 0) {
@@ -128,28 +214,40 @@ const Checkout = () => {
       return;
     }
 
-    if (!canDeliver) {
+    if (data.order_type === 'delivery' && !canDeliver) {
       toast({
         title: 'Bezorgen niet mogelijk',
-        description: 'Wij bezorgen helaas niet op dit adres.',
+        description: 'Wij bezorgen helaas niet op dit adres. Kies voor afhalen.',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!meetsMinimum && currentZone) {
+    if (timeError) {
       toast({
-        title: 'Minimale bestelling niet bereikt',
-        description: `Voeg nog ${formatPrice(currentZone.min_order_amount! - subtotal)} toe aan je bestelling.`,
+        title: 'Ongeldige tijd',
+        description: timeError,
         variant: 'destructive',
       });
       return;
+    }
+
+    // Check if date is closed
+    if (closedDays) {
+      const { isClosed, reason } = isDateClosed(data.delivery_date, closedDays);
+      if (isClosed) {
+        toast({
+          title: 'Gesloten op deze dag',
+          description: reason || 'Kies een andere datum.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      // Use secure edge function for server-side price validation
       const { data: orderResult, error: functionError } = await supabase.functions.invoke('create-order', {
         body: {
           items: items.map((item) => ({
@@ -158,14 +256,17 @@ const Checkout = () => {
             notes: item.notes || undefined,
           })),
           formData: {
-            company_name: data.company_name,
+            customer_type: data.customer_type,
+            order_type: data.order_type,
+            company_name: data.company_name || undefined,
             contact_person: data.contact_person,
             email: data.email,
             phone: data.phone,
-            delivery_address: data.delivery_address,
-            postcode: data.postcode,
-            city: data.city,
+            delivery_address: data.order_type === 'delivery' ? data.delivery_address : undefined,
+            postcode: data.order_type === 'delivery' ? data.postcode : undefined,
+            city: data.order_type === 'delivery' ? data.city : undefined,
             delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
+            delivery_asap: data.delivery_asap,
             delivery_time: data.delivery_time || undefined,
             payment_method: data.payment_method,
             notes: data.notes || undefined,
@@ -192,7 +293,6 @@ const Checkout = () => {
         throw new Error('No order ID or confirmation token returned');
       }
 
-      // Clear cart and redirect to confirmation with secure token
       clearCart();
       navigate(`/bestelling-bevestigd/${orderResult.orderId}?token=${orderResult.confirmationToken}`);
     } catch (error) {
@@ -251,44 +351,55 @@ const Checkout = () => {
             <div className="lg:col-span-2">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-                  {/* Company Info */}
+                  {/* Customer Type */}
                   <div className="bg-card rounded-xl p-6 shadow-card">
-                    <h2 className="text-xl font-semibold mb-4">Bedrijfsgegevens</h2>
+                    <h2 className="text-xl font-semibold mb-4">Klanttype</h2>
+                    <FormField
+                      control={form.control}
+                      name="customer_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CustomerTypeToggle
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="bg-card rounded-xl p-6 shadow-card">
+                    <h2 className="text-xl font-semibold mb-4">
+                      {watchedCustomerType === 'business' ? 'Bedrijfsgegevens' : 'Contactgegevens'}
+                    </h2>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="company_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bedrijfsnaam *</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Uw bedrijfsnaam" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {watchedCustomerType === 'business' && (
+                        <FormField
+                          control={form.control}
+                          name="company_name"
+                          render={({ field }) => (
+                            <FormItem className="sm:col-span-2">
+                              <FormLabel>Bedrijfsnaam *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Uw bedrijfsnaam" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <FormField
                         control={form.control}
                         name="contact_person"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Contactpersoon *</FormLabel>
+                            <FormLabel>{watchedCustomerType === 'business' ? 'Contactpersoon *' : 'Naam *'}</FormLabel>
                             <FormControl>
                               <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>E-mail *</FormLabel>
-                            <FormControl>
-                              <Input type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -307,46 +418,50 @@ const Checkout = () => {
                           </FormItem>
                         )}
                       />
-                    </div>
-                  </div>
-
-                  {/* Delivery Address */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
-                    <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
-                    <div className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="delivery_address"
+                        name="email"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Straat en huisnummer *</FormLabel>
+                          <FormItem className="sm:col-span-2">
+                            <FormLabel>E-mail *</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <div className="grid sm:grid-cols-2 gap-4">
+                    </div>
+                  </div>
+
+                  {/* Order Type */}
+                  <div className="bg-card rounded-xl p-6 shadow-card">
+                    <h2 className="text-xl font-semibold mb-4">Bezorgen of afhalen</h2>
+                    <FormField
+                      control={form.control}
+                      name="order_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <OrderTypeSelector
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Delivery Address (only for delivery) */}
+                    {watchedOrderType === 'delivery' && (
+                      <div className="mt-6 space-y-4">
                         <FormField
                           control={form.control}
-                          name="postcode"
+                          name="delivery_address"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Postcode *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="1234 AB" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Plaats *</FormLabel>
+                              <FormLabel>Straat en huisnummer *</FormLabel>
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
@@ -354,29 +469,100 @@ const Checkout = () => {
                             </FormItem>
                           )}
                         />
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="postcode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Postcode *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="1234 AB" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Plaats *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* Delivery Zone Warning */}
+                        {postcodeHas4Digits && !canDeliver && (
+                          <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-destructive">Bezorgen niet mogelijk</p>
+                              <p className="text-sm text-muted-foreground">
+                                Helaas bezorgen wij niet in deze postcode. Kies voor afhalen of neem contact met ons op.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Free delivery info */}
+                        {canDeliver && shopSettings && (
+                          <div className={cn(
+                            "flex items-start gap-3 p-4 rounded-lg border",
+                            isFreeDelivery 
+                              ? "bg-primary/5 border-primary/20" 
+                              : "bg-muted/50 border-border"
+                          )}>
+                            <Truck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                            <div>
+                              {isFreeDelivery ? (
+                                <p className="font-medium text-primary">Gratis bezorging! 🎉</p>
+                              ) : (
+                                <>
+                                  <p className="font-medium">Bezorgkosten: {formatPrice(shopSettings.delivery_cost)}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* Delivery Zone Info */}
-                      <div className="mt-4">
-                        <DeliveryZoneInfo 
-                          zone={currentZone} 
-                          postcode={watchedPostcode} 
-                          subtotal={subtotal} 
-                        />
+                    )}
+
+                    {/* Pickup Address (only for pickup) */}
+                    {watchedOrderType === 'pickup' && shopSettings && (
+                      <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium">Afhaaladres</p>
+                            <p className="text-sm text-muted-foreground">{shopSettings.pickup_address}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Delivery Date & Time */}
+                  {/* Date & Time */}
                   <div className="bg-card rounded-xl p-6 shadow-card">
-                    <h2 className="text-xl font-semibold mb-4">Bezorging</h2>
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <h2 className="text-xl font-semibold mb-4">
+                      {watchedOrderType === 'pickup' ? 'Afhaaldatum & tijd' : 'Bezorgdatum & tijd'}
+                    </h2>
+                    <div className="grid sm:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
                         name="delivery_date"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Bezorgdatum *</FormLabel>
+                            <FormLabel>Datum *</FormLabel>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <FormControl>
@@ -411,33 +597,18 @@ const Checkout = () => {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="delivery_time"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Gewenste tijd</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecteer tijd (optioneel)" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {DELIVERY_TIMES.map((time) => (
-                                  <SelectItem key={time} value={time}>
-                                    {time}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div>
+                        <FormLabel className="mb-2 block">Tijd</FormLabel>
+                        <DeliveryTimeInput
+                          selectedDate={watchedDeliveryDate}
+                          deliveryAsap={watchedDeliveryAsap}
+                          deliveryTime={watchedDeliveryTime}
+                          minPrepTimeMinutes={shopSettings?.min_preparation_time_minutes || 60}
+                          onAsapChange={(asap) => form.setValue('delivery_asap', asap)}
+                          onTimeChange={(time) => form.setValue('delivery_time', time)}
+                          error={timeError || undefined}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -497,7 +668,7 @@ const Checkout = () => {
                     type="submit"
                     size="lg"
                     className="w-full"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (watchedOrderType === 'delivery' && !canDeliver)}
                   >
                     {isSubmitting ? (
                       <>
@@ -536,8 +707,12 @@ const Checkout = () => {
                     <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Bezorgkosten</span>
-                    <span>{formatPrice(deliveryCost)}</span>
+                    <span className="text-muted-foreground">
+                      {watchedOrderType === 'pickup' ? 'Afhalen' : 'Bezorgkosten'}
+                    </span>
+                    <span className={isFreeDelivery ? 'text-primary font-medium' : ''}>
+                      {watchedOrderType === 'pickup' ? 'Gratis' : (isFreeDelivery ? 'Gratis' : formatPrice(deliveryCost))}
+                    </span>
                   </div>
                 </div>
 
@@ -547,6 +722,21 @@ const Checkout = () => {
                   <span>Totaal</span>
                   <span>{formatPrice(total)}</span>
                 </div>
+
+                {/* Free delivery progress */}
+                {watchedOrderType === 'delivery' && shopSettings && !isFreeDelivery && (
+                  <div className="mt-4 p-3 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
+                    </p>
+                    <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.min((subtotal / shopSettings.free_delivery_threshold) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
