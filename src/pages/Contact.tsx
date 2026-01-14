@@ -7,11 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useOpeningHours, getDayName } from '@/hooks/useOpeningHours';
+import { useActiveClosedDays } from '@/hooks/useClosedDays';
 
 const WHATSAPP_NUMBER = '31642908804';
 import heroOriginal from '@/assets/hero-original.jpg';
 
-const contactInfo = [
+const baseContactInfo = [
   {
     icon: MapPin,
     title: 'Adres',
@@ -29,15 +31,13 @@ const contactInfo = [
     details: ['info@frisversshop.nl'],
     link: 'mailto:info@frisversshop.nl',
   },
-  {
-    icon: Clock,
-    title: 'Openingstijden',
-    details: ['Ma - Vr: 08:00 - 18:00', 'Za: 07:30 - 16:00', 'Zo: Gesloten'],
-  },
 ];
 
 const Contact = () => {
   const { toast } = useToast();
+  const { data: openingHours, isLoading: loadingHours } = useOpeningHours();
+  const { data: closedDays } = useActiveClosedDays();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -45,6 +45,69 @@ const Contact = () => {
     subject: '',
     message: '',
   });
+
+  // Build opening hours details dynamically
+  const formatTime = (time: string) => time.substring(0, 5);
+  
+  const getOpeningHoursDetails = () => {
+    if (loadingHours || !openingHours) {
+      return ['Laden...'];
+    }
+
+    // Get dates for current week to check closed days
+    const today = new Date();
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
+    monday.setDate(today.getDate() - daysFromMonday);
+    
+    const getWeekDate = (dayOfWeek: number) => {
+      const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offset);
+      return date;
+    };
+
+    const isSpecialClosed = (dayOfWeek: number) => {
+      if (!closedDays) return false;
+      const weekDate = getWeekDate(dayOfWeek);
+      const dateString = weekDate.toISOString().split('T')[0];
+      
+      return closedDays.some(cd => 
+        cd.recurrence_type === 'none' && cd.date === dateString
+      );
+    };
+
+    // Ordered days: Monday (1) to Sunday (0)
+    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+    
+    return orderedDays.map((dayIndex) => {
+      const dayHours = openingHours.find((h) => h.day_of_week === dayIndex);
+      const specialClosed = isSpecialClosed(dayIndex);
+      const isClosed = dayHours?.is_closed || specialClosed;
+      
+      const dayName = getDayName(dayIndex).substring(0, 2); // Ma, Di, Wo, etc.
+      
+      if (isClosed) {
+        return `${dayName}: Gesloten`;
+      }
+      
+      if (dayHours) {
+        return `${dayName}: ${formatTime(dayHours.open_time)} - ${formatTime(dayHours.close_time)}`;
+      }
+      
+      return `${dayName}: -`;
+    });
+  };
+
+  const contactInfo = [
+    ...baseContactInfo,
+    {
+      icon: Clock,
+      title: 'Openingstijden',
+      details: getOpeningHoursDetails(),
+    },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
