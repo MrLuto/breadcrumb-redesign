@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,11 +33,12 @@ import {
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/hooks/useAuth';
+import { useCustomerProfile } from '@/hooks/useCustomerProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle } from 'lucide-react';
+import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
 import { useShopSettings, calculateDeliveryCost } from '@/hooks/useShopSettings';
 import { useActiveClosedDays, isDateClosed } from '@/hooks/useClosedDays';
@@ -102,6 +103,8 @@ const PAYMENT_METHODS = [
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, subtotal, clearCart } = useCart();
+  const { user } = useAuth();
+  const { data: profile } = useCustomerProfile();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: deliveryZones } = useActiveDeliveryZones();
   const { data: shopSettings } = useShopSettings();
@@ -125,6 +128,25 @@ const Checkout = () => {
       notes: '',
     },
   });
+
+  // Auto-fill form from profile
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        ...form.getValues(),
+        customer_type: (profile.customer_type as 'private' | 'business') || 'business',
+        company_name: profile.company_name || '',
+        contact_person: profile.contact_person || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        delivery_address: profile.delivery_address || '',
+        postcode: profile.postcode || '',
+        city: profile.city || '',
+      });
+    } else if (user?.email) {
+      form.setValue('email', user.email);
+    }
+  }, [profile, user]);
 
   const watchedPostcode = form.watch('postcode') || '';
   const watchedOrderType = form.watch('order_type');

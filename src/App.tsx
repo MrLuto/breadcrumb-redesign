@@ -17,6 +17,12 @@ import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
+// Auth pages
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Profile from "./pages/auth/Profile";
+import AuthCallback from "./pages/auth/AuthCallback";
+
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -49,6 +55,12 @@ const App = () => (
                 <Route path="/bestelling-bevestigd/:orderId" element={<OrderConfirmation />} />
                 <Route path="/over-ons" element={<OverOns />} />
                 <Route path="/contact" element={<Contact />} />
+                
+                {/* Auth routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/registreren" element={<Register />} />
+                <Route path="/profiel" element={<Profile />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 
                 {/* Admin routes */}
                 <Route path="/admin/login" element={<AdminLogin />} />

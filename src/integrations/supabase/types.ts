@@ -131,6 +131,51 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_profiles: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          contact_person: string | null
+          created_at: string | null
+          customer_type: string | null
+          delivery_address: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          postcode: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          customer_type?: string | null
+          delivery_address?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          customer_type?: string | null
+          delivery_address?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          postcode?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       delivery_zones: {
         Row: {
           created_at: string
@@ -339,6 +384,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           city: string
@@ -371,6 +417,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           city?: string
@@ -403,6 +450,7 @@ export type Database = {
           subtotal?: number
           total?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
