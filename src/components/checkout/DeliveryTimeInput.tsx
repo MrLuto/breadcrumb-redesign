@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
-import { addMinutes, format, isToday, isBefore, getMinutes, getHours, setMinutes, setHours } from 'date-fns';
+import { addMinutes, addDays, format, isToday, isBefore, getMinutes, getHours } from 'date-fns';
 
 interface DeliveryTimeInputProps {
   selectedDate: Date | undefined;
   deliveryTime: string;
   minPrepTimeMinutes: number;
   onTimeChange: (time: string) => void;
+  onDateChange?: (date: Date) => void;
   error?: string;
 }
 
@@ -49,6 +50,7 @@ export function DeliveryTimeInput({
   deliveryTime,
   minPrepTimeMinutes,
   onTimeChange,
+  onDateChange,
   error,
 }: DeliveryTimeInputProps) {
   const [timeError, setTimeError] = useState<string | null>(null);
@@ -120,9 +122,18 @@ export function DeliveryTimeInput({
   }, [deliveryTime, selectedDate, minPrepTimeMinutes, hours, minutes, isTimeValid]);
 
   const incrementHours = () => {
-    const newHours = hours >= 23 ? 0 : hours + 1;
-    const newTime = formatTime(newHours, minutes);
-    onTimeChange(newTime);
+    if (hours >= 23) {
+      // Wrap to next day
+      if (selectedDate && onDateChange) {
+        const nextDay = addDays(selectedDate, 1);
+        onDateChange(nextDay);
+        onTimeChange(formatTime(0, minutes));
+      } else {
+        onTimeChange(formatTime(0, minutes));
+      }
+    } else {
+      onTimeChange(formatTime(hours + 1, minutes));
+    }
   };
 
   const decrementHours = () => {
@@ -136,8 +147,7 @@ export function DeliveryTimeInput({
       }
     }
     
-    const newTime = formatTime(newHours, minutes);
-    onTimeChange(newTime);
+    onTimeChange(formatTime(newHours, minutes));
   };
 
   const incrementMinutes = () => {
@@ -146,11 +156,22 @@ export function DeliveryTimeInput({
     
     if (newMinutes >= 60) {
       newMinutes = 0;
-      newHours = hours >= 23 ? 0 : hours + 1;
+      if (newHours >= 23) {
+        // Wrap to next day
+        if (selectedDate && onDateChange) {
+          const nextDay = addDays(selectedDate, 1);
+          onDateChange(nextDay);
+          onTimeChange(formatTime(0, newMinutes));
+          return;
+        } else {
+          newHours = 0;
+        }
+      } else {
+        newHours = hours + 1;
+      }
     }
     
-    const newTime = formatTime(newHours, newMinutes);
-    onTimeChange(newTime);
+    onTimeChange(formatTime(newHours, newMinutes));
   };
 
   const decrementMinutes = () => {
