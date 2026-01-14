@@ -29,7 +29,6 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCatalog from "./pages/admin/AdminCatalog";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCompanies from "./pages/admin/AdminCompanies";
-import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
 import AdminOpeningHours from "./pages/admin/AdminOpeningHours";
@@ -90,11 +89,6 @@ const App = () => (
                 <Route path="/admin/companies" element={
                   <ProtectedRoute>
                     <AdminCompanies />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/invoices" element={
-                  <ProtectedRoute>
-                    <AdminInvoices />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/settings" element={
