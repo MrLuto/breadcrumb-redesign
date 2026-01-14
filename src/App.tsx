@@ -106,7 +106,7 @@ const App = () => (
                 } />
                 <Route path="/admin/closed-days" element={
                   <ProtectedRoute>
-                    <AdminClosedDays />
+                    <AdminOpeningHours />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/opening-hours" element={

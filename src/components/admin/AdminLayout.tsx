@@ -14,8 +14,7 @@ import {
   X,
   Settings,
   Truck,
-  Clock,
-  CalendarX
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -33,7 +32,6 @@ const navigation = [
   { name: 'Facturen', href: '/admin/invoices', icon: FileText },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
   { name: 'Openingstijden', href: '/admin/opening-hours', icon: Clock },
-  { name: 'Gesloten dagen', href: '/admin/closed-days', icon: CalendarX },
   { name: 'Instellingen', href: '/admin/settings', icon: Settings },
 ];
 
