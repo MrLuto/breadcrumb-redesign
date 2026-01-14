@@ -27,6 +27,7 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
+import AdminClosedDays from "./pages/admin/AdminClosedDays";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,11 @@ const App = () => (
                 <Route path="/admin/delivery-zones" element={
                   <ProtectedRoute>
                     <AdminDeliveryZones />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/closed-days" element={
+                  <ProtectedRoute>
+                    <AdminClosedDays />
                   </ProtectedRoute>
                 } />
                 
