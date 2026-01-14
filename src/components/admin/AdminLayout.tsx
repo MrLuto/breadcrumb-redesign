@@ -10,7 +10,7 @@ import {
   LogOut,
   Menu,
   X,
-  Settings,
+  Users,
   Truck,
   Clock
 } from 'lucide-react';
@@ -28,7 +28,7 @@ const navigation = [
   { name: 'Klanten', href: '/admin/companies', icon: Building2 },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
   { name: 'Openingstijden', href: '/admin/opening-hours', icon: Clock },
-  { name: 'Instellingen', href: '/admin/settings', icon: Settings },
+  { name: 'Accounts', href: '/admin/settings', icon: Users },
 ];
 
 export function AdminLayout({ children }: AdminLayoutProps) {
