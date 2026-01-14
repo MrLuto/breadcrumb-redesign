@@ -191,9 +191,19 @@ export function DeliveryTimeInput({
           >
             <ChevronUp className="h-5 w-5" />
           </Button>
-          <div className="h-14 w-14 flex items-center justify-center bg-muted border text-2xl font-mono font-bold">
-            {hours.toString().padStart(2, '0')}
-          </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={hours.toString().padStart(2, '0')}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              const num = Math.min(23, Math.max(0, parseInt(val) || 0));
+              onTimeChange(formatTime(num, minutes));
+            }}
+            onFocus={(e) => e.target.select()}
+            className="h-14 w-14 text-center bg-muted border text-2xl font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+            maxLength={2}
+          />
           <Button
             type="button"
             variant="outline"
@@ -219,9 +229,19 @@ export function DeliveryTimeInput({
           >
             <ChevronUp className="h-5 w-5" />
           </Button>
-          <div className="h-14 w-14 flex items-center justify-center bg-muted border text-2xl font-mono font-bold">
-            {minutes.toString().padStart(2, '0')}
-          </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={minutes.toString().padStart(2, '0')}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              const num = Math.min(59, Math.max(0, parseInt(val) || 0));
+              onTimeChange(formatTime(hours, num));
+            }}
+            onFocus={(e) => e.target.select()}
+            className="h-14 w-14 text-center bg-muted border text-2xl font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+            maxLength={2}
+          />
           <Button
             type="button"
             variant="outline"
