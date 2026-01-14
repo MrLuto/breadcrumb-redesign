@@ -15,12 +15,17 @@ interface OrderFormData {
   customer_type: 'private' | 'business';
   order_type: 'delivery' | 'pickup';
   company_name?: string;
+  kvk_number?: string;
+  department?: string;
   contact_person: string;
   email: string;
   phone: string;
   delivery_address?: string;
   postcode?: string;
   city?: string;
+  billing_address?: string;
+  billing_postcode?: string;
+  billing_city?: string;
   delivery_date: string;
   delivery_asap: boolean;
   delivery_time?: string;
@@ -372,12 +377,17 @@ Deno.serve(async (req) => {
         customer_type: formData.customer_type,
         order_type: formData.order_type,
         company_name: formData.company_name?.trim() || (formData.customer_type === 'private' ? formData.contact_person.trim() : 'Particulier'),
+        kvk_number: formData.kvk_number?.trim() || null,
+        department: formData.department?.trim() || null,
         contact_person: formData.contact_person.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
         delivery_address: formData.delivery_address?.trim() || null,
         postcode: formData.postcode?.toUpperCase().replace(/\s/g, '') || null,
         city: formData.city?.trim() || null,
+        billing_address: formData.billing_address?.trim() || null,
+        billing_postcode: formData.billing_postcode?.toUpperCase().replace(/\s/g, '') || null,
+        billing_city: formData.billing_city?.trim() || null,
         delivery_date: formData.delivery_date,
         delivery_asap: formData.delivery_asap,
         delivery_time: formData.delivery_time || null,

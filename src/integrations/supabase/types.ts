@@ -354,6 +354,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          billing_address: string | null
+          billing_city: string | null
+          billing_postcode: string | null
           city: string
           company_id: string | null
           company_name: string
@@ -367,9 +370,11 @@ export type Database = {
           delivery_date: string
           delivery_time: string | null
           delivery_zone: string | null
+          department: string | null
           email: string
           id: string
           invoice_id: string | null
+          kvk_number: string | null
           notes: string | null
           order_number: string
           order_status: Database["public"]["Enums"]["order_status_type"]
@@ -387,6 +392,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postcode?: string | null
           city: string
           company_id?: string | null
           company_name: string
@@ -400,9 +408,11 @@ export type Database = {
           delivery_date: string
           delivery_time?: string | null
           delivery_zone?: string | null
+          department?: string | null
           email: string
           id?: string
           invoice_id?: string | null
+          kvk_number?: string | null
           notes?: string | null
           order_number: string
           order_status?: Database["public"]["Enums"]["order_status_type"]
@@ -420,6 +430,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postcode?: string | null
           city?: string
           company_id?: string | null
           company_name?: string
@@ -433,9 +446,11 @@ export type Database = {
           delivery_date?: string
           delivery_time?: string | null
           delivery_zone?: string | null
+          department?: string | null
           email?: string
           id?: string
           invoice_id?: string | null
+          kvk_number?: string | null
           notes?: string | null
           order_number?: string
           order_status?: Database["public"]["Enums"]["order_status_type"]
