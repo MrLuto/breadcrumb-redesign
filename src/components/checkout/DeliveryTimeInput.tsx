@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
-import { addMinutes, format, isToday, parse, isBefore, setMinutes, setHours, getMinutes, getHours } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { addMinutes, format, isToday, isBefore, getMinutes, getHours, setMinutes, setHours } from 'date-fns';
 
 interface DeliveryTimeInputProps {
   selectedDate: Date | undefined;
@@ -18,25 +17,31 @@ const roundToNextQuarter = (date: Date): Date => {
   const remainder = minutes % 15;
   
   if (remainder === 0) {
-    // Already on a quarter, go to next one
     return addMinutes(date, 15);
   }
   
-  // Round up to next quarter
   const minutesToAdd = 15 - remainder;
   return addMinutes(date, minutesToAdd);
 };
 
 // Get the earliest possible time (now + prep time, rounded to next quarter)
-const getEarliestTime = (minPrepTimeMinutes: number): Date => {
+const getEarliestTime = (minPrepTimeMinutes: number): { hours: number; minutes: number } => {
   const now = new Date();
   const earliest = addMinutes(now, minPrepTimeMinutes);
-  return roundToNextQuarter(earliest);
+  const rounded = roundToNextQuarter(earliest);
+  return { hours: getHours(rounded), minutes: getMinutes(rounded) };
 };
 
-// Format time as HH:mm string
-const formatTimeString = (date: Date): string => {
-  return format(date, 'HH:mm');
+// Parse HH:mm string to hours and minutes
+const parseTime = (timeString: string): { hours: number; minutes: number } => {
+  if (!timeString) return { hours: 10, minutes: 0 };
+  const [h, m] = timeString.split(':').map(Number);
+  return { hours: h || 0, minutes: m || 0 };
+};
+
+// Format hours and minutes to HH:mm string
+const formatTime = (hours: number, minutes: number): string => {
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
 export function DeliveryTimeInput({
@@ -47,39 +52,32 @@ export function DeliveryTimeInput({
   error,
 }: DeliveryTimeInputProps) {
   const [timeError, setTimeError] = useState<string | null>(null);
+  const { hours, minutes } = parseTime(deliveryTime);
 
-  // Calculate and set default time on mount and when date changes
-  const updateDefaultTime = useCallback(() => {
-    if (!selectedDate) return;
-    
-    if (isToday(selectedDate)) {
-      const earliestTime = getEarliestTime(minPrepTimeMinutes);
-      const newTimeString = formatTimeString(earliestTime);
-      
-      // Only update if current time is invalid or empty
-      if (!deliveryTime) {
-        onTimeChange(newTimeString);
-      } else {
-        // Check if current time is still valid
-        const currentTime = parse(deliveryTime, 'HH:mm', selectedDate);
-        const now = new Date();
-        const minTime = addMinutes(now, minPrepTimeMinutes);
-        
-        if (isBefore(currentTime, minTime)) {
-          onTimeChange(newTimeString);
-        }
-      }
+  // Get minimum time for today
+  const getMinTime = useCallback(() => {
+    if (!selectedDate || !isToday(selectedDate)) {
+      return { hours: 0, minutes: 0 };
     }
-  }, [selectedDate, minPrepTimeMinutes, deliveryTime, onTimeChange]);
+    return getEarliestTime(minPrepTimeMinutes);
+  }, [selectedDate, minPrepTimeMinutes]);
+
+  // Check if a time is valid
+  const isTimeValid = useCallback((h: number, m: number) => {
+    if (!selectedDate || !isToday(selectedDate)) return true;
+    const minTime = getMinTime();
+    const timeInMinutes = h * 60 + m;
+    const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
+    return timeInMinutes >= minTimeInMinutes;
+  }, [selectedDate, getMinTime]);
 
   // Set initial time on mount
   useEffect(() => {
     if (selectedDate && !deliveryTime) {
       if (isToday(selectedDate)) {
-        const earliestTime = getEarliestTime(minPrepTimeMinutes);
-        onTimeChange(formatTimeString(earliestTime));
+        const earliest = getEarliestTime(minPrepTimeMinutes);
+        onTimeChange(formatTime(earliest.hours, earliest.minutes));
       } else {
-        // For future dates, default to 10:00
         onTimeChange('10:00');
       }
     }
@@ -89,28 +87,29 @@ export function DeliveryTimeInput({
   useEffect(() => {
     if (!selectedDate || !isToday(selectedDate)) return;
 
-    const interval = setInterval(() => {
-      updateDefaultTime();
-    }, 60000); // Check every minute
+    const checkAndUpdateTime = () => {
+      if (!isTimeValid(hours, minutes)) {
+        const earliest = getEarliestTime(minPrepTimeMinutes);
+        onTimeChange(formatTime(earliest.hours, earliest.minutes));
+      }
+    };
 
+    const interval = setInterval(checkAndUpdateTime, 60000);
     return () => clearInterval(interval);
-  }, [selectedDate, updateDefaultTime]);
+  }, [selectedDate, hours, minutes, minPrepTimeMinutes, onTimeChange, isTimeValid]);
 
   // Update time when date changes to today
   useEffect(() => {
-    if (selectedDate && isToday(selectedDate)) {
-      updateDefaultTime();
+    if (selectedDate && isToday(selectedDate) && !isTimeValid(hours, minutes)) {
+      const earliest = getEarliestTime(minPrepTimeMinutes);
+      onTimeChange(formatTime(earliest.hours, earliest.minutes));
     }
   }, [selectedDate]);
 
   // Validate time when it changes
   useEffect(() => {
     if (deliveryTime && selectedDate && isToday(selectedDate)) {
-      const now = new Date();
-      const selectedTime = parse(deliveryTime, 'HH:mm', selectedDate);
-      const earliestTime = addMinutes(now, minPrepTimeMinutes);
-
-      if (isBefore(selectedTime, earliestTime)) {
+      if (!isTimeValid(hours, minutes)) {
         setTimeError(`Tijd moet minimaal ${minPrepTimeMinutes} minuten in de toekomst zijn`);
       } else {
         setTimeError(null);
@@ -118,34 +117,126 @@ export function DeliveryTimeInput({
     } else {
       setTimeError(null);
     }
-  }, [deliveryTime, selectedDate, minPrepTimeMinutes]);
+  }, [deliveryTime, selectedDate, minPrepTimeMinutes, hours, minutes, isTimeValid]);
 
-  const handleTimeChange = (value: string) => {
-    onTimeChange(value);
+  const incrementHours = () => {
+    const newHours = hours >= 23 ? 0 : hours + 1;
+    const newTime = formatTime(newHours, minutes);
+    onTimeChange(newTime);
   };
 
-  // Get min time attribute for the input
-  const getMinTime = (): string | undefined => {
-    if (!selectedDate || !isToday(selectedDate)) return undefined;
-    const earliestTime = getEarliestTime(minPrepTimeMinutes);
-    return formatTimeString(earliestTime);
+  const decrementHours = () => {
+    const newHours = hours <= 0 ? 23 : hours - 1;
+    const minTime = getMinTime();
+    
+    // Prevent going below minimum time for today
+    if (selectedDate && isToday(selectedDate)) {
+      if (newHours < minTime.hours || (newHours === minTime.hours && minutes < minTime.minutes)) {
+        return;
+      }
+    }
+    
+    const newTime = formatTime(newHours, minutes);
+    onTimeChange(newTime);
+  };
+
+  const incrementMinutes = () => {
+    let newMinutes = minutes + 15;
+    let newHours = hours;
+    
+    if (newMinutes >= 60) {
+      newMinutes = 0;
+      newHours = hours >= 23 ? 0 : hours + 1;
+    }
+    
+    const newTime = formatTime(newHours, newMinutes);
+    onTimeChange(newTime);
+  };
+
+  const decrementMinutes = () => {
+    let newMinutes = minutes - 15;
+    let newHours = hours;
+    
+    if (newMinutes < 0) {
+      newMinutes = 45;
+      newHours = hours <= 0 ? 23 : hours - 1;
+    }
+    
+    // Prevent going below minimum time for today
+    if (selectedDate && isToday(selectedDate)) {
+      const minTime = getMinTime();
+      const newTimeInMinutes = newHours * 60 + newMinutes;
+      const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
+      
+      if (newTimeInMinutes < minTimeInMinutes) {
+        return;
+      }
+    }
+    
+    const newTime = formatTime(newHours, newMinutes);
+    onTimeChange(newTime);
   };
 
   return (
-    <div className="space-y-2">
-      <Input
-        id="delivery-time"
-        type="time"
-        value={deliveryTime}
-        onChange={(e) => handleTimeChange(e.target.value)}
-        min={getMinTime()}
-        step="900" // 15 minute steps
-        className={timeError ? 'border-destructive' : ''}
-      />
+    <div className="space-y-3">
+      <div className="flex items-center justify-center gap-4">
+        {/* Hours Counter */}
+        <div className="flex flex-col items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-10 w-14 rounded-b-none border-b-0"
+            onClick={incrementHours}
+          >
+            <ChevronUp className="h-5 w-5" />
+          </Button>
+          <div className="h-14 w-14 flex items-center justify-center bg-muted border text-2xl font-mono font-bold">
+            {hours.toString().padStart(2, '0')}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-10 w-14 rounded-t-none border-t-0"
+            onClick={decrementHours}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Separator */}
+        <span className="text-3xl font-bold text-muted-foreground">:</span>
+
+        {/* Minutes Counter */}
+        <div className="flex flex-col items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-10 w-14 rounded-b-none border-b-0"
+            onClick={incrementMinutes}
+          >
+            <ChevronUp className="h-5 w-5" />
+          </Button>
+          <div className="h-14 w-14 flex items-center justify-center bg-muted border text-2xl font-mono font-bold">
+            {minutes.toString().padStart(2, '0')}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-10 w-14 rounded-t-none border-t-0"
+            onClick={decrementMinutes}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
       
       {/* Time validation error */}
       {(timeError || error) && (
-        <p className="text-sm text-destructive flex items-center gap-1">
+        <p className="text-sm text-destructive flex items-center justify-center gap-1">
           <AlertCircle className="h-3 w-3" />
           {timeError || error}
         </p>
@@ -153,7 +244,7 @@ export function DeliveryTimeInput({
 
       {/* Hint for today */}
       {selectedDate && isToday(selectedDate) && !timeError && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-center">
           Minimale voorbereidingstijd: {minPrepTimeMinutes} minuten
         </p>
       )}
