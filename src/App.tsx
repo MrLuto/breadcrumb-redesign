@@ -26,14 +26,12 @@ import AuthCallback from "./pages/auth/AuthCallback";
 // Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminCategories from "./pages/admin/AdminCategories";
-import AdminProducts from "./pages/admin/AdminProducts";
+import AdminCatalog from "./pages/admin/AdminCatalog";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
-import AdminClosedDays from "./pages/admin/AdminClosedDays";
 import AdminOpeningHours from "./pages/admin/AdminOpeningHours";
 const queryClient = new QueryClient();
 
@@ -69,14 +67,19 @@ const App = () => (
                     <AdminDashboard />
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/catalog" element={
+                  <ProtectedRoute>
+                    <AdminCatalog />
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin/categories" element={
                   <ProtectedRoute>
-                    <AdminCategories />
+                    <AdminCatalog />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/products" element={
                   <ProtectedRoute>
-                    <AdminProducts />
+                    <AdminCatalog />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/orders" element={
