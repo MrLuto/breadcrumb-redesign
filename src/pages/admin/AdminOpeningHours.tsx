@@ -210,25 +210,43 @@ const AdminOpeningHours = () => {
                           <div className="flex items-center gap-2">
                             <Label className="text-sm text-muted-foreground">Van</Label>
                             <Input
-                              type="time"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="08:00"
                               value={(openTime as string).slice(0, 5)}
-                              onChange={(e) =>
-                                handleChange(hour.id, 'open_time', e.target.value, hour)
-                              }
+                              onChange={(e) => {
+                                let value = e.target.value.replace(/[^0-9:]/g, '');
+                                if (value.length === 2 && !value.includes(':')) {
+                                  value = value + ':';
+                                }
+                                if (value.length <= 5) {
+                                  handleChange(hour.id, 'open_time', value, hour);
+                                }
+                              }}
                               disabled={isClosed as boolean}
-                              className="w-28"
+                              className="w-20 text-center font-mono"
+                              maxLength={5}
                             />
                           </div>
                           <div className="flex items-center gap-2">
                             <Label className="text-sm text-muted-foreground">Tot</Label>
                             <Input
-                              type="time"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="18:00"
                               value={(closeTime as string).slice(0, 5)}
-                              onChange={(e) =>
-                                handleChange(hour.id, 'close_time', e.target.value, hour)
-                              }
+                              onChange={(e) => {
+                                let value = e.target.value.replace(/[^0-9:]/g, '');
+                                if (value.length === 2 && !value.includes(':')) {
+                                  value = value + ':';
+                                }
+                                if (value.length <= 5) {
+                                  handleChange(hour.id, 'close_time', value, hour);
+                                }
+                              }}
                               disabled={isClosed as boolean}
-                              className="w-28"
+                              className="w-20 text-center font-mono"
+                              maxLength={5}
                             />
                           </div>
                         </div>
