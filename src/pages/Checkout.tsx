@@ -126,10 +126,34 @@ const Checkout = () => {
       city: '',
       delivery_asap: false,
       delivery_time: '',
-      payment_method: 'ideal',
+      payment_method: 'invoice', // Default for business
       notes: '',
     },
   });
+
+  // Update payment method when customer type changes
+  const watchedPostcode = form.watch('postcode') || '';
+  const watchedOrderType = form.watch('order_type');
+  const watchedCustomerType = form.watch('customer_type');
+  const watchedDeliveryDate = form.watch('delivery_date');
+  const watchedDeliveryAsap = form.watch('delivery_asap');
+  const watchedDeliveryTime = form.watch('delivery_time') || '';
+
+  // Update payment method when customer type changes
+  useEffect(() => {
+    const currentPaymentMethod = form.getValues('payment_method');
+    if (watchedCustomerType === 'business') {
+      // Default to invoice for business
+      if (currentPaymentMethod === 'pin') {
+        form.setValue('payment_method', 'invoice');
+      }
+    } else {
+      // Default to pin for private
+      if (currentPaymentMethod === 'invoice') {
+        form.setValue('payment_method', 'pin');
+      }
+    }
+  }, [watchedCustomerType]);
 
   // Auto-fill form from profile
   useEffect(() => {
@@ -149,13 +173,6 @@ const Checkout = () => {
       form.setValue('email', user.email);
     }
   }, [profile, user]);
-
-  const watchedPostcode = form.watch('postcode') || '';
-  const watchedOrderType = form.watch('order_type');
-  const watchedCustomerType = form.watch('customer_type');
-  const watchedDeliveryDate = form.watch('delivery_date');
-  const watchedDeliveryAsap = form.watch('delivery_asap');
-  const watchedDeliveryTime = form.watch('delivery_time') || '';
 
   // Check if postcode is in delivery zone
   const currentZone = getDeliveryZoneForPostcode(deliveryZones, watchedPostcode);
