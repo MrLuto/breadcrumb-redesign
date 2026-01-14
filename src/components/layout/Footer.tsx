@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Clock, Facebook } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { useOpeningHours, getDayName } from '@/hooks/useOpeningHours';
 
 const Footer = () => {
+  const { data: openingHours, isLoading } = useOpeningHours();
+
+  // Reorder days: Monday (1) to Sunday (0)
+  const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+
+  const formatTime = (time: string) => {
+    return time.substring(0, 5);
+  };
+
   return (
     <footer className="bg-secondary text-secondary-foreground">
       <div className="container py-16">
@@ -77,34 +87,26 @@ const Footer = () => {
           <div>
             <h4 className="font-display text-lg font-semibold mb-4">Openingstijden</h4>
             <ul className="space-y-2 text-secondary-foreground/90">
-              <li className="flex justify-between">
-                <span>Maandag</span>
-                <span>08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Dinsdag</span>
-                <span>08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Woensdag</span>
-                <span>08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Donderdag</span>
-                <span>08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Vrijdag</span>
-                <span>08:00 - 18:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Zaterdag</span>
-                <span>07:30 - 16:00</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Zondag</span>
-                <span>Gesloten</span>
-              </li>
+              {isLoading ? (
+                <li className="text-secondary-foreground/60">Laden...</li>
+              ) : (
+                orderedDays.map((dayIndex) => {
+                  const dayHours = openingHours?.find((h) => h.day_of_week === dayIndex);
+                  return (
+                    <li key={dayIndex} className="flex justify-between">
+                      <span>{getDayName(dayIndex)}</span>
+                      <span>
+                        {dayHours?.is_closed 
+                          ? 'Gesloten' 
+                          : dayHours 
+                            ? `${formatTime(dayHours.open_time)} - ${formatTime(dayHours.close_time)}`
+                            : '-'
+                        }
+                      </span>
+                    </li>
+                  );
+                })
+              )}
             </ul>
           </div>
         </div>
