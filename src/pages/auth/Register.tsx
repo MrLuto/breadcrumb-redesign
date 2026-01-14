@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -35,9 +35,12 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const redirectUrl = searchParams.get('redirect') || '/';
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -69,7 +72,7 @@ export default function Register() {
           title: 'Account aangemaakt!',
           description: 'Je bent succesvol geregistreerd en ingelogd.',
         });
-        navigate('/', { replace: true });
+        navigate(redirectUrl, { replace: true });
       }
     } catch (error) {
       console.error('Register error:', error);
@@ -255,7 +258,7 @@ export default function Register() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Al een account? </span>
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to={redirectUrl !== '/' ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'} className="text-primary hover:underline font-medium">
                 Inloggen
               </Link>
             </div>
