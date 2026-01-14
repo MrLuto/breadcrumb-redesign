@@ -6,6 +6,8 @@ import {
   useClosedDaysMutations,
   ClosedDay,
   getDayName as getClosedDayName,
+  getMonthName,
+  RecurrenceType,
 } from '@/hooks/useClosedDays';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,8 +132,8 @@ const AdminOpeningHours = () => {
     });
   };
 
-  const recurringDays = closedDays?.filter((d) => d.is_recurring) || [];
-  const oneTimeDays = closedDays?.filter((d) => !d.is_recurring) || [];
+  const recurringDays = closedDays?.filter((d) => d.recurrence_type !== 'none') || [];
+  const oneTimeDays = closedDays?.filter((d) => d.recurrence_type === 'none') || [];
 
   const isLoading = loadingHours || loadingClosedDays;
 
@@ -291,14 +293,15 @@ const AdminOpeningHours = () => {
                   Terugkerende sluitingsdagen
                 </CardTitle>
                 <CardDescription>
-                  Dagen die elke week gesloten zijn (naast de reguliere openingstijden).
+                  Dagen die wekelijks, maandelijks of jaarlijks terugkeren.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Dag</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Wanneer</TableHead>
                       <TableHead>Reden</TableHead>
                       <TableHead>Actief</TableHead>
                       <TableHead className="text-right">Acties</TableHead>
@@ -307,45 +310,76 @@ const AdminOpeningHours = () => {
                   <TableBody>
                     {recurringDays.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           Geen terugkerende sluitingsdagen ingesteld
                         </TableCell>
                       </TableRow>
                     ) : (
-                      recurringDays.map((closedDay) => (
-                        <TableRow key={closedDay.id}>
-                          <TableCell className="font-medium">
-                            <Badge variant="outline">
-                              {getClosedDayName(closedDay.day_of_week!)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{closedDay.reason}</TableCell>
-                          <TableCell>
-                            <Switch
-                              checked={closedDay.is_active}
-                              onCheckedChange={() => handleToggleActive(closedDay)}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditClosedDay(closedDay)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteClosedDay(closedDay)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      recurringDays.map((closedDay) => {
+                        const getRecurrenceLabel = () => {
+                          switch (closedDay.recurrence_type) {
+                            case 'weekly':
+                              return 'Wekelijks';
+                            case 'monthly':
+                              return 'Maandelijks';
+                            case 'yearly':
+                              return 'Jaarlijks';
+                            default:
+                              return '-';
+                          }
+                        };
+
+                        const getWhenLabel = () => {
+                          switch (closedDay.recurrence_type) {
+                            case 'weekly':
+                              return `Elke ${getClosedDayName(closedDay.day_of_week!)}`;
+                            case 'monthly':
+                              return `Elke ${closedDay.day_of_month}e van de maand`;
+                            case 'yearly':
+                              return `${closedDay.day_of_month} ${getMonthName(closedDay.month!)}`;
+                            default:
+                              return '-';
+                          }
+                        };
+
+                        return (
+                          <TableRow key={closedDay.id}>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {getRecurrenceLabel()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {getWhenLabel()}
+                            </TableCell>
+                            <TableCell>{closedDay.reason}</TableCell>
+                            <TableCell>
+                              <Switch
+                                checked={closedDay.is_active}
+                                onCheckedChange={() => handleToggleActive(closedDay)}
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditClosedDay(closedDay)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteClosedDay(closedDay)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
