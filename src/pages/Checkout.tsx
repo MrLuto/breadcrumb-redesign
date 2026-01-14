@@ -37,7 +37,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCustomerProfile } from '@/hooks/useCustomerProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User } from 'lucide-react';
+import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User, UserPlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
 import { useShopSettings, calculateDeliveryCost } from '@/hooks/useShopSettings';
@@ -106,6 +107,8 @@ const Checkout = () => {
   const { user } = useAuth();
   const { data: profile } = useCustomerProfile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountPassword, setAccountPassword] = useState('');
   const { data: deliveryZones } = useActiveDeliveryZones();
   const { data: shopSettings } = useShopSettings();
   const { data: closedDays } = useActiveClosedDays();
@@ -313,6 +316,39 @@ const Checkout = () => {
 
       if (!orderResult?.orderId || !orderResult?.confirmationToken) {
         throw new Error('No order ID or confirmation token returned');
+      }
+
+      // Create account if requested
+      if (createAccount && accountPassword.length >= 6) {
+        try {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: data.email,
+            password: accountPassword,
+            options: {
+              emailRedirectTo: window.location.origin,
+              data: {
+                full_name: data.contact_person,
+              },
+            },
+          });
+
+          if (signUpError) {
+            console.error('Account creation error:', signUpError);
+            // Don't block the order, just show a warning
+            toast({
+              title: 'Account aanmaken mislukt',
+              description: 'Je bestelling is wel geplaatst. Probeer later opnieuw te registreren.',
+              variant: 'default',
+            });
+          } else {
+            toast({
+              title: 'Account aangemaakt',
+              description: 'Je kunt nu inloggen met je e-mailadres en wachtwoord.',
+            });
+          }
+        } catch (accountError) {
+          console.error('Account creation error:', accountError);
+        }
       }
 
       clearCart();
@@ -690,7 +726,7 @@ const Checkout = () => {
                     type="submit"
                     size="lg"
                     className="w-full"
-                    disabled={isSubmitting || (watchedOrderType === 'delivery' && !canDeliver)}
+                    disabled={isSubmitting || (watchedOrderType === 'delivery' && !canDeliver) || (createAccount && accountPassword.length < 6)}
                   >
                     {isSubmitting ? (
                       <>
@@ -701,6 +737,54 @@ const Checkout = () => {
                       `Bestelling plaatsen - ${formatPrice(total)}`
                     )}
                   </Button>
+
+                  {/* Register option for guests */}
+                  {!user && (
+                    <div className="mt-6 p-4 rounded-lg border border-border bg-muted/30">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          id="create-account" 
+                          checked={createAccount}
+                          onCheckedChange={(checked) => setCreateAccount(checked === true)}
+                        />
+                        <div className="flex-1">
+                          <label 
+                            htmlFor="create-account" 
+                            className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            Account aanmaken
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Sla je gegevens op voor sneller afrekenen in de toekomst
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {createAccount && (
+                        <div className="mt-4 space-y-3">
+                          <div>
+                            <label htmlFor="account-password" className="text-sm font-medium">
+                              Wachtwoord *
+                            </label>
+                            <Input
+                              id="account-password"
+                              type="password"
+                              value={accountPassword}
+                              onChange={(e) => setAccountPassword(e.target.value)}
+                              placeholder="Minimaal 6 tekens"
+                              className="mt-1"
+                            />
+                            {accountPassword.length > 0 && accountPassword.length < 6 && (
+                              <p className="text-xs text-destructive mt-1">
+                                Wachtwoord moet minimaal 6 tekens zijn
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </form>
               </Form>
             </div>
