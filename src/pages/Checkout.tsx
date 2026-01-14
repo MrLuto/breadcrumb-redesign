@@ -51,12 +51,18 @@ const checkoutSchema = z.object({
   customer_type: z.enum(['private', 'business']),
   order_type: z.enum(['delivery', 'pickup']),
   company_name: z.string().optional(),
+  kvk_number: z.string().optional(),
+  department: z.string().optional(),
   contact_person: z.string().min(1, 'Naam is verplicht'),
   email: z.string().email('Ongeldig e-mailadres'),
   phone: z.string().min(10, 'Telefoonnummer is verplicht'),
   delivery_address: z.string().optional(),
   postcode: z.string().optional(),
   city: z.string().optional(),
+  same_billing_address: z.boolean(),
+  billing_address: z.string().optional(),
+  billing_postcode: z.string().optional(),
+  billing_city: z.string().optional(),
   delivery_date: z.date({ required_error: 'Datum is verplicht' }),
   delivery_asap: z.boolean(),
   delivery_time: z.string().optional(),
@@ -89,6 +95,15 @@ const checkoutSchema = z.object({
 }, {
   message: 'Ongeldige postcode',
   path: ['postcode'],
+}).refine((data) => {
+  // Billing address required if different from delivery for business
+  if (data.customer_type === 'business' && !data.same_billing_address) {
+    return data.billing_address && data.billing_postcode && data.billing_city;
+  }
+  return true;
+}, {
+  message: 'Facturatieadres is verplicht',
+  path: ['billing_address'],
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
@@ -118,12 +133,18 @@ const Checkout = () => {
       customer_type: 'business',
       order_type: 'delivery',
       company_name: '',
+      kvk_number: '',
+      department: '',
       contact_person: '',
       email: '',
       phone: '',
       delivery_address: '',
       postcode: '',
       city: '',
+      same_billing_address: true,
+      billing_address: '',
+      billing_postcode: '',
+      billing_city: '',
       delivery_date: new Date(),
       delivery_asap: false,
       delivery_time: '',
@@ -301,12 +322,17 @@ const Checkout = () => {
             customer_type: data.customer_type,
             order_type: data.order_type,
             company_name: data.company_name || undefined,
+            kvk_number: data.kvk_number || undefined,
+            department: data.department || undefined,
             contact_person: data.contact_person,
             email: data.email,
             phone: data.phone,
             delivery_address: data.order_type === 'delivery' ? data.delivery_address : undefined,
             postcode: data.order_type === 'delivery' ? data.postcode : undefined,
             city: data.order_type === 'delivery' ? data.city : undefined,
+            billing_address: data.customer_type === 'business' && !data.same_billing_address ? data.billing_address : undefined,
+            billing_postcode: data.customer_type === 'business' && !data.same_billing_address ? data.billing_postcode : undefined,
+            billing_city: data.customer_type === 'business' && !data.same_billing_address ? data.billing_city : undefined,
             delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
             delivery_asap: data.delivery_asap,
             delivery_time: data.delivery_time || undefined,
@@ -485,19 +511,47 @@ const Checkout = () => {
                     </h2>
                     <div className="grid sm:grid-cols-2 gap-4">
                       {watchedCustomerType === 'business' && (
-                        <FormField
-                          control={form.control}
-                          name="company_name"
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-2">
-                              <FormLabel>Bedrijfsnaam *</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Uw bedrijfsnaam" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="company_name"
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-2">
+                                <FormLabel>Bedrijfsnaam *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Uw bedrijfsnaam" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="kvk_number"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>KvK-nummer</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="12345678" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="department"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Afdeling (optioneel)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Bijv. Receptie, HR" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
                       )}
                       <FormField
                         control={form.control}
@@ -588,6 +642,77 @@ const Checkout = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Billing Address for Business */}
+                  {watchedCustomerType === 'business' && (
+                    <div className="bg-card rounded-xl p-6 shadow-card">
+                      <h2 className="text-xl font-semibold mb-4">Facturatieadres</h2>
+                      <FormField
+                        control={form.control}
+                        name="same_billing_address"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-4">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="font-normal cursor-pointer">
+                                Facturatieadres is hetzelfde als bezorgadres
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      {!form.watch('same_billing_address') && (
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="billing_address"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Straat en huisnummer *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="billing_postcode"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Postcode *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="1234 AB" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="billing_city"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Plaats *</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Order Type */}
                   <div className="bg-card rounded-xl p-6 shadow-card">
