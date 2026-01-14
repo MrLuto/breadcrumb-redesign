@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
+import { Menu, X, Phone, Mail, MapPin, User, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { CartSheet } from '@/components/cart/CartSheet';
+import { useAuth } from '@/hooks/useAuth';
 
 const navLinks = [
   { name: 'Home', path: '/' },
@@ -16,6 +17,7 @@ const navLinks = [
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, isLoading } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -43,6 +45,28 @@ const Header = () => {
             <Phone className="w-4 h-4" />
             0182 - 524 926
           </a>
+          {/* Account link in top bar */}
+          <div className="hidden md:block">
+            {!isLoading && (
+              user ? (
+                <Link 
+                  to="/profiel" 
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Mijn Account
+                </Link>
+              ) : (
+                <Link 
+                  to="/login" 
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Inloggen
+                </Link>
+              )
+            )}
+          </div>
         </div>
       </div>
 
@@ -109,6 +133,30 @@ const Header = () => {
                     {link.name}
                   </Link>
                 ))}
+                
+                {/* Mobile account link */}
+                {!isLoading && (
+                  user ? (
+                    <Link
+                      to="/profiel"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="font-medium py-2 flex items-center gap-2 transition-colors hover:text-primary"
+                    >
+                      <User className="w-4 h-4" />
+                      Mijn Account
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="font-medium py-2 flex items-center gap-2 transition-colors hover:text-primary"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Inloggen
+                    </Link>
+                  )
+                )}
+                
                 <div className="mt-4" onClick={() => setIsMenuOpen(false)}>
                   <CartSheet />
                 </div>
