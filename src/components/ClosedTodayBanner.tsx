@@ -1,12 +1,15 @@
-import { AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, X } from 'lucide-react';
 import { useOpeningHours } from '@/hooks/useOpeningHours';
 import { useActiveClosedDays, isDateClosed } from '@/hooks/useClosedDays';
+import { Button } from '@/components/ui/button';
 
 const ClosedTodayBanner = () => {
+  const [isDismissed, setIsDismissed] = useState(false);
   const { data: openingHours, isLoading: loadingHours } = useOpeningHours();
   const { data: closedDays, isLoading: loadingClosed } = useActiveClosedDays();
 
-  if (loadingHours || loadingClosed) return null;
+  if (loadingHours || loadingClosed || isDismissed) return null;
 
   const today = new Date();
   const dayOfWeek = today.getDay();
@@ -27,11 +30,19 @@ const ClosedTodayBanner = () => {
   return (
     <div className="bg-destructive text-destructive-foreground">
       <div className="container py-2">
-        <div className="flex items-center justify-center gap-2 text-sm font-medium">
+        <div className="flex items-center justify-center gap-2 text-sm font-medium relative">
           <AlertTriangle className="h-4 w-4" />
           <span>
             Vandaag zijn wij gesloten{reason !== 'Gesloten' ? ` (${reason})` : ''}
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 h-6 w-6 hover:bg-destructive-foreground/10 text-destructive-foreground"
+            onClick={() => setIsDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
