@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard, 
   Package, 
-  FolderOpen, 
   ShoppingCart, 
   Building2, 
   FileText, 
@@ -25,8 +24,7 @@ interface AdminLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Categorieën', href: '/admin/categories', icon: FolderOpen },
-  { name: 'Producten', href: '/admin/products', icon: Package },
+  { name: 'Assortiment', href: '/admin/catalog', icon: Package },
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Bedrijven', href: '/admin/companies', icon: Building2 },
   { name: 'Facturen', href: '/admin/invoices', icon: FileText },
