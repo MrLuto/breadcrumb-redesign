@@ -73,3 +73,32 @@ export const useRemoveAdminRole = () => {
     },
   });
 };
+
+export const useResetAdminPassword = () => {
+  return useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
+      const { data, error } = await supabase.functions.invoke('reset-admin-password', {
+        body: { userId, newPassword },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Wachtwoord gereset',
+        description: 'Het wachtwoord is succesvol gewijzigd.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Fout bij resetten',
+        description: error instanceof Error ? error.message : 'Er is iets misgegaan.',
+        variant: 'destructive',
+      });
+    },
+  });
+};

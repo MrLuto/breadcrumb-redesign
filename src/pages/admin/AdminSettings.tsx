@@ -7,6 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -15,9 +23,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminUsers, useRemoveAdminRole } from '@/hooks/useAdminUsers';
+import { useAdminUsers, useRemoveAdminRole, useResetAdminPassword } from '@/hooks/useAdminUsers';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, CheckCircle2, Trash2, Users, Shield } from 'lucide-react';
+import { Loader2, UserPlus, CheckCircle2, Trash2, Users, Shield, KeyRound } from 'lucide-react';
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -32,9 +40,17 @@ export default function AdminSettings() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
   
+  // Password reset state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [userToReset, setUserToReset] = useState<{ id: string; email: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+  
   const { session, user } = useAuth();
   const { data: adminUsers, isLoading: loadingAdmins } = useAdminUsers();
   const removeAdminMutation = useRemoveAdminRole();
+  const resetPasswordMutation = useResetAdminPassword();
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +122,41 @@ export default function AdminSettings() {
     setUserToDelete(null);
   };
 
+  const handleResetClick = (userId: string, email: string) => {
+    setUserToReset({ id: userId, email });
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setResetError(null);
+    setResetDialogOpen(true);
+  };
+
+  const handleConfirmReset = async () => {
+    if (!userToReset) return;
+    
+    if (newPassword !== confirmNewPassword) {
+      setResetError('Wachtwoorden komen niet overeen');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setResetError('Wachtwoord moet minimaal 6 tekens bevatten');
+      return;
+    }
+
+    try {
+      await resetPasswordMutation.mutateAsync({ 
+        userId: userToReset.id, 
+        newPassword 
+      });
+      setResetDialogOpen(false);
+      setUserToReset(null);
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err) {
+      // Error is handled in mutation
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -134,7 +185,7 @@ export default function AdminSettings() {
                   <TableHead>E-mail</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Toegevoegd op</TableHead>
-                  <TableHead className="w-[100px]">Acties</TableHead>
+                  <TableHead className="w-[120px]">Acties</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,16 +220,28 @@ export default function AdminSettings() {
                         {format(new Date(adminUser.created_at), 'PPP', { locale: nl })}
                       </TableCell>
                       <TableCell>
-                        {adminUser.user_id !== user?.id && (
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(adminUser.user_id, adminUser.email || '')}
-                            disabled={removeAdminMutation.isPending}
+                            onClick={() => handleResetClick(adminUser.user_id, adminUser.email || '')}
+                            disabled={resetPasswordMutation.isPending}
+                            title="Wachtwoord resetten"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <KeyRound className="h-4 w-4" />
                           </Button>
-                        )}
+                          {adminUser.user_id !== user?.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(adminUser.user_id, adminUser.email || '')}
+                              disabled={removeAdminMutation.isPending}
+                              title="Admin verwijderen"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -276,6 +339,7 @@ export default function AdminSettings() {
         </Card>
       </div>
 
+      {/* Delete Confirm Dialog */}
       <DeleteConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -284,6 +348,76 @@ export default function AdminSettings() {
         description={`Weet je zeker dat je de admin rechten van ${userToDelete?.email} wilt intrekken? De gebruiker kan dan niet meer inloggen in het admin paneel.`}
         isLoading={removeAdminMutation.isPending}
       />
+
+      {/* Password Reset Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Wachtwoord Resetten
+            </DialogTitle>
+            <DialogDescription>
+              Stel een nieuw wachtwoord in voor {userToReset?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {resetError && (
+              <Alert variant="destructive">
+                <AlertDescription>{resetError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nieuw Wachtwoord</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={resetPasswordMutation.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Bevestig Wachtwoord</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                disabled={resetPasswordMutation.isPending}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setResetDialogOpen(false)}
+              disabled={resetPasswordMutation.isPending}
+            >
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleConfirmReset}
+              disabled={resetPasswordMutation.isPending || !newPassword || !confirmNewPassword}
+            >
+              {resetPasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Bezig...
+                </>
+              ) : (
+                'Wachtwoord Resetten'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
