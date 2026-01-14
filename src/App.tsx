@@ -34,7 +34,7 @@ import AdminInvoices from "./pages/admin/AdminInvoices";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
 import AdminClosedDays from "./pages/admin/AdminClosedDays";
-
+import AdminOpeningHours from "./pages/admin/AdminOpeningHours";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -107,6 +107,11 @@ const App = () => (
                 <Route path="/admin/closed-days" element={
                   <ProtectedRoute>
                     <AdminClosedDays />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/opening-hours" element={
+                  <ProtectedRoute>
+                    <AdminOpeningHours />
                   </ProtectedRoute>
                 } />
                 
