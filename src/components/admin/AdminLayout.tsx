@@ -26,7 +26,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Assortiment', href: '/admin/catalog', icon: Package },
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
-  { name: 'Bedrijven', href: '/admin/companies', icon: Building2 },
+  { name: 'Klanten', href: '/admin/companies', icon: Building2 },
   { name: 'Facturen', href: '/admin/invoices', icon: FileText },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
   { name: 'Openingstijden', href: '/admin/opening-hours', icon: Clock },
