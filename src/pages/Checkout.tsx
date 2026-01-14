@@ -158,7 +158,6 @@ const Checkout = () => {
   const watchedOrderType = form.watch('order_type');
   const watchedCustomerType = form.watch('customer_type');
   const watchedDeliveryDate = form.watch('delivery_date');
-  const watchedDeliveryAsap = form.watch('delivery_asap');
   const watchedDeliveryTime = form.watch('delivery_time') || '';
 
   // Update payment method when customer type changes
@@ -247,7 +246,6 @@ const Checkout = () => {
   // Validate delivery time
   const validateDeliveryTime = (): string | null => {
     if (!watchedDeliveryDate) return null;
-    if (watchedDeliveryAsap) return null;
     if (!watchedDeliveryTime) return null;
 
     if (isToday(watchedDeliveryDate)) {
@@ -831,13 +829,11 @@ const Checkout = () => {
                         )}
                       />
                       <div>
-                        <FormLabel className="mb-2 block">Tijd</FormLabel>
+                        <FormLabel className="mb-2 block">Tijd *</FormLabel>
                         <DeliveryTimeInput
                           selectedDate={watchedDeliveryDate}
-                          deliveryAsap={watchedDeliveryAsap}
                           deliveryTime={watchedDeliveryTime}
                           minPrepTimeMinutes={shopSettings?.min_preparation_time_minutes || 60}
-                          onAsapChange={(asap) => form.setValue('delivery_asap', asap)}
                           onTimeChange={(time) => form.setValue('delivery_time', time)}
                           error={timeError || undefined}
                         />
