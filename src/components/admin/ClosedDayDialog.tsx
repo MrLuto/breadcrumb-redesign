@@ -23,7 +23,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { ClosedDay, getDayName } from '@/hooks/useClosedDays';
+import { ClosedDay, RecurrenceType, getDayName, getMonthName } from '@/hooks/useClosedDays';
 
 interface ClosedDayDialogProps {
   open: boolean;
@@ -42,23 +42,51 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Zaterdag' },
 ];
 
+const MONTHS = [
+  { value: 1, label: 'Januari' },
+  { value: 2, label: 'Februari' },
+  { value: 3, label: 'Maart' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'Mei' },
+  { value: 6, label: 'Juni' },
+  { value: 7, label: 'Juli' },
+  { value: 8, label: 'Augustus' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'Oktober' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
+
+const RECURRENCE_TYPES = [
+  { value: 'none', label: 'Eenmalig (specifieke datum)' },
+  { value: 'weekly', label: 'Wekelijks (elke week dezelfde dag)' },
+  { value: 'monthly', label: 'Maandelijks (elke maand dezelfde dag)' },
+  { value: 'yearly', label: 'Jaarlijks (elk jaar dezelfde datum)' },
+];
+
 export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: ClosedDayDialogProps) {
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
   const [dayOfWeek, setDayOfWeek] = useState<number | null>(null);
+  const [dayOfMonth, setDayOfMonth] = useState<number | null>(null);
+  const [month, setMonth] = useState<number | null>(null);
   const [date, setDate] = useState<Date | undefined>();
   const [reason, setReason] = useState('');
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     if (closedDay) {
-      setIsRecurring(closedDay.is_recurring);
+      setRecurrenceType(closedDay.recurrence_type);
       setDayOfWeek(closedDay.day_of_week);
+      setDayOfMonth(closedDay.day_of_month);
+      setMonth(closedDay.month);
       setDate(closedDay.date ? new Date(closedDay.date) : undefined);
       setReason(closedDay.reason);
       setIsActive(closedDay.is_active);
     } else {
-      setIsRecurring(false);
+      setRecurrenceType('none');
       setDayOfWeek(null);
+      setDayOfMonth(null);
+      setMonth(null);
       setDate(undefined);
       setReason('');
       setIsActive(true);
@@ -67,9 +95,12 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
 
   const handleSave = () => {
     const data: Omit<ClosedDay, 'id' | 'created_at' | 'updated_at'> = {
-      is_recurring: isRecurring,
-      day_of_week: isRecurring ? dayOfWeek : null,
-      date: !isRecurring && date ? format(date, 'yyyy-MM-dd') : null,
+      recurrence_type: recurrenceType,
+      is_recurring: recurrenceType !== 'none',
+      day_of_week: recurrenceType === 'weekly' ? dayOfWeek : null,
+      day_of_month: recurrenceType === 'monthly' || recurrenceType === 'yearly' ? dayOfMonth : null,
+      month: recurrenceType === 'yearly' ? month : null,
+      date: recurrenceType === 'none' && date ? format(date, 'yyyy-MM-dd') : null,
       reason,
       is_active: isActive,
     };
@@ -78,7 +109,22 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
     onOpenChange(false);
   };
 
-  const isValid = reason.trim() && (isRecurring ? dayOfWeek !== null : date !== undefined);
+  const isValid = () => {
+    if (!reason.trim()) return false;
+    
+    switch (recurrenceType) {
+      case 'none':
+        return date !== undefined;
+      case 'weekly':
+        return dayOfWeek !== null;
+      case 'monthly':
+        return dayOfMonth !== null;
+      case 'yearly':
+        return dayOfMonth !== null && month !== null;
+      default:
+        return false;
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,37 +136,28 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Recurring toggle */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="is-recurring">Terugkerend (wekelijks)</Label>
-            <Switch
-              id="is-recurring"
-              checked={isRecurring}
-              onCheckedChange={setIsRecurring}
-            />
+          {/* Recurrence type */}
+          <div className="space-y-2">
+            <Label>Type herhaling</Label>
+            <Select
+              value={recurrenceType}
+              onValueChange={(val) => setRecurrenceType(val as RecurrenceType)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer type" />
+              </SelectTrigger>
+              <SelectContent>
+                {RECURRENCE_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Day of week or specific date */}
-          {isRecurring ? (
-            <div className="space-y-2">
-              <Label>Dag van de week</Label>
-              <Select
-                value={dayOfWeek?.toString() ?? ''}
-                onValueChange={(val) => setDayOfWeek(parseInt(val))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecteer een dag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS_OF_WEEK.map((day) => (
-                    <SelectItem key={day.value} value={day.value.toString()}>
-                      {day.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
+          {/* Fields based on recurrence type */}
+          {recurrenceType === 'none' && (
             <div className="space-y-2">
               <Label>Datum</Label>
               <Popover>
@@ -149,6 +186,89 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
             </div>
           )}
 
+          {recurrenceType === 'weekly' && (
+            <div className="space-y-2">
+              <Label>Dag van de week</Label>
+              <Select
+                value={dayOfWeek?.toString() ?? ''}
+                onValueChange={(val) => setDayOfWeek(parseInt(val))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer een dag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAYS_OF_WEEK.map((day) => (
+                    <SelectItem key={day.value} value={day.value.toString()}>
+                      {day.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {recurrenceType === 'monthly' && (
+            <div className="space-y-2">
+              <Label>Dag van de maand</Label>
+              <Select
+                value={dayOfMonth?.toString() ?? ''}
+                onValueChange={(val) => setDayOfMonth(parseInt(val))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer een dag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}e
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {recurrenceType === 'yearly' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Dag van de maand</Label>
+                <Select
+                  value={dayOfMonth?.toString() ?? ''}
+                  onValueChange={(val) => setDayOfMonth(parseInt(val))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer een dag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Maand</Label>
+                <Select
+                  value={month?.toString() ?? ''}
+                  onValueChange={(val) => setMonth(parseInt(val))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer een maand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTHS.map((m) => (
+                      <SelectItem key={m.value} value={m.value.toString()}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
           {/* Reason */}
           <div className="space-y-2">
             <Label htmlFor="reason">Reden</Label>
@@ -156,7 +276,7 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Bijv. Vakantie, Feestdag, etc."
+              placeholder="Bijv. Kerst, Koningsdag, Vakantie, etc."
             />
           </div>
 
@@ -175,7 +295,7 @@ export function ClosedDayDialog({ open, onOpenChange, onSave, closedDay }: Close
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
-          <Button onClick={handleSave} disabled={!isValid}>
+          <Button onClick={handleSave} disabled={!isValid()}>
             Opslaan
           </Button>
         </DialogFooter>

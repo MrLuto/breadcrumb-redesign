@@ -54,31 +54,40 @@ export type Database = {
         Row: {
           created_at: string | null
           date: string | null
+          day_of_month: number | null
           day_of_week: number | null
           id: string
           is_active: boolean | null
           is_recurring: boolean | null
+          month: number | null
           reason: string
+          recurrence_type: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           date?: string | null
+          day_of_month?: number | null
           day_of_week?: number | null
           id?: string
           is_active?: boolean | null
           is_recurring?: boolean | null
+          month?: number | null
           reason: string
+          recurrence_type?: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           date?: string | null
+          day_of_month?: number | null
           day_of_week?: number | null
           id?: string
           is_active?: boolean | null
           is_recurring?: boolean | null
+          month?: number | null
           reason?: string
+          recurrence_type?: string
           updated_at?: string | null
         }
         Relationships: []
