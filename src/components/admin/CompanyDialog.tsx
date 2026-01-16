@@ -35,7 +35,7 @@ const companySchema = z.object({
   address: z.string().optional(),
   postcode: z.string().optional(),
   city: z.string().optional(),
-  preferred_payment_method: z.enum(['direct', 'invoice', 'monthly_invoice']).optional().nullable(),
+  preferred_payment_method: z.enum(['direct', 'invoice', 'monthly_invoice', 'ideal', 'pin', 'cash']).optional().nullable(),
   notes: z.string().optional(),
 });
 

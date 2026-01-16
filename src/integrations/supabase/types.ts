@@ -677,7 +677,13 @@ export type Database = {
         | "out_for_delivery"
         | "delivered"
         | "cancelled"
-      payment_method_type: "direct" | "invoice" | "monthly_invoice"
+      payment_method_type:
+        | "direct"
+        | "invoice"
+        | "monthly_invoice"
+        | "ideal"
+        | "pin"
+        | "cash"
       payment_status_type: "pending" | "paid" | "invoiced" | "refunded"
     }
     CompositeTypes: {
@@ -816,7 +822,14 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
-      payment_method_type: ["direct", "invoice", "monthly_invoice"],
+      payment_method_type: [
+        "direct",
+        "invoice",
+        "monthly_invoice",
+        "ideal",
+        "pin",
+        "cash",
+      ],
       payment_status_type: ["pending", "paid", "invoiced", "refunded"],
     },
   },
