@@ -383,6 +383,25 @@ Deno.serve(async (req) => {
 
     const total = subtotal + deliveryCost;
 
+    // Map frontend payment method to database enum
+    // Database accepts: 'direct', 'invoice', 'monthly_invoice'
+    // Frontend sends: 'ideal', 'pin', 'cash', 'invoice', 'monthly_invoice'
+    const mapPaymentMethod = (method: string): 'direct' | 'invoice' | 'monthly_invoice' => {
+      switch (method) {
+        case 'invoice':
+          return 'invoice';
+        case 'monthly_invoice':
+          return 'monthly_invoice';
+        case 'ideal':
+        case 'pin':
+        case 'cash':
+        default:
+          return 'direct';
+      }
+    };
+
+    const dbPaymentMethod = mapPaymentMethod(formData.payment_method);
+
     // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -406,7 +425,7 @@ Deno.serve(async (req) => {
         delivery_asap: formData.delivery_asap,
         delivery_time: formData.delivery_time || null,
         delivery_zone: deliveryZone,
-        payment_method: formData.payment_method,
+        payment_method: dbPaymentMethod,
         notes: formData.notes?.trim() || null,
         subtotal,
         delivery_cost: deliveryCost,
