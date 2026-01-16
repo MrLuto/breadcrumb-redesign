@@ -80,7 +80,8 @@ async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean
 async function getShopSettings(supabase: any) {
   const { data } = await supabase
     .from('shop_settings')
-    .select('key, value');
+    .select('key, value')
+    .in('key', ['delivery_cost', 'free_delivery_threshold', 'min_preparation_time_minutes']);
 
   const settings = {
     delivery_cost: 4,
@@ -89,17 +90,30 @@ async function getShopSettings(supabase: any) {
   };
 
   data?.forEach((row: any) => {
-    const value = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
-    switch (row.key) {
-      case 'delivery_cost':
-        settings.delivery_cost = parseFloat(value);
-        break;
-      case 'free_delivery_threshold':
-        settings.free_delivery_threshold = parseFloat(value);
-        break;
-      case 'min_preparation_time_minutes':
-        settings.min_preparation_time_minutes = parseInt(value);
-        break;
+    try {
+      // Parse JSON if it's a string, otherwise use the value directly
+      let value = row.value;
+      if (typeof value === 'string') {
+        try {
+          value = JSON.parse(value);
+        } catch {
+          // If JSON parsing fails, use the string value as-is
+        }
+      }
+      
+      switch (row.key) {
+        case 'delivery_cost':
+          settings.delivery_cost = parseFloat(value) || 4;
+          break;
+        case 'free_delivery_threshold':
+          settings.free_delivery_threshold = parseFloat(value) || 40;
+          break;
+        case 'min_preparation_time_minutes':
+          settings.min_preparation_time_minutes = parseInt(value) || 60;
+          break;
+      }
+    } catch (e) {
+      console.warn(`Failed to parse setting ${row.key}:`, e);
     }
   });
 
