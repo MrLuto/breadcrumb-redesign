@@ -90,35 +90,16 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
-  // Load postcode on mount via geo-ip
+  // Load postcode on mount via geo-ip - ALWAYS fetch fresh
   useEffect(() => {
     const loadPostcode = async () => {
-      // First check localStorage
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const deliveryInfo = checkPostcodeLocal(parsed.postcode);
-          setState({
-            postcode: parsed.postcode,
-            city: parsed.city || null,
-            deliveryInfo,
-            isLoading: false,
-            isChecked: true,
-          });
-          return;
-        } catch {
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      }
-
-      // Try geo-ip lookup
+      // Always try geo-ip lookup first for fresh data
       try {
         const { data, error } = await supabase.functions.invoke('geo-ip');
         if (!error && data) {
           const deliveryInfo = data.postcode ? checkPostcodeLocal(data.postcode) : { inArea: false };
           
-          // Save to localStorage for future visits
+          // Save to localStorage as backup
           if (data.postcode) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
               postcode: data.postcode, 
@@ -137,6 +118,25 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
         }
       } catch (err) {
         console.error('Geo IP lookup failed:', err);
+      }
+
+      // Fallback to localStorage if geo-ip fails
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const deliveryInfo = checkPostcodeLocal(parsed.postcode);
+          setState({
+            postcode: parsed.postcode,
+            city: parsed.city || null,
+            deliveryInfo,
+            isLoading: false,
+            isChecked: true,
+          });
+          return;
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
 
       setState(prev => ({ ...prev, isLoading: false }));
@@ -162,7 +162,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
     setPendingRedirect(false);
   };
 
-  const handlePostcodeUpdate = (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => {
+  const handlePostcodeUpdate = async (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ postcode, city }));
     setState({
       postcode,
@@ -171,6 +171,15 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
       isLoading: false,
       isChecked: true,
     });
+
+    // Also save to database for analytics
+    try {
+      await supabase.functions.invoke('save-postcode', {
+        body: { postcode, city, inDeliveryArea: deliveryInfo.inArea }
+      });
+    } catch (err) {
+      console.error('Failed to save postcode:', err);
+    }
   };
 
   return (
@@ -426,7 +435,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
 };
 
 // Delivery status banner component for homepage
-const DeliveryStatusBanner = () => {
+export const DeliveryStatusBanner = () => {
   const { state } = usePostcode();
 
   if (state.isLoading) {
@@ -464,10 +473,6 @@ const DeliveryStatusBanner = () => {
             <Truck className="w-4 h-4" />
             <span>Bezorgkosten: <strong>€{state.deliveryInfo.cost?.toFixed(2)}</strong></span>
           </div>
-          <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4" />
-            <span>Minimum: <strong>€{state.deliveryInfo.minimum?.toFixed(2)}</strong></span>
-          </div>
         </div>
       </motion.div>
     );
@@ -481,16 +486,15 @@ const DeliveryStatusBanner = () => {
     >
       <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
         <MapPin className="w-5 h-5" />
-        <span className="font-medium">
-          Op basis van uw locatie{state.city ? ` (${state.city})` : ''} lijkt u buiten ons bezorggebied te vallen.
+        <span className="font-semibold">
+          Alleen ophalen mogelijk{state.city ? ` (${state.city})` : ''}
         </span>
       </div>
       <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-        U kunt nog steeds bestellen - wij controleren dit bij uw bestelling.
+        Wij bezorgen helaas niet in uw regio. U kunt uw bestelling wel afhalen in onze winkel.
       </p>
     </motion.div>
   );
 };
 
-export { DeliveryStatusBanner };
-export default DeliveryStatusBanner;
+export default PostcodeProvider;

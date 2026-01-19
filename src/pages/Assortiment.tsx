@@ -27,18 +27,28 @@ const Assortiment = () => {
     }))
     ?.filter((group) => group.products.length > 0);
 
-  // Scroll to section when hash changes
+  // Scroll to section when hash changes - uses category slug
   useEffect(() => {
-    if (location.hash && !isLoading) {
-      const id = decodeURIComponent(location.hash.slice(1));
-      const element = document.getElementById(id);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+    if (location.hash && !isLoading && productsByCategory) {
+      const hashId = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+      // Find category by slug or by matching name (case-insensitive)
+      const matchingCategory = productsByCategory.find(
+        (group) => 
+          group.category.slug === hashId || 
+          group.category.name.toLowerCase() === hashId ||
+          group.category.slug === hashId.replace(/\s+/g, '-')
+      );
+      
+      if (matchingCategory) {
+        const element = document.getElementById(matchingCategory.category.slug);
+        if (element) {
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
       }
     }
-  }, [location.hash, isLoading]);
+  }, [location.hash, isLoading, productsByCategory]);
 
   return (
     <Layout>
@@ -102,7 +112,7 @@ const Assortiment = () => {
               {productsByCategory?.map((group, index) => (
                 <motion.div
                   key={group.category.id}
-                  id={group.category.name}
+                  id={group.category.slug}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}

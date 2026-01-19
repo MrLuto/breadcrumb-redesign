@@ -142,44 +142,71 @@ export type Database = {
       }
       customer_profiles: {
         Row: {
+          billing_address: string | null
+          billing_city: string | null
+          billing_postcode: string | null
           city: string | null
           company_name: string | null
           contact_person: string | null
           created_at: string | null
           customer_type: string | null
+          default_notes: string | null
+          default_order_type: string | null
           delivery_address: string | null
+          department: string | null
           email: string | null
           id: string
+          kvk_number: string | null
           phone: string | null
           postcode: string | null
+          preferred_payment_method: string | null
+          same_billing_address: boolean | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postcode?: string | null
           city?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string | null
           customer_type?: string | null
+          default_notes?: string | null
+          default_order_type?: string | null
           delivery_address?: string | null
+          department?: string | null
           email?: string | null
           id?: string
+          kvk_number?: string | null
           phone?: string | null
           postcode?: string | null
+          preferred_payment_method?: string | null
+          same_billing_address?: boolean | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postcode?: string | null
           city?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string | null
           customer_type?: string | null
+          default_notes?: string | null
+          default_order_type?: string | null
           delivery_address?: string | null
+          department?: string | null
           email?: string | null
           id?: string
+          kvk_number?: string | null
           phone?: string | null
           postcode?: string | null
+          preferred_payment_method?: string | null
+          same_billing_address?: boolean | null
           updated_at?: string | null
           user_id?: string
         }

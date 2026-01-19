@@ -38,7 +38,7 @@ const sanitizeString = (str: unknown, maxLength: number): string | null => {
 
 const checkPostcode = (postcode: string): DeliveryInfo => {
   const cleaned = postcode.replace(/\s/g, '').toUpperCase();
-  const match = cleaned.match(/^(\d{4})([A-Z]{2})$/);
+  const match = cleaned.match(/^(\d{4})([A-Z]{2})?$/);
   
   if (!match) {
     return { inArea: false };
@@ -138,32 +138,10 @@ serve(async (req) => {
       });
     }
 
-    // Check if we have a stored postcode for this IP
-    const { data: existingData } = await supabase
-      .from('ip_postcodes')
-      .select('*')
-      .eq('ip_address', clientIP)
-      .single();
+    // ALWAYS fetch fresh from geo-ip API - skip database cache
+    // This ensures we get the most up-to-date location data
+    console.log('Fetching fresh geo-ip data for:', clientIP);
 
-    if (existingData) {
-      console.log('Found existing postcode for IP:', existingData.postcode);
-      const deliveryInfo = checkPostcode(existingData.postcode);
-      return new Response(JSON.stringify({
-        ip: clientIP,
-        postcode: existingData.postcode,
-        city: sanitizeString(existingData.city, MAX_CITY_LENGTH),
-        source: 'database',
-        ...deliveryInfo,
-      }), {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': remaining.toString()
-        },
-      });
-    }
-
-    // Try to get location from IP using free ip-api.com
     let geoData = null;
     try {
       // ip-api.com is free for non-commercial use, 45 requests per minute
@@ -204,12 +182,13 @@ serve(async (req) => {
       const city = sanitizeString(geoData.city, MAX_CITY_LENGTH);
       const deliveryInfo = checkPostcode(postcode);
       
-      // Store in database for future lookups
+      // Update database for analytics (upsert to update existing entry)
       await supabase.from('ip_postcodes').upsert({
         ip_address: clientIP,
         postcode: postcode,
         city: city,
         in_delivery_area: deliveryInfo.inArea,
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'ip_address' });
 
       return new Response(JSON.stringify({

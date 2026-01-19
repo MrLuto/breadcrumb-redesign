@@ -14,6 +14,15 @@ export interface CustomerProfile {
   delivery_address: string | null;
   postcode: string | null;
   city: string | null;
+  kvk_number: string | null;
+  department: string | null;
+  billing_address: string | null;
+  billing_postcode: string | null;
+  billing_city: string | null;
+  same_billing_address: boolean | null;
+  preferred_payment_method: string | null;
+  default_notes: string | null;
+  default_order_type: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,7 +105,10 @@ export function useCustomerOrders() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching customer orders:', error);
+        throw error;
+      }
       return data || [];
     },
     enabled: !!user,
