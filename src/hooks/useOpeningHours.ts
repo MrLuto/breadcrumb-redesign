@@ -48,9 +48,22 @@ export const useUpdateOpeningHour = () => {
       close_time: string;
       is_closed: boolean;
     }) => {
+      // Ensure time format includes seconds (HH:MM:SS)
+      const formatTime = (time: string) => {
+        const parts = time.split(':');
+        if (parts.length === 2) {
+          return `${parts[0]}:${parts[1]}:00`;
+        }
+        return time;
+      };
+      
       const { data, error } = await supabase
         .from('opening_hours')
-        .update({ open_time, close_time, is_closed })
+        .update({ 
+          open_time: formatTime(open_time), 
+          close_time: formatTime(close_time), 
+          is_closed 
+        })
         .eq('id', id)
         .select()
         .single();

@@ -33,19 +33,19 @@ const categories = [
     title: 'Belegde Broodjes',
     description: 'Kies tussen bijna 1000 verschillende soorten belegde broodjes.',
     image: belegdeBroodjes,
-    link: '/assortiment#Belegde Broodjes',
+    link: '/assortiment#belegde-broodjes',
   },
   {
     title: 'Kaas & Zuivel',
     description: 'Een breed assortiment aan heerlijke kazen uit de regio.',
     image: kaasOriginal,
-    link: '/assortiment#Kaas',
+    link: '/assortiment#kaas',
   },
   {
     title: 'Olijven & Tapas',
     description: 'Heerlijke olijven, tapas en delicatessen.',
     image: olijvenTapas,
-    link: '/assortiment#Olijven',
+    link: '/assortiment#olijven',
   },
 ];
 
@@ -79,9 +79,6 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <OrderButton variant="hero" size="xl" />
-              <Button variant="heroOutline" size="xl" asChild>
-                <Link to="/assortiment">Bekijk Assortiment</Link>
-              </Button>
             </div>
           </motion.div>
         </div>

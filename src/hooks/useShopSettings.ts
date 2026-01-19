@@ -31,19 +31,28 @@ export function useShopSettings() {
       const settings = { ...DEFAULT_SETTINGS };
       
       data?.forEach((row) => {
-        const value = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        // Handle both JSON-stringified and raw values
+        let value = row.value;
+        if (typeof value === 'string') {
+          try {
+            value = JSON.parse(value);
+          } catch {
+            // Keep as string if not valid JSON
+          }
+        }
+        
         switch (row.key) {
           case 'delivery_cost':
-            settings.delivery_cost = parseFloat(value);
+            settings.delivery_cost = parseFloat(String(value)) || 4;
             break;
           case 'free_delivery_threshold':
-            settings.free_delivery_threshold = parseFloat(value);
+            settings.free_delivery_threshold = parseFloat(String(value)) || 40;
             break;
           case 'min_preparation_time_minutes':
-            settings.min_preparation_time_minutes = parseInt(value);
+            settings.min_preparation_time_minutes = parseInt(String(value)) || 60;
             break;
           case 'pickup_address':
-            settings.pickup_address = value;
+            settings.pickup_address = String(value);
             break;
         }
       });

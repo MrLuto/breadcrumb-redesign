@@ -383,11 +383,31 @@ Deno.serve(async (req) => {
 
     const total = subtotal + deliveryCost;
 
-    // Create order
+    // For pickup orders, use pickup address from settings
+    let deliveryAddress = formData.delivery_address?.trim() || null;
+    let postcodeValue = formData.postcode?.toUpperCase().replace(/\s/g, '') || null;
+    let cityValue = formData.city?.trim() || null;
+
+    if (formData.order_type === 'pickup') {
+      // Get pickup address from shop settings
+      const { data: pickupSetting } = await supabase
+        .from('shop_settings')
+        .select('value')
+        .eq('key', 'pickup_address')
+        .single();
+      
+      deliveryAddress = pickupSetting?.value ? String(pickupSetting.value) : 'Afhalen bij winkel';
+      postcodeValue = postcodeValue || '0000AA'; // Placeholder for pickup
+      cityValue = cityValue || 'Gouda';
+    }
+
+    // Create order with unique temp order number
+    const tempOrderNumber = `TEMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        order_number: 'TEMP',
+        order_number: tempOrderNumber,
         customer_type: formData.customer_type,
         order_type: formData.order_type,
         company_name: formData.company_name?.trim() || (formData.customer_type === 'private' ? formData.contact_person.trim() : 'Particulier'),
@@ -396,9 +416,9 @@ Deno.serve(async (req) => {
         contact_person: formData.contact_person.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
-        delivery_address: formData.delivery_address?.trim() || null,
-        postcode: formData.postcode?.toUpperCase().replace(/\s/g, '') || null,
-        city: formData.city?.trim() || null,
+        delivery_address: deliveryAddress,
+        postcode: postcodeValue,
+        city: cityValue,
         billing_address: formData.billing_address?.trim() || null,
         billing_postcode: formData.billing_postcode?.toUpperCase().replace(/\s/g, '') || null,
         billing_city: formData.billing_city?.trim() || null,

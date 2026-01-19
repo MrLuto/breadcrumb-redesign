@@ -200,6 +200,13 @@ const Checkout = () => {
   const postcodeHas4Digits = watchedPostcode.replace(/\s/g, '').length >= 4;
   const canDeliver = !postcodeHas4Digits || currentZone !== null;
 
+  // Auto-switch to pickup if delivery is not possible
+  useEffect(() => {
+    if (postcodeHas4Digits && !canDeliver && watchedOrderType === 'delivery') {
+      form.setValue('order_type', 'pickup');
+    }
+  }, [postcodeHas4Digits, canDeliver, watchedOrderType, form]);
+
   // Calculate delivery cost
   const deliveryCost = useMemo(() => {
     if (watchedOrderType === 'pickup' || !shopSettings) return 0;
@@ -724,6 +731,8 @@ const Checkout = () => {
                             <OrderTypeSelector
                               value={field.value}
                               onChange={field.onChange}
+                              disableDelivery={postcodeHas4Digits && !canDeliver}
+                              deliveryError={postcodeHas4Digits && !canDeliver ? "Bezorgen is niet mogelijk op dit adres. Kies voor afhalen." : undefined}
                             />
                           </FormControl>
                           <FormMessage />
