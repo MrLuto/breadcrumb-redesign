@@ -58,6 +58,49 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+/**
+ * Sanitizes an ID for use in CSS selectors.
+ * Only allows alphanumeric characters, hyphens, and underscores.
+ * This prevents CSS injection attacks if IDs are ever sourced from user input.
+ */
+const sanitizeId = (id: string): string => id.replace(/[^a-zA-Z0-9-_]/g, '');
+
+/**
+ * Sanitizes a color value for use in CSS.
+ * Only allows valid CSS color formats to prevent injection attacks.
+ */
+const sanitizeColor = (color: string): string => {
+  // Allow hex colors (#fff, #ffffff, #ffffffff)
+  if (/^#[0-9A-Fa-f]{3,8}$/.test(color)) {
+    return color;
+  }
+  // Allow rgb/rgba colors
+  if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/.test(color)) {
+    return color;
+  }
+  // Allow hsl/hsla colors
+  if (/^hsla?\(\s*[\d.]+\s*(deg)?\s*[\s,]+\s*[\d.]+%?\s*[\s,]+\s*[\d.]+%?\s*([\s,/]+\s*[\d.]+%?\s*)?\)$/.test(color)) {
+    return color;
+  }
+  // Allow CSS color keywords (common ones)
+  const validKeywords = ['transparent', 'currentColor', 'inherit', 'initial', 'unset'];
+  if (validKeywords.includes(color)) {
+    return color;
+  }
+  // Allow CSS variables
+  if (/^var\(--[a-zA-Z0-9-_]+\)$/.test(color)) {
+    return color;
+  }
+  // Return transparent as fallback for any invalid color
+  return 'transparent';
+};
+
+/**
+ * Sanitizes a config key for use as a CSS variable name.
+ * Only allows alphanumeric characters, hyphens, and underscores.
+ */
+const sanitizeKey = (key: string): string => key.replace(/[^a-zA-Z0-9-_]/g, '');
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
@@ -65,17 +108,23 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  // Sanitize the ID to prevent CSS injection
+  const safeId = sanitizeId(id);
+
   return (
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${safeId}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    // Sanitize both the key and color value
+    const safeKey = sanitizeKey(key);
+    const safeColor = color ? sanitizeColor(color) : null;
+    return safeColor ? `  --color-${safeKey}: ${safeColor};` : null;
   })
   .join("\n")}
 }
