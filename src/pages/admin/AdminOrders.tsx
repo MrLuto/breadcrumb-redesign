@@ -36,6 +36,7 @@ import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,8 +61,9 @@ export default function AdminOrders() {
       order.contact_person.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.order_status === statusFilter;
+    const matchesPayment = paymentFilter === 'all' || order.payment_status === paymentFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesPayment;
   });
 
   const handleViewOrder = (order: OrderWithItems) => {
@@ -102,12 +104,25 @@ export default function AdminOrders() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter op status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle statussen</SelectItem>
               {ORDER_STATUSES.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter op betaling" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle betalingen</SelectItem>
+              {PAYMENT_STATUSES.map((status) => (
                 <SelectItem key={status.value} value={status.value}>
                   {status.label}
                 </SelectItem>
