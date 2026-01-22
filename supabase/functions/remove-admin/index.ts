@@ -80,9 +80,8 @@ serve(async (req) => {
     );
   } catch (error: unknown) {
     console.error("Error in remove-admin:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "Er is een fout opgetreden. Probeer het later opnieuw.", code: "ERR_ADMIN_500" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
