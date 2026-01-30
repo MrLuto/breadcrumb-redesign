@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     `).join('');
 
     const emailResponse = await resend.emails.send({
-      from: "FrisVers Broodjes <noreply@frisversbroodjes.nl>",
+      from: "FrisVers Broodjes <frisvers@sites.byluto.nl>",
       to: [data.customerEmail],
       subject: `Bevestiging bestelling ${data.orderNumber}`,
       html: `
