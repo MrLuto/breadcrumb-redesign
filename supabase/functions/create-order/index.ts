@@ -226,12 +226,12 @@ Deno.serve(async (req) => {
     // Validate minimum delivery date (must be tomorrow or later)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const deliveryDate = new Date(formData.delivery_date);
-    deliveryDate.setHours(0, 0, 0, 0);
+    const deliveryDateCheck = new Date(formData.delivery_date);
+    deliveryDateCheck.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (deliveryDate < tomorrow) {
+    if (deliveryDateCheck < tomorrow) {
       return new Response(
         JSON.stringify({ error: 'Bezorgdatum moet minimaal morgen zijn' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -311,10 +311,49 @@ Deno.serve(async (req) => {
     // Get shop settings
     const shopSettings = await getShopSettings(supabase);
 
-    // Validate delivery time
+    // Get opening hours for the delivery date
+    const deliveryDate = new Date(formData.delivery_date);
+    const dayOfWeek = deliveryDate.getDay();
+    
+    const { data: openingHoursData } = await supabase
+      .from('opening_hours')
+      .select('*')
+      .eq('day_of_week', dayOfWeek)
+      .single();
+
+    // Validate delivery time is within opening hours
+    if (!formData.delivery_asap && formData.delivery_time && openingHoursData) {
+      if (openingHoursData.is_closed) {
+        return new Response(
+          JSON.stringify({ error: 'Wij zijn gesloten op deze dag' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const [hours, minutes] = formData.delivery_time.split(':').map(Number);
+      const timeInMinutes = hours * 60 + minutes;
+
+      const [openH, openM] = openingHoursData.open_time.split(':').map(Number);
+      const openInMinutes = openH * 60 + openM;
+
+      const [closeH, closeM] = openingHoursData.close_time.split(':').map(Number);
+      const closeInMinutes = closeH * 60 + closeM;
+
+      if (timeInMinutes < openInMinutes || timeInMinutes > closeInMinutes) {
+        const openTime = openingHoursData.open_time.slice(0, 5);
+        const closeTime = openingHoursData.close_time.slice(0, 5);
+        return new Response(
+          JSON.stringify({ 
+            error: `Bezorgtijd moet tussen ${openTime} en ${closeTime} zijn` 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Validate delivery time for same-day orders
     if (!formData.delivery_asap && formData.delivery_time) {
       const now = new Date();
-      const deliveryDate = new Date(formData.delivery_date);
       const isToday = deliveryDate.toDateString() === now.toDateString();
 
       if (isToday) {
@@ -388,17 +427,27 @@ Deno.serve(async (req) => {
       const normalizedPostcode = formData.postcode!.toUpperCase().replace(/\s/g, '');
       const postcodePrefix = normalizedPostcode.slice(0, 4);
 
-      // Check if delivery is available for this postcode
+      // Check if delivery is available for this postcode and get zone details
       const { data: zone } = await supabase
         .from('delivery_zones')
-        .select('postcode_prefix, is_active')
+        .select('postcode_prefix, is_active, delivery_cost, min_order_amount')
         .eq('postcode_prefix', postcodePrefix)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!zone) {
         return new Response(
-          JSON.stringify({ error: 'Delivery not available to this postcode' }),
+          JSON.stringify({ error: 'Bezorgen niet mogelijk op deze postcode' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check minimum order amount for this zone
+      if (zone.min_order_amount && subtotal < zone.min_order_amount) {
+        return new Response(
+          JSON.stringify({ 
+            error: `Minimaal bestelbedrag voor deze postcode is €${zone.min_order_amount.toFixed(2)}. Uw bestelling: €${subtotal.toFixed(2)}` 
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -409,7 +458,7 @@ Deno.serve(async (req) => {
       if (subtotal >= shopSettings.free_delivery_threshold) {
         deliveryCost = 0;
       } else {
-        deliveryCost = shopSettings.delivery_cost;
+        deliveryCost = zone.delivery_cost || shopSettings.delivery_cost;
       }
     }
 
