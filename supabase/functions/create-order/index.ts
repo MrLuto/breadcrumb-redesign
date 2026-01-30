@@ -120,10 +120,12 @@ async function getShopSettings(supabase: any) {
   return settings;
 }
 
-// Check if date is closed
+// Check if date is closed - supports all recurrence types (none, weekly, monthly, yearly)
 async function isDateClosed(supabase: any, dateString: string): Promise<{ isClosed: boolean; reason?: string }> {
   const date = new Date(dateString);
-  const dayOfWeek = date.getDay();
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const dayOfMonth = date.getDate(); // 1-31
+  const month = date.getMonth() + 1; // 1-12
 
   const { data: closedDays } = await supabase
     .from('closed_days')
@@ -133,12 +135,27 @@ async function isDateClosed(supabase: any, dateString: string): Promise<{ isClos
   if (!closedDays) return { isClosed: false };
 
   for (const closedDay of closedDays) {
-    // Check recurring days
-    if (closedDay.is_recurring && closedDay.day_of_week === dayOfWeek) {
+    const recurrenceType = closedDay.recurrence_type || 'none';
+    
+    // Check one-time closure (specific date)
+    if (recurrenceType === 'none' && closedDay.date === dateString) {
       return { isClosed: true, reason: closedDay.reason };
     }
-    // Check specific dates
-    if (!closedDay.is_recurring && closedDay.date === dateString) {
+
+    // Check weekly recurring (e.g., every Sunday)
+    if (recurrenceType === 'weekly' && closedDay.day_of_week === dayOfWeek) {
+      return { isClosed: true, reason: closedDay.reason };
+    }
+
+    // Check monthly recurring (e.g., every 1st of the month)
+    if (recurrenceType === 'monthly' && closedDay.day_of_month === dayOfMonth) {
+      return { isClosed: true, reason: closedDay.reason };
+    }
+
+    // Check yearly recurring (e.g., every December 25th)
+    if (recurrenceType === 'yearly' && 
+        closedDay.day_of_month === dayOfMonth && 
+        closedDay.month === month) {
       return { isClosed: true, reason: closedDay.reason };
     }
   }
@@ -202,6 +219,21 @@ Deno.serve(async (req) => {
         !formData.delivery_date) {
       return new Response(
         JSON.stringify({ error: 'Missing required order information' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate minimum delivery date (must be tomorrow or later)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deliveryDate = new Date(formData.delivery_date);
+    deliveryDate.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (deliveryDate < tomorrow) {
+      return new Response(
+        JSON.stringify({ error: 'Bezorgdatum moet minimaal morgen zijn' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

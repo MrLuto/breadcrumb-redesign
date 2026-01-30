@@ -5,19 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveDeliveryZones, getDeliveryZoneForPostcode, type DeliveryZone } from '@/hooks/useDeliveryZones';
 
 const STORAGE_KEY = 'frisvers_postcode';
 const ORDER_URL = 'https://bestellen.frisversbroodjes.nl/';
-
-// Delivery zones - only need 4 digit numbers
-const deliveryZones = [
-  { start: 2741, end: 2743, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2800, end: 2811, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2820, end: 2821, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2830, end: 2831, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2840, end: 2841, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2850, end: 2851, minutes: 120, cost: 4.00, minimum: 20.00 },
-];
 
 interface DeliveryInfo {
   inArea: boolean;
@@ -50,26 +41,46 @@ export const usePostcode = () => {
   return context;
 };
 
-// Check postcode (4 digits is enough)
-const checkPostcodeLocal = (postcode: string): DeliveryInfo => {
-  const cleaned = postcode.replace(/\s/g, '').toUpperCase();
-  
-  // Extract 4 digits
-  const match = cleaned.match(/^(\d{4})/);
-  if (!match) {
+// Safe localStorage access wrapper
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      console.warn('localStorage not available');
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      console.warn('localStorage not available');
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      console.warn('localStorage not available');
+    }
+  },
+};
+
+// Check postcode against delivery zones from DB
+const checkPostcodeWithZones = (postcode: string, zones: DeliveryZone[] | undefined): DeliveryInfo => {
+  if (!zones || zones.length === 0) {
     return { inArea: false };
   }
   
-  const numericPart = parseInt(match[1], 10);
-  for (const zone of deliveryZones) {
-    if (numericPart >= zone.start && numericPart <= zone.end) {
-      return {
-        inArea: true,
-        minutes: zone.minutes,
-        cost: zone.cost,
-        minimum: zone.minimum,
-      };
-    }
+  const zone = getDeliveryZoneForPostcode(zones, postcode);
+  if (zone) {
+    return {
+      inArea: true,
+      minutes: 90, // Default estimate, could be added to zone table
+      cost: zone.delivery_cost,
+      minimum: zone.min_order_amount || 0,
+    };
   }
   
   return { inArea: false };
@@ -80,6 +91,7 @@ interface PostcodeProviderProps {
 }
 
 export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
+  const { data: deliveryZones, isLoading: zonesLoading } = useActiveDeliveryZones();
   const [state, setState] = useState<PostcodeState>({
     postcode: null,
     city: null,
@@ -90,18 +102,25 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(false);
 
+  // Wrapper function to check postcode with current zones
+  const checkPostcode = (postcode: string): DeliveryInfo => {
+    return checkPostcodeWithZones(postcode, deliveryZones);
+  };
+
   // Load postcode on mount via geo-ip - ALWAYS fetch fresh
   useEffect(() => {
+    if (zonesLoading) return; // Wait for zones to load first
+
     const loadPostcode = async () => {
       // Always try geo-ip lookup first for fresh data
       try {
         const { data, error } = await supabase.functions.invoke('geo-ip');
         if (!error && data) {
-          const deliveryInfo = data.postcode ? checkPostcodeLocal(data.postcode) : { inArea: false };
+          const deliveryInfo = data.postcode ? checkPostcodeWithZones(data.postcode, deliveryZones) : { inArea: false };
           
           // Save to localStorage as backup
           if (data.postcode) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
+            safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify({ 
               postcode: data.postcode, 
               city: data.city 
             }));
@@ -121,11 +140,11 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
       }
 
       // Fallback to localStorage if geo-ip fails
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = safeLocalStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          const deliveryInfo = checkPostcodeLocal(parsed.postcode);
+          const deliveryInfo = checkPostcodeWithZones(parsed.postcode, deliveryZones);
           setState({
             postcode: parsed.postcode,
             city: parsed.city || null,
@@ -135,7 +154,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
           });
           return;
         } catch {
-          localStorage.removeItem(STORAGE_KEY);
+          safeLocalStorage.removeItem(STORAGE_KEY);
         }
       }
 
@@ -143,7 +162,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
     };
 
     loadPostcode();
-  }, []);
+  }, [zonesLoading, deliveryZones]);
 
   const openOrderModal = () => {
     // If already checked and in area, redirect directly
@@ -163,7 +182,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   };
 
   const handlePostcodeUpdate = async (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ postcode, city }));
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify({ postcode, city }));
     setState({
       postcode,
       city,
@@ -185,7 +204,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
   return (
     <PostcodeContext.Provider value={{
       state,
-      checkPostcode: checkPostcodeLocal,
+      checkPostcode,
       openOrderModal,
     }}>
       {children}
@@ -196,6 +215,7 @@ export const PostcodeProvider = ({ children }: PostcodeProviderProps) => {
         onPostcodeUpdate={handlePostcodeUpdate}
         pendingRedirect={pendingRedirect}
         currentState={state}
+        checkPostcode={checkPostcode}
       />
     </PostcodeContext.Provider>
   );
@@ -209,9 +229,10 @@ interface PostcodeModalProps {
   onPostcodeUpdate: (postcode: string, city: string | null, deliveryInfo: DeliveryInfo) => void;
   pendingRedirect: boolean;
   currentState: PostcodeState;
+  checkPostcode: (postcode: string) => DeliveryInfo;
 }
 
-const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendingRedirect, currentState }: PostcodeModalProps) => {
+const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendingRedirect, currentState, checkPostcode }: PostcodeModalProps) => {
   const [inputPostcode, setInputPostcode] = useState('');
   const [localResult, setLocalResult] = useState<DeliveryInfo | null>(null);
   const [showManualInput, setShowManualInput] = useState(false);
@@ -228,7 +249,7 @@ const PostcodeModal = ({ open, onOpenChange, onConfirm, onPostcodeUpdate, pendin
     const trimmed = inputPostcode.trim();
     if (trimmed.length < 4) return;
     
-    const info = checkPostcodeLocal(trimmed);
+    const info = checkPostcode(trimmed);
     setLocalResult(info);
     
     if (info.inArea) {

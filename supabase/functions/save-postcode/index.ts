@@ -10,19 +10,16 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_REQUESTS_PER_WINDOW = 10;
 
-// Delivery zones
-const deliveryZones = [
-  { start: 2741, end: 2743, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2800, end: 2811, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2820, end: 2821, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2830, end: 2831, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2840, end: 2841, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2850, end: 2851, minutes: 120, cost: 4.00, minimum: 20.00 },
-];
-
 // Input validation
 const POSTCODE_REGEX = /^\d{4}[A-Z]{2}$/;
 const MAX_CITY_LENGTH = 100;
+
+interface DeliveryZone {
+  postcode_prefix: string;
+  delivery_cost: number;
+  min_order_amount: number | null;
+  is_active: boolean;
+}
 
 const validatePostcode = (postcode: unknown): { valid: boolean; cleaned?: string; error?: string } => {
   if (typeof postcode !== 'string') {
@@ -60,22 +57,23 @@ const validateCity = (city: unknown): { valid: boolean; cleaned?: string | null;
   return { valid: true, cleaned: cleaned || null };
 };
 
-const checkPostcode = (postcode: string) => {
+// Check postcode against DB zones
+const checkPostcode = (postcode: string, zones: DeliveryZone[]) => {
   const match = postcode.match(/^(\d{4})([A-Z]{2})$/);
   
   if (!match) {
     return { inArea: false };
   }
   
-  const numericPart = parseInt(match[1], 10);
+  const prefix = match[1];
   
-  for (const zone of deliveryZones) {
-    if (numericPart >= zone.start && numericPart <= zone.end) {
+  for (const zone of zones) {
+    if (zone.postcode_prefix === prefix && zone.is_active) {
       return {
         inArea: true,
-        minutes: zone.minutes,
-        cost: zone.cost,
-        minimum: zone.minimum,
+        minutes: 90,
+        cost: zone.delivery_cost,
+        minimum: zone.min_order_amount || 0,
       };
     }
   }
@@ -178,7 +176,14 @@ serve(async (req) => {
 
     console.log('Saving postcode for IP:', clientIP, 'Postcode:', postcode);
 
-    const deliveryInfo = checkPostcode(postcode);
+    // Fetch delivery zones from database
+    const { data: zonesData } = await supabase
+      .from('delivery_zones')
+      .select('postcode_prefix, delivery_cost, min_order_amount, is_active')
+      .eq('is_active', true);
+    
+    const zones: DeliveryZone[] = zonesData || [];
+    const deliveryInfo = checkPostcode(postcode, zones);
 
     // Upsert the postcode for this IP
     const { error } = await supabase.from('ip_postcodes').upsert({

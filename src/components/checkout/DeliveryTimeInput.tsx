@@ -73,7 +73,7 @@ export function DeliveryTimeInput({
     return timeInMinutes >= minTimeInMinutes;
   }, [selectedDate, getMinTime]);
 
-  // Set initial time on mount
+  // Set initial time on mount and when minPrepTimeMinutes changes
   useEffect(() => {
     if (selectedDate && !deliveryTime) {
       if (isToday(selectedDate)) {
@@ -83,7 +83,18 @@ export function DeliveryTimeInput({
         onTimeChange('10:00');
       }
     }
-  }, []);
+  }, [selectedDate, minPrepTimeMinutes]);
+
+  // Re-calculate when minPrepTimeMinutes changes (async shop settings load)
+  useEffect(() => {
+    if (selectedDate && isToday(selectedDate) && deliveryTime) {
+      const { hours: currentH, minutes: currentM } = parseTime(deliveryTime);
+      if (!isTimeValid(currentH, currentM)) {
+        const earliest = getEarliestTime(minPrepTimeMinutes);
+        onTimeChange(formatTime(earliest.hours, earliest.minutes));
+      }
+    }
+  }, [minPrepTimeMinutes]);
 
   // Auto-update time every minute to keep it valid (only for today)
   useEffect(() => {
