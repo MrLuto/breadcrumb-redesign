@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sheet,
@@ -8,19 +9,30 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ShoppingCart, Plus, Minus, Trash2, ShoppingBag, MessageSquare, ChevronDown } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 
 export function CartSheet() {
-  const { items, totalItems, subtotal, updateQuantity, removeItem } = useCart();
+  const { items, totalItems, subtotal, updateQuantity, updateNotes, removeItem } = useCart();
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
       currency: 'EUR',
     }).format(price);
+  };
+
+  const toggleNotes = (productId: string) => {
+    setOpenNotes(prev => ({ ...prev, [productId]: !prev[productId] }));
   };
 
   return (
@@ -122,6 +134,31 @@ export function CartSheet() {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
+
+                      {/* Notes per item */}
+                      <Collapsible open={openNotes[item.product.id] || !!item.notes}>
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => toggleNotes(item.product.id)}
+                          >
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            {item.notes ? 'Opmerking bewerken' : 'Opmerking toevoegen'}
+                            <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${openNotes[item.product.id] ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <Textarea
+                            placeholder="Bijv. zonder ui, extra saus..."
+                            value={item.notes || ''}
+                            onChange={(e) => updateNotes(item.product.id, e.target.value)}
+                            className="mt-2 text-sm min-h-[60px]"
+                            rows={2}
+                          />
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
 
                     {/* Line Total */}

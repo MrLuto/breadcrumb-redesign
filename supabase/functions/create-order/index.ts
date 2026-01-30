@@ -38,11 +38,12 @@ interface CreateOrderRequest {
   formData: OrderFormData;
 }
 
-// Rate limiting helper
-async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean> {
+// Rate limiting helper - higher limits for authenticated users
+async function checkRateLimit(supabase: any, ipAddress: string, isAuthenticated: boolean): Promise<boolean> {
   const functionName = 'create-order';
   const windowMinutes = 60;
-  const maxRequests = 10;
+  // Authenticated users get 50 requests/hour, anonymous gets 10
+  const maxRequests = isAuthenticated ? 50 : 10;
 
   const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
 
@@ -74,6 +75,19 @@ async function checkRateLimit(supabase: any, ipAddress: string): Promise<boolean
   }
 
   return true;
+}
+
+// Helper to mask PII for logging
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return '***';
+  const maskedLocal = local.length > 2 ? local[0] + '***' + local[local.length - 1] : '***';
+  return `${maskedLocal}@${domain}`;
+}
+
+function maskPhone(phone: string): string {
+  if (phone.length < 4) return '***';
+  return phone.slice(0, 2) + '***' + phone.slice(-2);
 }
 
 // Get shop settings
@@ -186,12 +200,20 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Check for authenticated user
+    const authHeader = req.headers.get('authorization');
+    let isAuthenticated = false;
+    if (authHeader) {
+      const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+      isAuthenticated = !!user;
+    }
+
     // Rate limiting
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
       || req.headers.get('cf-connecting-ip') 
       || 'unknown';
 
-    const withinLimit = await checkRateLimit(supabase, clientIP);
+    const withinLimit = await checkRateLimit(supabase, clientIP, isAuthenticated);
     if (!withinLimit) {
       return new Response(
         JSON.stringify({ error: 'Too many orders. Please try again later.' }),
@@ -553,7 +575,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Order created successfully: ${order.order_number}`);
+    // Log order creation without PII
+    console.log(`Order created: ${order.order_number} | email: ${maskEmail(formData.email)} | phone: ${maskPhone(formData.phone)}`);
 
     // Send confirmation email (fire and forget - don't block order creation)
     const siteUrl = Deno.env.get('SITE_URL') || 'https://frisversbroodjes.nl';

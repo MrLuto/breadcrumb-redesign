@@ -32,12 +32,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomerProfile } from '@/hooks/useCustomerProfile';
+import { useProducts } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User, UserPlus } from 'lucide-react';
+import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User, UserPlus, XCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
@@ -117,15 +119,25 @@ const PAYMENT_METHODS = [
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, removeItem } = useCart();
   const { user } = useAuth();
   const { data: profile } = useCustomerProfile();
+  const { data: allProducts } = useProducts();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createAccount, setCreateAccount] = useState(false);
   const [accountPassword, setAccountPassword] = useState('');
   const { data: deliveryZones } = useActiveDeliveryZones();
   const { data: shopSettings } = useShopSettings();
   const { data: closedDays } = useActiveClosedDays();
+
+  // Check for unavailable products in cart
+  const unavailableItems = useMemo(() => {
+    if (!allProducts) return [];
+    return items.filter(item => {
+      const currentProduct = allProducts.find(p => p.id === item.product.id);
+      return !currentProduct || !currentProduct.is_available;
+    });
+  }, [items, allProducts]);
 
   // Default delivery date is tomorrow (minimum allowed date)
   const defaultDeliveryDate = useMemo(() => addDays(startOfDay(new Date()), 1), []);
@@ -471,6 +483,35 @@ const Checkout = () => {
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-8">
             Afrekenen
           </h1>
+
+          {/* Unavailable products warning */}
+          {unavailableItems.length > 0 && (
+            <Alert variant="destructive" className="mb-6">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-medium mb-2">
+                  {unavailableItems.length === 1 
+                    ? 'Een product in je winkelwagen is niet meer beschikbaar:' 
+                    : `${unavailableItems.length} producten in je winkelwagen zijn niet meer beschikbaar:`}
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  {unavailableItems.map(item => (
+                    <li key={item.product.id} className="flex items-center justify-between">
+                      <span>{item.product.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive h-7"
+                        onClick={() => removeItem(item.product.id)}
+                      >
+                        Verwijderen
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
