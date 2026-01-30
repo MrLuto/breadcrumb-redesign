@@ -27,13 +27,14 @@ const CART_STORAGE_KEY = 'frisversshop-cart';
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(CART_STORAGE_KEY);
-      if (saved) {
-        try {
+      try {
+        const saved = localStorage.getItem(CART_STORAGE_KEY);
+        if (saved) {
           return JSON.parse(saved);
-        } catch {
-          return [];
         }
+      } catch (e) {
+        // localStorage might be blocked (privacy mode) or quota exceeded
+        console.warn('Failed to read cart from localStorage:', e);
       }
     }
     return [];
@@ -41,7 +42,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Persist cart to localStorage
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      // localStorage might be blocked (privacy mode) or quota exceeded
+      console.warn('Failed to persist cart to localStorage:', e);
+    }
   }, [items]);
 
   const addItem = (product: Product, quantity = 1, notes?: string) => {

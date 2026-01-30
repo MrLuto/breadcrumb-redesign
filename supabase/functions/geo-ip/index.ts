@@ -10,16 +10,6 @@ const corsHeaders = {
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_REQUESTS_PER_WINDOW = 20;
 
-// Delivery zones: [startNumeric, endNumeric, deliveryMinutes, cost, minimum]
-const deliveryZones = [
-  { start: 2741, end: 2743, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2800, end: 2811, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2820, end: 2821, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2830, end: 2831, minutes: 90, cost: 4.00, minimum: 20.00 },
-  { start: 2840, end: 2841, minutes: 120, cost: 4.00, minimum: 20.00 },
-  { start: 2850, end: 2851, minutes: 120, cost: 4.00, minimum: 20.00 },
-];
-
 // Input validation
 const POSTCODE_REGEX = /^\d{4}[A-Z]{0,2}$/;
 const MAX_CITY_LENGTH = 100;
@@ -31,12 +21,20 @@ interface DeliveryInfo {
   minimum?: number;
 }
 
+interface DeliveryZone {
+  postcode_prefix: string;
+  delivery_cost: number;
+  min_order_amount: number | null;
+  is_active: boolean;
+}
+
 const sanitizeString = (str: unknown, maxLength: number): string | null => {
   if (typeof str !== 'string') return null;
   return str.trim().slice(0, maxLength) || null;
 };
 
-const checkPostcode = (postcode: string): DeliveryInfo => {
+// Check postcode against DB zones
+const checkPostcode = (postcode: string, zones: DeliveryZone[]): DeliveryInfo => {
   const cleaned = postcode.replace(/\s/g, '').toUpperCase();
   const match = cleaned.match(/^(\d{4})([A-Z]{2})?$/);
   
@@ -44,15 +42,15 @@ const checkPostcode = (postcode: string): DeliveryInfo => {
     return { inArea: false };
   }
   
-  const numericPart = parseInt(match[1], 10);
+  const prefix = match[1];
   
-  for (const zone of deliveryZones) {
-    if (numericPart >= zone.start && numericPart <= zone.end) {
+  for (const zone of zones) {
+    if (zone.postcode_prefix === prefix && zone.is_active) {
       return {
         inArea: true,
-        minutes: zone.minutes,
-        cost: zone.cost,
-        minimum: zone.minimum,
+        minutes: 90, // Default estimate
+        cost: zone.delivery_cost,
+        minimum: zone.min_order_amount || 0,
       };
     }
   }
@@ -142,6 +140,14 @@ serve(async (req) => {
     // This ensures we get the most up-to-date location data
     console.log('Fetching fresh geo-ip data for:', clientIP);
 
+    // Fetch delivery zones from database
+    const { data: zonesData } = await supabase
+      .from('delivery_zones')
+      .select('postcode_prefix, delivery_cost, min_order_amount, is_active')
+      .eq('is_active', true);
+    
+    const zones: DeliveryZone[] = zonesData || [];
+
     let geoData = null;
     try {
       // ip-api.com is free for non-commercial use, 45 requests per minute
@@ -180,7 +186,7 @@ serve(async (req) => {
       
       const postcode = rawPostcode.toUpperCase();
       const city = sanitizeString(geoData.city, MAX_CITY_LENGTH);
-      const deliveryInfo = checkPostcode(postcode);
+      const deliveryInfo = checkPostcode(postcode, zones);
       
       // Update database for analytics (upsert to update existing entry)
       await supabase.from('ip_postcodes').upsert({

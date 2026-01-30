@@ -127,6 +127,9 @@ const Checkout = () => {
   const { data: shopSettings } = useShopSettings();
   const { data: closedDays } = useActiveClosedDays();
 
+  // Default delivery date is tomorrow (minimum allowed date)
+  const defaultDeliveryDate = useMemo(() => addDays(startOfDay(new Date()), 1), []);
+
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -145,7 +148,7 @@ const Checkout = () => {
       billing_address: '',
       billing_postcode: '',
       billing_city: '',
-      delivery_date: new Date(),
+      delivery_date: defaultDeliveryDate,
       delivery_asap: false,
       delivery_time: '',
       payment_method: 'invoice', // Default for business
