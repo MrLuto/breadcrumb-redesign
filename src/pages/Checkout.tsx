@@ -202,6 +202,11 @@ const Checkout = () => {
   const currentZone = getDeliveryZoneForPostcode(deliveryZones, watchedPostcode);
   const postcodeHas4Digits = watchedPostcode.replace(/\s/g, '').length >= 4;
   const canDeliver = !postcodeHas4Digits || currentZone !== null;
+  
+  // Check minimum order amount for this zone
+  const minOrderAmount = currentZone?.min_order_amount || 0;
+  const meetsMinOrder = subtotal >= minOrderAmount;
+  const amountUntilMinOrder = minOrderAmount - subtotal;
 
   // Auto-switch to pickup if delivery is not possible
   useEffect(() => {
@@ -210,11 +215,13 @@ const Checkout = () => {
     }
   }, [postcodeHas4Digits, canDeliver, watchedOrderType, form]);
 
-  // Calculate delivery cost
+  // Calculate delivery cost based on zone
   const deliveryCost = useMemo(() => {
     if (watchedOrderType === 'pickup' || !shopSettings) return 0;
-    return calculateDeliveryCost(subtotal, shopSettings);
-  }, [subtotal, shopSettings, watchedOrderType]);
+    if (subtotal >= shopSettings.free_delivery_threshold) return 0;
+    // Use zone-specific delivery cost if available
+    return currentZone?.delivery_cost ?? shopSettings.delivery_cost;
+  }, [subtotal, shopSettings, watchedOrderType, currentZone]);
 
   const isFreeDelivery = shopSettings && subtotal >= shopSettings.free_delivery_threshold && watchedOrderType === 'delivery';
   const amountUntilFreeDelivery = shopSettings ? shopSettings.free_delivery_threshold - subtotal : 0;
@@ -289,6 +296,16 @@ const Checkout = () => {
       toast({
         title: 'Bezorgen niet mogelijk',
         description: 'Wij bezorgen helaas niet op dit adres. Kies voor afhalen.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check minimum order amount for delivery zone
+    if (data.order_type === 'delivery' && !meetsMinOrder) {
+      toast({
+        title: 'Minimaal bestelbedrag niet bereikt',
+        description: `Voor bezorging naar deze postcode is een minimaal bestelbedrag van ${formatPrice(minOrderAmount)} vereist. Je hebt nog ${formatPrice(amountUntilMinOrder)} nodig.`,
         variant: 'destructive',
       });
       return;
@@ -910,7 +927,12 @@ const Checkout = () => {
                     type="submit"
                     size="lg"
                     className="w-full"
-                    disabled={isSubmitting || (watchedOrderType === 'delivery' && !canDeliver) || (createAccount && accountPassword.length < 6)}
+                    disabled={
+                      isSubmitting || 
+                      (watchedOrderType === 'delivery' && !canDeliver) || 
+                      (watchedOrderType === 'delivery' && !meetsMinOrder) ||
+                      (createAccount && accountPassword.length < 6)
+                    }
                   >
                     {isSubmitting ? (
                       <>
@@ -921,6 +943,17 @@ const Checkout = () => {
                       `Bestelling plaatsen - ${formatPrice(total)}`
                     )}
                   </Button>
+
+                  {/* Minimum order warning */}
+                  {watchedOrderType === 'delivery' && !meetsMinOrder && minOrderAmount > 0 && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      <p className="text-sm">
+                        Minimaal bestelbedrag voor deze postcode: {formatPrice(minOrderAmount)}. 
+                        Nog {formatPrice(amountUntilMinOrder)} nodig.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Register option for guests */}
                   {!user && (
@@ -1025,6 +1058,18 @@ const Checkout = () => {
                         style={{ width: `${Math.min((subtotal / shopSettings.free_delivery_threshold) * 100, 100)}%` }}
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Minimum order amount warning */}
+                {watchedOrderType === 'delivery' && !meetsMinOrder && minOrderAmount > 0 && (
+                  <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                      Minimaal bestelbedrag: {formatPrice(minOrderAmount)}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Nog {formatPrice(amountUntilMinOrder)} nodig voor bezorging
+                    </p>
                   </div>
                 )}
               </div>
