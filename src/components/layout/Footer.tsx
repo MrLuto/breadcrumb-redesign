@@ -15,14 +15,16 @@ const Footer = () => {
     return time.substring(0, 5);
   };
 
-  // Get the dates for this week (Monday to Sunday)
-  const getWeekDates = () => {
+  // Get the dates for the relevant week (current or next if day has passed)
+  const getRelevantWeekDates = () => {
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Sunday
+    
+    // Find Monday of current week
     const monday = new Date(today);
-    // Adjust to get Monday of current week
     const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
     monday.setDate(today.getDate() - daysFromMonday);
+    monday.setHours(0, 0, 0, 0);
     
     const weekDates: { [key: number]: Date } = {};
     for (let i = 0; i < 7; i++) {
@@ -30,6 +32,11 @@ const Footer = () => {
       date.setDate(monday.getDate() + i);
       // Map: 0=Monday -> dayOfWeek 1, 1=Tuesday -> dayOfWeek 2, ..., 6=Sunday -> dayOfWeek 0
       const dayOfWeek = i === 6 ? 0 : i + 1;
+      
+      // If this day has already passed today, show next week's date
+      if (date < today && !(date.toDateString() === today.toDateString())) {
+        date.setDate(date.getDate() + 7);
+      }
       weekDates[dayOfWeek] = date;
     }
     return weekDates;
@@ -55,7 +62,7 @@ const Footer = () => {
     return null;
   };
 
-  const weekDates = getWeekDates();
+  const weekDates = getRelevantWeekDates();
   const isLoading = loadingHours || loadingClosed;
 
   return (

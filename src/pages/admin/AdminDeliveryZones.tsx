@@ -30,6 +30,7 @@ interface ZoneFormData {
   zone_name: string;
   delivery_cost: number;
   min_order_amount: number;
+  free_delivery_threshold: number | null;
   is_active: boolean;
 }
 
@@ -38,6 +39,7 @@ const emptyForm: ZoneFormData = {
   zone_name: '',
   delivery_cost: 7.5,
   min_order_amount: 0,
+  free_delivery_threshold: null,
   is_active: true,
 };
 
@@ -71,6 +73,7 @@ export default function AdminDeliveryZones() {
       zone_name: zone.zone_name,
       delivery_cost: zone.delivery_cost,
       min_order_amount: zone.min_order_amount || 0,
+      free_delivery_threshold: zone.free_delivery_threshold,
       is_active: zone.is_active,
     });
     setDialogOpen(true);
@@ -184,6 +187,25 @@ export default function AdminDeliveryZones() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="free_delivery_threshold">Gratis bezorging vanaf (€)</Label>
+                  <Input
+                    id="free_delivery_threshold"
+                    type="number"
+                    step="5"
+                    min="0"
+                    value={form.free_delivery_threshold ?? ''}
+                    onChange={(e) => setForm({ 
+                      ...form, 
+                      free_delivery_threshold: e.target.value ? parseFloat(e.target.value) : null 
+                    })}
+                    placeholder="Gebruik globale instelling"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Laat leeg om de globale instelling te gebruiken
+                  </p>
+                </div>
+
                 <div className="flex items-center gap-3">
                   <Switch
                     id="is_active"
@@ -238,6 +260,7 @@ export default function AdminDeliveryZones() {
                     <TableHead>Zone</TableHead>
                     <TableHead>Bezorgkosten</TableHead>
                     <TableHead>Min. Bestelling</TableHead>
+                    <TableHead>Gratis vanaf</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
@@ -250,6 +273,9 @@ export default function AdminDeliveryZones() {
                       <TableCell>{formatPrice(zone.delivery_cost)}</TableCell>
                       <TableCell>
                         {zone.min_order_amount ? formatPrice(zone.min_order_amount) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {zone.free_delivery_threshold ? formatPrice(zone.free_delivery_threshold) : 'Globaal'}
                       </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

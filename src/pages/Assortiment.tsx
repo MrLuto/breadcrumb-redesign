@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductCard } from '@/components/ProductCard';
+import { CategoryNav } from '@/components/assortiment/CategoryNav';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
@@ -12,6 +13,7 @@ const Assortiment = () => {
   const location = useLocation();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const isLoading = categoriesLoading || productsLoading;
 
@@ -26,6 +28,29 @@ const Assortiment = () => {
         ?.sort((a, b) => a.display_order - b.display_order) || [],
     }))
     ?.filter((group) => group.products.length > 0);
+
+  // Track active section on scroll
+  const handleScroll = useCallback(() => {
+    if (!productsByCategory) return;
+
+    const scrollPosition = window.scrollY + 200; // Offset for header + nav
+
+    for (const group of productsByCategory) {
+      const element = document.getElementById(group.category.slug);
+      if (element) {
+        const { offsetTop, offsetHeight } = element;
+        if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+          setActiveCategory(group.category.slug);
+          return;
+        }
+      }
+    }
+  }, [productsByCategory]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   // Scroll to section when hash changes - uses category slug
   useEffect(() => {
@@ -49,6 +74,8 @@ const Assortiment = () => {
       }
     }
   }, [location.hash, isLoading, productsByCategory]);
+
+  const categoryList = productsByCategory?.map(g => g.category) || [];
 
   return (
     <Layout>
@@ -77,6 +104,11 @@ const Assortiment = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Sticky Category Navigation */}
+      {!isLoading && categoryList.length > 0 && (
+        <CategoryNav categories={categoryList} activeCategory={activeCategory} />
+      )}
 
       {/* Products by Category */}
       <section className="py-12 md:py-16">
@@ -117,7 +149,7 @@ const Assortiment = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="scroll-mt-24"
+                  className="scroll-mt-32"
                 >
                   {/* Category Header */}
                   <div className="mb-8">

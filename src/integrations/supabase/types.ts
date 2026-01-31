@@ -216,6 +216,7 @@ export type Database = {
         Row: {
           created_at: string
           delivery_cost: number
+          free_delivery_threshold: number | null
           id: string
           is_active: boolean
           min_order_amount: number | null
@@ -226,6 +227,7 @@ export type Database = {
         Insert: {
           created_at?: string
           delivery_cost?: number
+          free_delivery_threshold?: number | null
           id?: string
           is_active?: boolean
           min_order_amount?: number | null
@@ -236,6 +238,7 @@ export type Database = {
         Update: {
           created_at?: string
           delivery_cost?: number
+          free_delivery_threshold?: number | null
           id?: string
           is_active?: boolean
           min_order_amount?: number | null

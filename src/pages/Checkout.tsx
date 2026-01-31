@@ -48,6 +48,7 @@ import { useActiveClosedDays, isDateClosed } from '@/hooks/useClosedDays';
 import { CustomerTypeToggle } from '@/components/checkout/CustomerTypeToggle';
 import { OrderTypeSelector } from '@/components/checkout/OrderTypeSelector';
 import { DeliveryTimeInput } from '@/components/checkout/DeliveryTimeInput';
+import { OrderSummary } from '@/components/checkout/OrderSummary';
 
 const checkoutSchema = z.object({
   customer_type: z.enum(['private', 'business']),
@@ -119,7 +120,7 @@ const PAYMENT_METHODS = [
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, subtotal, clearCart, removeItem } = useCart();
+  const { items, subtotal, clearCart, removeItem, updateQuantity } = useCart();
   const { user } = useAuth();
   const { data: profile } = useCustomerProfile();
   const { data: allProducts } = useProducts();
@@ -139,8 +140,29 @@ const Checkout = () => {
     });
   }, [items, allProducts]);
 
-  // Default delivery date is tomorrow (minimum allowed date)
-  const defaultDeliveryDate = useMemo(() => addDays(startOfDay(new Date()), 1), []);
+  // Find first available delivery date (skip closed days)
+  const findFirstAvailableDate = useMemo(() => {
+    let date = addDays(startOfDay(new Date()), 1); // Start with tomorrow
+    const maxDaysToCheck = 30; // Prevent infinite loop
+    
+    for (let i = 0; i < maxDaysToCheck; i++) {
+      if (closedDays) {
+        const { isClosed } = isDateClosed(date, closedDays);
+        if (!isClosed) {
+          return date;
+        }
+      } else {
+        return date;
+      }
+      date = addDays(date, 1);
+    }
+    
+    // Fallback to tomorrow if no open day found
+    return addDays(startOfDay(new Date()), 1);
+  }, [closedDays]);
+
+  // Default delivery date is first available date
+  const defaultDeliveryDate = findFirstAvailableDate;
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -191,6 +213,19 @@ const Checkout = () => {
     }
   }, [watchedCustomerType]);
 
+  // Update delivery date to first available when closed days are loaded
+  useEffect(() => {
+    if (closedDays) {
+      const currentDate = form.getValues('delivery_date');
+      if (currentDate && closedDays) {
+        const { isClosed } = isDateClosed(currentDate, closedDays);
+        if (isClosed) {
+          form.setValue('delivery_date', findFirstAvailableDate);
+        }
+      }
+    }
+  }, [closedDays, findFirstAvailableDate]);
+
   // Auto-fill form from profile
   useEffect(() => {
     if (profile) {
@@ -227,16 +262,24 @@ const Checkout = () => {
     }
   }, [postcodeHas4Digits, canDeliver, watchedOrderType, form]);
 
+  // Calculate free delivery threshold for this zone (zone-specific or global)
+  const freeDeliveryThreshold = useMemo(() => {
+    if (currentZone?.free_delivery_threshold !== null && currentZone?.free_delivery_threshold !== undefined) {
+      return currentZone.free_delivery_threshold;
+    }
+    return shopSettings?.free_delivery_threshold || 40;
+  }, [currentZone, shopSettings]);
+
   // Calculate delivery cost based on zone
   const deliveryCost = useMemo(() => {
     if (watchedOrderType === 'pickup' || !shopSettings) return 0;
-    if (subtotal >= shopSettings.free_delivery_threshold) return 0;
+    if (subtotal >= freeDeliveryThreshold) return 0;
     // Use zone-specific delivery cost if available
     return currentZone?.delivery_cost ?? shopSettings.delivery_cost;
-  }, [subtotal, shopSettings, watchedOrderType, currentZone]);
+  }, [subtotal, shopSettings, watchedOrderType, currentZone, freeDeliveryThreshold]);
 
-  const isFreeDelivery = shopSettings && subtotal >= shopSettings.free_delivery_threshold && watchedOrderType === 'delivery';
-  const amountUntilFreeDelivery = shopSettings ? shopSettings.free_delivery_threshold - subtotal : 0;
+  const isFreeDelivery = subtotal >= freeDeliveryThreshold && watchedOrderType === 'delivery';
+  const amountUntilFreeDelivery = freeDeliveryThreshold - subtotal;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -815,7 +858,7 @@ const Checkout = () => {
                     )}
 
                     {/* Free delivery info */}
-                    {watchedOrderType === 'delivery' && canDeliver && shopSettings && (
+                    {watchedOrderType === 'delivery' && canDeliver && (
                       <div className={cn(
                         "mt-6 flex items-start gap-3 p-4 rounded-lg border",
                         isFreeDelivery 
@@ -828,7 +871,7 @@ const Checkout = () => {
                             <p className="font-medium text-primary">Gratis bezorging! 🎉</p>
                           ) : (
                             <>
-                              <p className="font-medium">Bezorgkosten: {formatPrice(shopSettings.delivery_cost)}</p>
+                              <p className="font-medium">Bezorgkosten: {formatPrice(deliveryCost)}</p>
                               <p className="text-sm text-muted-foreground">
                                 Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
                               </p>
@@ -1049,71 +1092,21 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-card rounded-xl p-6 shadow-card sticky top-24">
-                <h2 className="text-xl font-semibold mb-4">Besteloverzicht</h2>
-                
-                <div className="space-y-3 mb-4">
-                  {items.map((item) => (
-                    <div key={item.product.id} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {item.quantity}x {item.product.name}
-                      </span>
-                      <span>{formatPrice(item.product.price * item.quantity)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotaal</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {watchedOrderType === 'pickup' ? 'Afhalen' : 'Bezorgkosten'}
-                    </span>
-                    <span className={isFreeDelivery ? 'text-primary font-medium' : ''}>
-                      {watchedOrderType === 'pickup' ? 'Gratis' : (isFreeDelivery ? 'Gratis' : formatPrice(deliveryCost))}
-                    </span>
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Totaal</span>
-                  <span>{formatPrice(total)}</span>
-                </div>
-
-                {/* Free delivery progress */}
-                {watchedOrderType === 'delivery' && shopSettings && !isFreeDelivery && (
-                  <div className="mt-4 p-3 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">
-                      Nog {formatPrice(amountUntilFreeDelivery)} tot gratis bezorging
-                    </p>
-                    <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${Math.min((subtotal / shopSettings.free_delivery_threshold) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Minimum order amount warning */}
-                {watchedOrderType === 'delivery' && !meetsMinOrder && minOrderAmount > 0 && (
-                  <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                    <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                      Minimaal bestelbedrag: {formatPrice(minOrderAmount)}
-                    </p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                      Nog {formatPrice(amountUntilMinOrder)} nodig voor bezorging
-                    </p>
-                  </div>
-                )}
-              </div>
+              <OrderSummary
+                items={items}
+                subtotal={subtotal}
+                deliveryCost={deliveryCost}
+                total={total}
+                orderType={watchedOrderType}
+                isFreeDelivery={isFreeDelivery}
+                amountUntilFreeDelivery={amountUntilFreeDelivery}
+                freeDeliveryThreshold={freeDeliveryThreshold}
+                minOrderAmount={minOrderAmount}
+                meetsMinOrder={meetsMinOrder}
+                amountUntilMinOrder={amountUntilMinOrder}
+                onUpdateQuantity={updateQuantity}
+                formatPrice={formatPrice}
+              />
             </div>
           </div>
         </motion.div>
