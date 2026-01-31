@@ -149,12 +149,21 @@ export function useClosedDaysMutations() {
   };
 }
 
+// Helper function to format date as YYYY-MM-DD in local timezone (not UTC)
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper function to check if a date is closed
 export function isDateClosed(date: Date, closedDays: ClosedDay[]): { isClosed: boolean; reason?: string } {
   const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const dayOfMonth = date.getDate(); // 1-31
   const month = date.getMonth() + 1; // 1-12
-  const dateString = date.toISOString().split('T')[0];
+  // Use local date format instead of UTC to prevent timezone issues
+  const dateString = formatDateLocal(date);
 
   for (const closedDay of closedDays) {
     if (!closedDay.is_active) continue;
