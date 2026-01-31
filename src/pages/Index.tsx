@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Award, ChefHat, ArrowRight } from 'lucide-react';
+import { Users, Award, ChefHat, ArrowRight, TrendingUp } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { DeliveryStatusBanner } from '@/components/PostcodeChecker';
 import OrderButton from '@/components/OrderButton';
 import { useCategories } from '@/hooks/useCategories';
+import { usePopularCategories, useHasOrders } from '@/hooks/usePopularCategories';
 import heroOriginal from '@/assets/hero-original.jpg';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasOriginal from '@/assets/kaas-original.jpg';
@@ -41,19 +42,28 @@ const categoryImages: Record<string, string> = {
   'dranken': kaasOriginal,
 };
 
+// Default fallback image
+const defaultCategoryImage = belegdeBroodjes;
+
 const Index = () => {
   const { data: dbCategories } = useCategories();
+  const { data: popularCategories } = usePopularCategories(3);
+  const { data: hasOrders } = useHasOrders();
   
-  // Get first 3 active categories from database
-  const displayCategories = (dbCategories || [])
+  // Use popular categories if there are orders, otherwise use first 3 by display order
+  const categoriesToShow = hasOrders && popularCategories?.length ? popularCategories : dbCategories;
+  
+  // Get display categories (first 3)
+  const displayCategories = (categoriesToShow || [])
     .filter(cat => cat.is_active)
     .slice(0, 3)
     .map(cat => ({
       id: cat.id,
       title: cat.name,
       description: cat.description || `Ontdek onze ${cat.name.toLowerCase()}`,
-      image: cat.image_url || categoryImages[cat.slug] || belegdeBroodjes,
+      image: cat.image_url || categoryImages[cat.slug] || defaultCategoryImage,
       link: `/assortiment#${cat.slug}`,
+      isPopular: hasOrders && 'order_count' in cat && (cat as any).order_count > 0,
     }));
 
   return (
@@ -144,10 +154,13 @@ const Index = () => {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-              Ons Assortiment
+              {hasOrders ? 'Populaire Categorieën' : 'Ons Assortiment'}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Van versgebakken broodjes tot ambachtelijke kazen - ontdek onze selectie.
+              {hasOrders 
+                ? 'Ontdek de meest bestelde categorieën bij onze klanten.'
+                : 'Van versgebakken broodjes tot ambachtelijke kazen - ontdek onze selectie.'
+              }
             </p>
           </motion.div>
 
@@ -172,6 +185,12 @@ const Index = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
+                      {category.isPopular && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/20 px-2 py-1 rounded-full mb-2">
+                          <TrendingUp className="h-3 w-3" />
+                          Populair
+                        </span>
+                      )}
                       <h3 className="text-2xl font-display font-bold text-card mb-2">
                         {category.title}
                       </h3>

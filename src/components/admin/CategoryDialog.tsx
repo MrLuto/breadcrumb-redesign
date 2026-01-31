@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,6 +21,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Category } from '@/hooks/useCategories';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Upload, X, ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Naam is verplicht'),
@@ -48,6 +51,9 @@ export function CategoryDialog({
   onSubmit,
   isLoading,
 }: CategoryDialogProps) {
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
@@ -70,6 +76,7 @@ export function CategoryDialog({
         display_order: category.display_order,
         is_active: category.is_active,
       });
+      setImagePreview(category.image_url || null);
     } else {
       form.reset({
         name: '',
@@ -79,6 +86,7 @@ export function CategoryDialog({
         display_order: 0,
         is_active: true,
       });
+      setImagePreview(null);
     }
   }, [category, form]);
 
@@ -93,9 +101,61 @@ export function CategoryDialog({
     }
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Alleen afbeeldingen zijn toegestaan');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Afbeelding mag maximaal 5MB zijn');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `category-${Date.now()}.${fileExt}`;
+      const filePath = `categories/${fileName}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      form.setValue('image_url', publicUrl);
+      setImagePreview(publicUrl);
+      toast.success('Afbeelding geüpload');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Fout bij uploaden afbeelding');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    form.setValue('image_url', '');
+    setImagePreview(null);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {category ? 'Categorie bewerken' : 'Nieuwe categorie'}
@@ -148,14 +208,67 @@ export function CategoryDialog({
               )}
             />
 
+            {/* Image Upload Section */}
             <FormField
               control={form.control}
               name="image_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Afbeelding URL</FormLabel>
+                  <FormLabel>Afbeelding</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="https://..." />
+                    <div className="space-y-3">
+                      {imagePreview ? (
+                        <div className="relative">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-40 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-8 w-8"
+                            onClick={removeImage}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {uploading ? (
+                              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            ) : (
+                              <>
+                                <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                                <p className="text-sm text-muted-foreground">
+                                  Klik om afbeelding te uploaden
+                                </p>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                          />
+                        </label>
+                      )}
+                      
+                      {/* Manual URL input as fallback */}
+                      <Input
+                        {...field}
+                        placeholder="Of voer een URL in..."
+                        className="text-sm"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setImagePreview(e.target.value || null);
+                        }}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
