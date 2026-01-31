@@ -5,6 +5,7 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { DeliveryStatusBanner } from '@/components/PostcodeChecker';
 import OrderButton from '@/components/OrderButton';
+import { useCategories } from '@/hooks/useCategories';
 import heroOriginal from '@/assets/hero-original.jpg';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasOriginal from '@/assets/kaas-original.jpg';
@@ -28,28 +29,33 @@ const features = [
   },
 ];
 
-const categories = [
-  {
-    title: 'Belegde Broodjes',
-    description: 'Kies tussen bijna 1000 verschillende soorten belegde broodjes.',
-    image: belegdeBroodjes,
-    link: '/assortiment#belegde-broodjes',
-  },
-  {
-    title: 'Kaas & Zuivel',
-    description: 'Een breed assortiment aan heerlijke kazen uit de regio.',
-    image: kaasOriginal,
-    link: '/assortiment#kaas',
-  },
-  {
-    title: 'Olijven & Tapas',
-    description: 'Heerlijke olijven, tapas en delicatessen.',
-    image: olijvenTapas,
-    link: '/assortiment#olijven',
-  },
-];
+// Fallback images for categories that don't have their own image
+const categoryImages: Record<string, string> = {
+  'assorti': belegdeBroodjes,
+  'broodjes': belegdeBroodjes,
+  'broodjes-onbelegd': kaasOriginal,
+  'warme-broodjes': olijvenTapas,
+  'luxe-hapjes': olijvenTapas,
+  'soepen': kaasOriginal,
+  'overig': olijvenTapas,
+  'dranken': kaasOriginal,
+};
 
 const Index = () => {
+  const { data: dbCategories } = useCategories();
+  
+  // Get first 3 active categories from database
+  const displayCategories = (dbCategories || [])
+    .filter(cat => cat.is_active)
+    .slice(0, 3)
+    .map(cat => ({
+      id: cat.id,
+      title: cat.name,
+      description: cat.description || `Ontdek onze ${cat.name.toLowerCase()}`,
+      image: cat.image_url || categoryImages[cat.slug] || belegdeBroodjes,
+      link: `/assortiment#${cat.slug}`,
+    }));
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -146,9 +152,9 @@ const Index = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {categories.map((category, index) => (
+            {displayCategories.map((category, index) => (
               <motion.div
-                key={category.title}
+                key={category.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -169,7 +175,7 @@ const Index = () => {
                       <h3 className="text-2xl font-display font-bold text-card mb-2">
                         {category.title}
                       </h3>
-                      <p className="text-card/80">
+                      <p className="text-card/80 line-clamp-2">
                         {category.description}
                       </p>
                     </div>
