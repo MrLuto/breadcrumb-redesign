@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { addMinutes, addDays, format, isToday, isBefore, getMinutes, getHours } from 'date-fns';
+import { OpeningHour, isWithinOpeningHours } from '@/hooks/useOpeningHours';
 
 interface DeliveryTimeInputProps {
   selectedDate: Date | undefined;
@@ -10,6 +11,7 @@ interface DeliveryTimeInputProps {
   onTimeChange: (time: string) => void;
   onDateChange?: (date: Date) => void;
   error?: string;
+  openingHours?: OpeningHour[];
 }
 
 // Round up to next quarter hour
@@ -52,49 +54,110 @@ export function DeliveryTimeInput({
   onTimeChange,
   onDateChange,
   error,
+  openingHours,
 }: DeliveryTimeInputProps) {
   const [timeError, setTimeError] = useState<string | null>(null);
+
+  // Get opening hours for selected date
+  const dayOpeningHours = useMemo(() => {
+    if (!selectedDate || !openingHours) return null;
+    const dayOfWeek = selectedDate.getDay();
+    return openingHours.find((h) => h.day_of_week === dayOfWeek) || null;
+  }, [selectedDate, openingHours]);
+
+  // Parse opening/closing times
+  const openingMinutes = useMemo(() => {
+    if (!dayOpeningHours || dayOpeningHours.is_closed) return null;
+    const [h, m] = dayOpeningHours.open_time.split(':').map(Number);
+    return h * 60 + m;
+  }, [dayOpeningHours]);
+
+  const closingMinutes = useMemo(() => {
+    if (!dayOpeningHours || dayOpeningHours.is_closed) return null;
+    const [h, m] = dayOpeningHours.close_time.split(':').map(Number);
+    return h * 60 + m;
+  }, [dayOpeningHours]);
+
+  // Check if a time is within opening hours
+  const isWithinOpeningHoursCheck = useCallback((h: number, m: number) => {
+    if (!dayOpeningHours || dayOpeningHours.is_closed) return false;
+    if (openingMinutes === null || closingMinutes === null) return true;
+    const timeInMinutes = h * 60 + m;
+    return timeInMinutes >= openingMinutes && timeInMinutes <= closingMinutes;
+  }, [dayOpeningHours, openingMinutes, closingMinutes]);
   const { hours, minutes } = parseTime(deliveryTime);
 
-  // Get minimum time for today
+  // Get minimum time for today (considering both prep time and opening hours)
   const getMinTime = useCallback(() => {
+    // For non-today, use opening time if available
     if (!selectedDate || !isToday(selectedDate)) {
+      if (openingMinutes !== null) {
+        return { hours: Math.floor(openingMinutes / 60), minutes: openingMinutes % 60 };
+      }
       return { hours: 0, minutes: 0 };
     }
-    return getEarliestTime(minPrepTimeMinutes);
-  }, [selectedDate, minPrepTimeMinutes]);
+    
+    // For today, use the later of: earliest prep time OR opening time
+    const earliest = getEarliestTime(minPrepTimeMinutes);
+    const earliestInMinutes = earliest.hours * 60 + earliest.minutes;
+    
+    if (openingMinutes !== null && openingMinutes > earliestInMinutes) {
+      return { hours: Math.floor(openingMinutes / 60), minutes: openingMinutes % 60 };
+    }
+    
+    return earliest;
+  }, [selectedDate, minPrepTimeMinutes, openingMinutes]);
 
-  // Check if a time is valid
+  // Check if a time is valid (prep time + opening hours)
   const isTimeValid = useCallback((h: number, m: number) => {
-    if (!selectedDate || !isToday(selectedDate)) return true;
-    const minTime = getMinTime();
     const timeInMinutes = h * 60 + m;
-    const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
-    return timeInMinutes >= minTimeInMinutes;
-  }, [selectedDate, getMinTime]);
+    
+    // Check against opening hours
+    if (openingMinutes !== null && closingMinutes !== null) {
+      if (timeInMinutes < openingMinutes || timeInMinutes > closingMinutes) {
+        return false;
+      }
+    }
+    
+    // Check against minimum prep time for today
+    if (selectedDate && isToday(selectedDate)) {
+      const minTime = getEarliestTime(minPrepTimeMinutes);
+      const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
+      if (timeInMinutes < minTimeInMinutes) {
+        return false;
+      }
+    }
+    
+    return true;
+  }, [selectedDate, minPrepTimeMinutes, openingMinutes, closingMinutes]);
 
-  // Set initial time on mount and when minPrepTimeMinutes changes
+  // Set initial time on mount and when date/opening hours change
   useEffect(() => {
     if (selectedDate && !deliveryTime) {
-      if (isToday(selectedDate)) {
-        const earliest = getEarliestTime(minPrepTimeMinutes);
-        onTimeChange(formatTime(earliest.hours, earliest.minutes));
-      } else {
-        onTimeChange('10:00');
-      }
+      const minTime = getMinTime();
+      // Round to next quarter hour
+      const minInMinutes = minTime.hours * 60 + minTime.minutes;
+      const roundedMinutes = Math.ceil(minInMinutes / 15) * 15;
+      const roundedHours = Math.floor(roundedMinutes / 60);
+      const roundedMins = roundedMinutes % 60;
+      onTimeChange(formatTime(roundedHours, roundedMins));
     }
-  }, [selectedDate, minPrepTimeMinutes]);
+  }, [selectedDate, openingHours]);
 
-  // Re-calculate when minPrepTimeMinutes changes (async shop settings load)
+  // Re-calculate when minPrepTimeMinutes or opening hours change
   useEffect(() => {
-    if (selectedDate && isToday(selectedDate) && deliveryTime) {
+    if (selectedDate && deliveryTime) {
       const { hours: currentH, minutes: currentM } = parseTime(deliveryTime);
       if (!isTimeValid(currentH, currentM)) {
-        const earliest = getEarliestTime(minPrepTimeMinutes);
-        onTimeChange(formatTime(earliest.hours, earliest.minutes));
+        const minTime = getMinTime();
+        const minInMinutes = minTime.hours * 60 + minTime.minutes;
+        const roundedMinutes = Math.ceil(minInMinutes / 15) * 15;
+        const roundedHours = Math.floor(roundedMinutes / 60);
+        const roundedMins = roundedMinutes % 60;
+        onTimeChange(formatTime(roundedHours, roundedMins));
       }
     }
-  }, [minPrepTimeMinutes]);
+  }, [minPrepTimeMinutes, openingHours, selectedDate]);
 
   // Auto-update time every minute to keep it valid (only for today)
   useEffect(() => {
@@ -121,16 +184,34 @@ export function DeliveryTimeInput({
 
   // Validate time when it changes
   useEffect(() => {
-    if (deliveryTime && selectedDate && isToday(selectedDate)) {
+    if (deliveryTime && selectedDate) {
       if (!isTimeValid(hours, minutes)) {
-        setTimeError(`Tijd moet minimaal ${minPrepTimeMinutes} minuten in de toekomst zijn`);
+        // Determine the reason for invalidity
+        if (dayOpeningHours?.is_closed) {
+          setTimeError('Winkel is gesloten op deze dag');
+        } else if (openingMinutes !== null && closingMinutes !== null) {
+          const timeInMinutes = hours * 60 + minutes;
+          if (timeInMinutes < openingMinutes || timeInMinutes > closingMinutes) {
+            const openTime = dayOpeningHours?.open_time.substring(0, 5) || '';
+            const closeTime = dayOpeningHours?.close_time.substring(0, 5) || '';
+            setTimeError(`Kies een tijd tussen ${openTime} en ${closeTime}`);
+          } else if (isToday(selectedDate)) {
+            setTimeError(`Tijd moet minimaal ${minPrepTimeMinutes} minuten in de toekomst zijn`);
+          } else {
+            setTimeError(null);
+          }
+        } else if (isToday(selectedDate)) {
+          setTimeError(`Tijd moet minimaal ${minPrepTimeMinutes} minuten in de toekomst zijn`);
+        } else {
+          setTimeError(null);
+        }
       } else {
         setTimeError(null);
       }
     } else {
       setTimeError(null);
     }
-  }, [deliveryTime, selectedDate, minPrepTimeMinutes, hours, minutes, isTimeValid]);
+  }, [deliveryTime, selectedDate, minPrepTimeMinutes, hours, minutes, isTimeValid, dayOpeningHours, openingMinutes, closingMinutes]);
 
   const incrementHours = () => {
     if (hours >= 23) {
@@ -150,12 +231,17 @@ export function DeliveryTimeInput({
   const decrementHours = () => {
     const newHours = hours <= 0 ? 23 : hours - 1;
     const minTime = getMinTime();
+    const newTimeInMinutes = newHours * 60 + minutes;
+    const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
     
-    // Prevent going below minimum time for today
-    if (selectedDate && isToday(selectedDate)) {
-      if (newHours < minTime.hours || (newHours === minTime.hours && minutes < minTime.minutes)) {
-        return;
-      }
+    // Prevent going below minimum time or opening hours
+    if (newTimeInMinutes < minTimeInMinutes) {
+      return;
+    }
+    
+    // Also check against opening hours
+    if (openingMinutes !== null && newTimeInMinutes < openingMinutes) {
+      return;
     }
     
     onTimeChange(formatTime(newHours, minutes));
@@ -182,6 +268,13 @@ export function DeliveryTimeInput({
       }
     }
     
+    // Check against closing hours
+    const newTimeInMinutes = newHours * 60 + newMinutes;
+    if (closingMinutes !== null && newTimeInMinutes > closingMinutes) {
+      // Don't exceed closing time
+      return;
+    }
+    
     onTimeChange(formatTime(newHours, newMinutes));
   };
 
@@ -194,15 +287,18 @@ export function DeliveryTimeInput({
       newHours = hours <= 0 ? 23 : hours - 1;
     }
     
-    // Prevent going below minimum time for today
-    if (selectedDate && isToday(selectedDate)) {
-      const minTime = getMinTime();
-      const newTimeInMinutes = newHours * 60 + newMinutes;
-      const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
-      
-      if (newTimeInMinutes < minTimeInMinutes) {
-        return;
-      }
+    // Prevent going below minimum time or opening hours
+    const minTime = getMinTime();
+    const newTimeInMinutes = newHours * 60 + newMinutes;
+    const minTimeInMinutes = minTime.hours * 60 + minTime.minutes;
+    
+    if (newTimeInMinutes < minTimeInMinutes) {
+      return;
+    }
+    
+    // Also check against opening hours
+    if (openingMinutes !== null && newTimeInMinutes < openingMinutes) {
+      return;
     }
     
     const newTime = formatTime(newHours, newMinutes);
@@ -294,10 +390,15 @@ export function DeliveryTimeInput({
         </p>
       )}
 
-      {/* Hint for today */}
-      {selectedDate && isToday(selectedDate) && !timeError && (
+      {/* Hint for time constraints */}
+      {selectedDate && !timeError && (
         <p className="text-sm text-muted-foreground text-center">
-          Minimale voorbereidingstijd: {minPrepTimeMinutes} minuten
+          {dayOpeningHours && !dayOpeningHours.is_closed && (
+            <>Openingstijden: {dayOpeningHours.open_time.substring(0, 5)} - {dayOpeningHours.close_time.substring(0, 5)}</>
+          )}
+          {isToday(selectedDate) && (
+            <> • Min. voorbereidingstijd: {minPrepTimeMinutes} min</>
+          )}
         </p>
       )}
     </div>
