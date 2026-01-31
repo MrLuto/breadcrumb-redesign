@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -14,22 +13,13 @@ interface CategoryNavProps {
 }
 
 export const CategoryNav = ({ categories, activeCategory }: CategoryNavProps) => {
-  const [isSticky, setIsSticky] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      // Make sticky after scrolling past hero (approximately 300px)
-      setIsSticky(window.scrollY > 300);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const scrollToCategory = (slug: string) => {
     const element = document.getElementById(slug);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Account for sticky header (64px) + category nav (56px approx)
+      const offset = 130;
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: elementPosition - offset, behavior: 'smooth' });
     }
   };
 
@@ -39,10 +29,7 @@ export const CategoryNav = ({ categories, activeCategory }: CategoryNavProps) =>
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        'bg-background/95 backdrop-blur-md border-b border-border z-40 transition-all duration-300',
-        isSticky ? 'sticky top-16 shadow-sm' : ''
-      )}
+      className="sticky top-16 bg-background/95 backdrop-blur-md border-b border-border z-40 shadow-sm"
     >
       <div className="container">
         <nav className="flex gap-1 py-3 overflow-x-auto scrollbar-hide">
