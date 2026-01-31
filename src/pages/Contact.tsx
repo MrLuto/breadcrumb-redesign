@@ -54,23 +54,30 @@ const Contact = () => {
       return ['Laden...'];
     }
 
-    // Get dates for current week to check closed days
+    // Get dates for relevant week (current day shows next week if already passed)
     const today = new Date();
     const currentDay = today.getDay();
     const monday = new Date(today);
     const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
     monday.setDate(today.getDate() - daysFromMonday);
+    monday.setHours(0, 0, 0, 0);
     
-    const getWeekDate = (dayOfWeek: number) => {
+    const getRelevantDate = (dayOfWeek: number) => {
+      // Map dayOfWeek (1=Mon, 2=Tue, ..., 0=Sun) to offset from Monday
       const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       const date = new Date(monday);
       date.setDate(monday.getDate() + offset);
+      
+      // If this day has already passed, show next week
+      if (date < today && !(date.toDateString() === today.toDateString())) {
+        date.setDate(date.getDate() + 7);
+      }
       return date;
     };
 
     const isSpecialClosed = (dayOfWeek: number) => {
       if (!closedDays) return false;
-      const weekDate = getWeekDate(dayOfWeek);
+      const weekDate = getRelevantDate(dayOfWeek);
       const dateString = weekDate.toISOString().split('T')[0];
       
       return closedDays.some(cd => 

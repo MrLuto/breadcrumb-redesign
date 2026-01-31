@@ -68,7 +68,7 @@ const safeLocalStorage = {
 };
 
 // Check postcode against delivery zones from DB
-const checkPostcodeWithZones = (postcode: string, zones: DeliveryZone[] | undefined): DeliveryInfo => {
+const checkPostcodeWithZones = (postcode: string, zones: DeliveryZone[] | undefined): DeliveryInfo & { freeFrom?: number } => {
   if (!zones || zones.length === 0) {
     return { inArea: false };
   }
@@ -80,6 +80,7 @@ const checkPostcodeWithZones = (postcode: string, zones: DeliveryZone[] | undefi
       minutes: 90, // Default estimate, could be added to zone table
       cost: zone.delivery_cost,
       minimum: zone.min_order_amount || 0,
+      freeFrom: zone.free_delivery_threshold ?? undefined,
     };
   }
   
