@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
 import { useShopSettings, calculateDeliveryCost } from '@/hooks/useShopSettings';
 import { useActiveClosedDays, isDateClosed } from '@/hooks/useClosedDays';
+import { useOpeningHours } from '@/hooks/useOpeningHours';
 import { CustomerTypeToggle } from '@/components/checkout/CustomerTypeToggle';
 import { OrderTypeSelector } from '@/components/checkout/OrderTypeSelector';
 import { DeliveryTimeInput } from '@/components/checkout/DeliveryTimeInput';
@@ -130,6 +131,7 @@ const Checkout = () => {
   const { data: deliveryZones } = useActiveDeliveryZones();
   const { data: shopSettings } = useShopSettings();
   const { data: closedDays } = useActiveClosedDays();
+  const { data: openingHours } = useOpeningHours();
 
   // Check for unavailable products in cart
   const unavailableItems = useMemo(() => {
@@ -950,6 +952,7 @@ const Checkout = () => {
                           onTimeChange={(time) => form.setValue('delivery_time', time)}
                           onDateChange={(date) => form.setValue('delivery_date', date)}
                           error={timeError || undefined}
+                          openingHours={openingHours}
                         />
                       </div>
                     </div>
