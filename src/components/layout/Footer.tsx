@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Facebook } from 'lucide-react';
-import logo from '@/assets/logo.png';
-import { useOpeningHours, getDayName } from '@/hooks/useOpeningHours';
-import { useActiveClosedDays } from '@/hooks/useClosedDays';
+import { Link } from "react-router-dom";
+import { Phone, Mail, MapPin, Facebook } from "lucide-react";
+import logo from "@/assets/logo.png";
+import { useOpeningHours, getDayName } from "@/hooks/useOpeningHours";
+import { useActiveClosedDays } from "@/hooks/useClosedDays";
 
 const Footer = () => {
   const { data: openingHours, isLoading: loadingHours } = useOpeningHours();
@@ -10,7 +10,7 @@ const Footer = () => {
 
   // Get all days Monday (1) to Sunday (0), filter out closed days dynamically
   const allDays = [1, 2, 3, 4, 5, 6, 0];
-  const orderedDays = allDays.filter(dayIndex => {
+  const orderedDays = allDays.filter((dayIndex) => {
     const dayHours = openingHours?.find((h) => h.day_of_week === dayIndex);
     // Hide days that are permanently closed
     return !dayHours?.is_closed;
@@ -24,20 +24,20 @@ const Footer = () => {
   const getRelevantWeekDates = () => {
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Sunday
-    
+
     // Find Monday of current week
     const monday = new Date(today);
     const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
     monday.setDate(today.getDate() - daysFromMonday);
     monday.setHours(0, 0, 0, 0);
-    
+
     const weekDates: { [key: number]: Date } = {};
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       // Map: 0=Monday -> dayOfWeek 1, 1=Tuesday -> dayOfWeek 2, ..., 6=Sunday -> dayOfWeek 0
       const dayOfWeek = i === 6 ? 0 : i + 1;
-      
+
       // If this day has already passed today, show next week's date
       if (date < today && !(date.toDateString() === today.toDateString())) {
         date.setDate(date.getDate() + 7);
@@ -50,8 +50,8 @@ const Footer = () => {
   // Check if a specific date has a closed day exception
   const getClosedDayForDate = (date: Date) => {
     if (!closedDays) return null;
-    
-    const dateString = date.toISOString().split('T')[0];
+
+    const dateString = date.toISOString().split("T")[0];
     const dayOfWeek = date.getDay();
 
     for (const closedDay of closedDays) {
@@ -77,19 +77,14 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <Link to="/" className="inline-block mb-4">
-              <img 
-                src={logo} 
-                alt="FrisVersshop Gouda" 
-                className="h-16 w-auto"
-              />
+              <img src={logo} alt="FrisVersshop Gouda" className="h-16 w-auto" />
             </Link>
             <p className="text-secondary-foreground/80 mb-4 leading-relaxed">
-              Al meer dan 40 jaar combineren wij onze liefde voor kaas, delicatessen 
-              en belegde broodjes in Gouda.
+              Al meer dan 40 jaar combineren wij onze liefde voor kaas, delicatessen en belegde broodjes in Gouda.
             </p>
-            <a 
-              href="https://www.facebook.com/Frisversshop/" 
-              target="_blank" 
+            <a
+              href="https://www.facebook.com/Frisversshop/"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 hover:text-primary transition-colors"
             >
@@ -103,16 +98,24 @@ const Footer = () => {
             <h4 className="font-display text-lg font-semibold mb-4">Navigatie</h4>
             <ul className="space-y-3">
               <li>
-                <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+                <Link to="/" className="hover:text-primary transition-colors">
+                  Home
+                </Link>
               </li>
               <li>
-                <Link to="/assortiment" className="hover:text-primary transition-colors">Assortiment</Link>
+                <Link to="/assortiment" className="hover:text-primary transition-colors">
+                  Assortiment
+                </Link>
               </li>
               <li>
-                <Link to="/over-ons" className="hover:text-primary transition-colors">Over Ons</Link>
+                <Link to="/over-ons" className="hover:text-primary transition-colors">
+                  Over Ons
+                </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
+                <Link to="/contact" className="hover:text-primary transition-colors">
+                  Contact
+                </Link>
               </li>
             </ul>
           </div>
@@ -123,7 +126,11 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>Willem en Marialaan 46<br />2805 AR Gouda</span>
+                <span>
+                  Willem en Marialaan 46
+                  <br />
+                  2805 AR Gouda
+                </span>
               </li>
               <li>
                 <a href="tel:0182524926" className="flex items-center gap-3 hover:text-primary transition-colors">
@@ -132,7 +139,10 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@frisversshop.nl" className="flex items-center gap-3 hover:text-primary transition-colors">
+                <a
+                  href="mailto:info@frisversshop.nl"
+                  className="flex items-center gap-3 hover:text-primary transition-colors"
+                >
                   <Mail className="w-5 h-5" />
                   info@frisversshop.nl
                 </a>
@@ -151,23 +161,22 @@ const Footer = () => {
                   const dayHours = openingHours?.find((h) => h.day_of_week === dayIndex);
                   const weekDate = weekDates[dayIndex];
                   const closedDay = weekDate ? getClosedDayForDate(weekDate) : null;
-                  
+
                   // Check if there's a special closed day this week
                   const isSpecialClosed = closedDay && !closedDay.is_recurring;
                   const isClosed = dayHours?.is_closed || isSpecialClosed;
-                  
+
                   return (
                     <li key={dayIndex} className="flex justify-between">
                       <span>{getDayName(dayIndex)}</span>
-                      <span className={isSpecialClosed ? 'text-destructive' : ''}>
-                        {isClosed 
-                          ? isSpecialClosed && closedDay?.reason 
+                      <span className={isSpecialClosed ? "text-destructive" : ""}>
+                        {isClosed
+                          ? isSpecialClosed && closedDay?.reason
                             ? `Gesloten (${closedDay.reason})`
-                            : 'Gesloten'
-                          : dayHours 
+                            : "Gesloten"
+                          : dayHours
                             ? `${formatTime(dayHours.open_time)} - ${formatTime(dayHours.close_time)}`
-                            : '-'
-                        }
+                            : "-"}
                       </span>
                     </li>
                   );
@@ -177,11 +186,17 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Bottom bar */}
       <div className="border-t border-secondary-foreground/20">
         <div className="container py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-secondary-foreground/70">
-          <p>© {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden.</p>
+          <p>
+            © {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden.
+            <a href="https://www.byluto.nl/" target="_blank">
+              {" "}
+              Powered ByLuto
+            </a>
+          </p>
         </div>
       </div>
     </footer>
