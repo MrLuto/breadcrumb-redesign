@@ -13,19 +13,42 @@ import {
   Users,
   Truck,
   Clock,
-  Settings
+  Settings,
+  ChevronDown,
+  FolderTree,
+  ShoppingBasket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: NavItem[];
+}
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Assortiment', href: '/admin/catalog', icon: Package },
-  { name: 'Product Opties', href: '/admin/product-options', icon: Settings },
+  { 
+    name: 'Assortiment', 
+    href: '/admin/catalog', 
+    icon: Package,
+    children: [
+      { name: 'Categorieën', href: '/admin/categories', icon: FolderTree },
+      { name: 'Producten', href: '/admin/products', icon: ShoppingBasket },
+      { name: 'Product Opties', href: '/admin/product-options', icon: Settings },
+    ]
+  },
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Klanten', href: '/admin/companies', icon: Building2 },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
@@ -79,8 +102,58 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
+              const hasChildren = item.children && item.children.length > 0;
               const isActive = location.pathname === item.href || 
                 (item.href !== '/admin' && location.pathname.startsWith(item.href));
+              const isChildActive = hasChildren && item.children?.some(
+                child => location.pathname === child.href || location.pathname.startsWith(child.href)
+              );
+              
+              if (hasChildren) {
+                return (
+                  <Collapsible key={item.name} defaultOpen={isActive || isChildActive}>
+                    <CollapsibleTrigger asChild>
+                      <button
+                        className={cn(
+                          "flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                          isActive || isChildActive
+                            ? "bg-primary/10 text-primary" 
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <span className="flex items-center gap-3">
+                          <item.icon className="h-5 w-5" />
+                          {item.name}
+                        </span>
+                        <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-4 mt-1 space-y-1">
+                      {item.children?.map((child) => {
+                        const isChildItemActive = location.pathname === child.href || 
+                          location.pathname.startsWith(child.href);
+                        
+                        return (
+                          <Link
+                            key={child.name}
+                            to={child.href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isChildItemActive 
+                                ? "bg-primary text-primary-foreground" 
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
+                          >
+                            <child.icon className="h-4 w-4" />
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              }
               
               return (
                 <Link
