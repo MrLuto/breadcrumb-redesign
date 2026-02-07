@@ -18,6 +18,8 @@ const DEFAULT_SETTINGS: ShopSettings = {
 export function useShopSettings() {
   return useQuery({
     queryKey: ['shop-settings'],
+    staleTime: 0, // Always refetch to get latest settings
+    refetchOnMount: true,
     queryFn: async (): Promise<ShopSettings> => {
       const { data, error } = await supabase
         .from('shop_settings')
