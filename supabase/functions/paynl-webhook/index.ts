@@ -5,6 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting config
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 100; // Allow 100 webhook calls per hour per IP
+
 // Pay.nl status codes
 // https://developer.pay.nl/docs/order-statuses
 const PAYNL_STATUS = {
@@ -20,27 +24,80 @@ const PAYNL_STATUS = {
   CHARGEBACK: -82, // Chargeback
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const checkRateLimit = async (supabase: any, ip: string, functionName: string): Promise<{ allowed: boolean }> => {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  
+  const { data: existing } = await supabase
+    .from('rate_limits')
+    .select('*')
+    .eq('ip_address', ip)
+    .eq('function_name', functionName)
+    .gte('window_start', windowStart)
+    .single();
+  
+  if (existing) {
+    if (existing.request_count >= MAX_REQUESTS_PER_WINDOW) {
+      return { allowed: false };
+    }
+    
+    await supabase
+      .from('rate_limits')
+      .update({ request_count: existing.request_count + 1 })
+      .eq('id', existing.id);
+    
+    return { allowed: true };
+  }
+  
+  await supabase
+    .from('rate_limits')
+    .upsert({
+      ip_address: ip,
+      function_name: functionName,
+      request_count: 1,
+      window_start: new Date().toISOString(),
+    }, { onConflict: 'ip_address,function_name' });
+  
+  return { allowed: true };
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
+  // Get client IP and check rate limit
+  const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+    || req.headers.get('cf-connecting-ip') 
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+
+  const { allowed } = await checkRateLimit(supabase, clientIP, 'paynl-webhook');
+  
+  if (!allowed) {
+    console.log('Rate limit exceeded for IP:', clientIP);
+    return new Response('Too many requests', { 
+      status: 429,
+      headers: { 'Retry-After': '3600' }
+    });
+  }
+
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const paynlApiToken = Deno.env.get('PAYNL_API_TOKEN');
 
     if (!paynlApiToken) {
       console.error('Pay.nl API token not configured');
       return new Response('Configuration error', { status: 500 });
     }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
 
     // Pay.nl sends webhook as form-urlencoded or query params
     let paymentId: string | null = null;
