@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,8 +46,9 @@ import {
 } from '@/hooks/useProductOptions';
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
-import { Plus, Pencil, Trash2, Settings, Loader2, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Settings, Loader2, Package, FolderOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface OptionGroupFormData {
   product_id: string | null;
@@ -95,6 +97,7 @@ const emptyOptionForm: OptionFormData = {
 };
 
 export default function AdminProductOptions() {
+  const navigate = useNavigate();
   const { data: optionGroups, isLoading } = useAllOptionGroups();
   const { data: products } = useProducts();
   const { data: categories } = useCategories();
@@ -224,12 +227,44 @@ export default function AdminProductOptions() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Assortiment</h1>
+          <p className="text-muted-foreground mt-1">
+            Beheer categorieën en producten.
+          </p>
+        </div>
+
+        <Tabs value="options" className="space-y-6">
+          <TabsList>
+            <TabsTrigger 
+              value="products" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/admin/catalog')}
+            >
+              <Package className="h-4 w-4" />
+              Producten
+            </TabsTrigger>
+            <TabsTrigger 
+              value="categories" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/admin/catalog?tab=categories')}
+            >
+              <FolderOpen className="h-4 w-4" />
+              Categorieën
+            </TabsTrigger>
+            <TabsTrigger value="options" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Product Opties
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
               <Settings className="h-6 w-6" />
               Product Opties
-            </h1>
+            </h2>
             <p className="text-muted-foreground">
               Beheer optiegroepen (broodsoort, beleg, etc.) en individuele opties
             </p>
