@@ -146,6 +146,7 @@ export type Database = {
           billing_city: string | null
           billing_postcode: string | null
           city: string | null
+          company_id: string | null
           company_name: string | null
           contact_person: string | null
           created_at: string | null
@@ -169,6 +170,7 @@ export type Database = {
           billing_city?: string | null
           billing_postcode?: string | null
           city?: string | null
+          company_id?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string | null
@@ -192,6 +194,7 @@ export type Database = {
           billing_city?: string | null
           billing_postcode?: string | null
           city?: string | null
+          company_id?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string | null
@@ -210,7 +213,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_zones: {
         Row: {
@@ -779,6 +790,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          is_public: boolean
           key: string
           updated_at: string | null
           value: Json
@@ -786,6 +798,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          is_public?: boolean
           key: string
           updated_at?: string | null
           value: Json
@@ -793,6 +806,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          is_public?: boolean
           key?: string
           updated_at?: string | null
           value?: Json
@@ -826,6 +840,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
