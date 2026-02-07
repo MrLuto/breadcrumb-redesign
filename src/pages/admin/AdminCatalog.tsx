@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Image as ImageIcon, FolderOpen, Package } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Plus, Pencil, Trash2, Image as ImageIcon, FolderOpen, Package, Settings } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,8 @@ import {
 } from '@/hooks/useProducts';
 
 export default function AdminCatalog() {
+  const navigate = useNavigate();
+  
   // Category state
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [deleteCategoryDialogOpen, setDeleteCategoryDialogOpen] = useState(false);
@@ -179,6 +182,14 @@ export default function AdminCatalog() {
             <TabsTrigger value="categories" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               Categorieën
+            </TabsTrigger>
+            <TabsTrigger 
+              value="options" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/admin/product-options')}
+            >
+              <Settings className="h-4 w-4" />
+              Product Opties
             </TabsTrigger>
           </TabsList>
 
