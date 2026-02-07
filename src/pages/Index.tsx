@@ -11,24 +11,19 @@ import heroOriginal from '@/assets/hero-original.jpg';
 import belegdeBroodjes from '@/assets/belegde-broodjes.jpg';
 import kaasOriginal from '@/assets/kaas-original.jpg';
 import olijvenTapas from '@/assets/olijven-tapas.jpg';
-
-const features = [
-  {
-    icon: Users,
-    title: 'Persoonlijke Aandacht',
-    description: 'Bij Frisversshop staat de persoonlijke aandacht voor onze klanten voorop. Wij hechten veel waarde aan de wensen van onze klanten.',
-  },
-  {
-    icon: Award,
-    title: 'Sinds 1986',
-    description: 'Al meer dan 40 jaar ervaring in Gouda. Wij hebben een sterke band met onze klanten gecreëerd en hun vertrouwen gewonnen.',
-  },
-  {
-    icon: ChefHat,
-    title: 'Vers Gebakken',
-    description: 'Onze overheerlijke broodjes worden altijd vers voor u gebakken in onze eigen oven. Op deze manier bent u altijd verzekerd van een knapperig broodje.',
-  },
-];
+const features = [{
+  icon: Users,
+  title: 'Persoonlijke Aandacht',
+  description: 'Bij Frisversshop staat de persoonlijke aandacht voor onze klanten voorop. Wij hechten veel waarde aan de wensen van onze klanten.'
+}, {
+  icon: Award,
+  title: 'Sinds 1986',
+  description: 'Al meer dan 40 jaar ervaring in Gouda. Wij hebben een sterke band met onze klanten gecreëerd en hun vertrouwen gewonnen.'
+}, {
+  icon: ChefHat,
+  title: 'Vers Gebakken',
+  description: 'Onze overheerlijke broodjes worden altijd vers voor u gebakken in onze eigen oven. Op deze manier bent u altijd verzekerd van een knapperig broodje.'
+}];
 
 // Fallback images for categories that don't have their own image
 const categoryImages: Record<string, string> = {
@@ -39,54 +34,56 @@ const categoryImages: Record<string, string> = {
   'luxe-hapjes': olijvenTapas,
   'soepen': kaasOriginal,
   'overig': olijvenTapas,
-  'dranken': kaasOriginal,
+  'dranken': kaasOriginal
 };
 
 // Default fallback image
 const defaultCategoryImage = belegdeBroodjes;
-
 const Index = () => {
-  const { data: dbCategories } = useCategories();
-  const { data: popularCategories } = usePopularCategories(3);
-  const { data: hasOrders } = useHasOrders();
-  
+  const {
+    data: dbCategories
+  } = useCategories();
+  const {
+    data: popularCategories
+  } = usePopularCategories(3);
+  const {
+    data: hasOrders
+  } = useHasOrders();
+
   // Use popular categories if there are orders, otherwise use first 3 by display order
   const categoriesToShow = hasOrders && popularCategories?.length ? popularCategories : dbCategories;
-  
-  // Get display categories (first 3)
-  const displayCategories = (categoriesToShow || [])
-    .filter(cat => cat.is_active)
-    .slice(0, 3)
-    .map(cat => ({
-      id: cat.id,
-      title: cat.name,
-      description: cat.description || `Ontdek onze ${cat.name.toLowerCase()}`,
-      image: cat.image_url || categoryImages[cat.slug] || defaultCategoryImage,
-      link: `/assortiment#${cat.slug}`,
-      isPopular: hasOrders && 'order_count' in cat && (cat as any).order_count > 0,
-    }));
 
-  return (
-    <Layout>
+  // Get display categories (first 3)
+  const displayCategories = (categoriesToShow || []).filter(cat => cat.is_active).slice(0, 3).map(cat => ({
+    id: cat.id,
+    title: cat.name,
+    description: cat.description || `Ontdek onze ${cat.name.toLowerCase()}`,
+    image: cat.image_url || categoryImages[cat.slug] || defaultCategoryImage,
+    link: `/assortiment#${cat.slug}`,
+    isPopular: hasOrders && 'order_count' in cat && (cat as any).order_count > 0
+  }));
+  return <Layout>
       {/* Hero Section */}
       <section className="relative min-h-[80vh] flex items-center">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroOriginal})` }}
-        >
+        <div className="absolute inset-0 bg-cover bg-center" style={{
+        backgroundImage: `url(${heroOriginal})`
+      }}>
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-transparent" />
         </div>
         
         <div className="container relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-2xl"
-          >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-card leading-tight mb-6">
-              Vers. Ambachtelijk.<br />
-              <span className="text-primary">Lokaal Genieten.</span>
+          <motion.div initial={{
+          opacity: 0,
+          y: 30
+        }} animate={{
+          opacity: 1,
+          y: 0
+        }} transition={{
+          duration: 0.8
+        }} className="max-w-2xl">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-card leading-tight mb-6">vers. ambachtelijk.
+lokaal genieten.<br />
+              <span className="text-primary">lokaal genieten.</span>
             </h1>
             <p className="text-lg md:text-xl text-card/90 mb-8 leading-relaxed">
               Bij Frisversshop combineren we onze liefde voor kaas, delicatessen en belegde 
@@ -103,13 +100,17 @@ const Index = () => {
       {/* Features Section */}
       <section className="py-20 gradient-warm">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-14"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} whileInView={{
+          opacity: 1,
+          y: 0
+        }} viewport={{
+          once: true
+        }} transition={{
+          duration: 0.6
+        }} className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
               Waarom FrisVersshop?
             </h2>
@@ -119,15 +120,18 @@ const Index = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-card rounded-2xl p-8 shadow-card hover:shadow-glow transition-shadow duration-300"
-              >
+            {features.map((feature, index) => <motion.div key={feature.title} initial={{
+            opacity: 0,
+            y: 30
+          }} whileInView={{
+            opacity: 1,
+            y: 0
+          }} viewport={{
+            once: true
+          }} transition={{
+            duration: 0.5,
+            delay: index * 0.1
+          }} className="bg-card rounded-2xl p-8 shadow-card hover:shadow-glow transition-shadow duration-300">
                 <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
                   <feature.icon className="w-7 h-7 text-primary" />
                 </div>
@@ -137,8 +141,7 @@ const Index = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </div>
         </div>
       </section>
@@ -146,51 +149,47 @@ const Index = () => {
       {/* Categories Section */}
       <section className="py-20 bg-background">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-14"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} whileInView={{
+          opacity: 1,
+          y: 0
+        }} viewport={{
+          once: true
+        }} transition={{
+          duration: 0.6
+        }} className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
               {hasOrders ? 'Populaire Categorieën' : 'Onze Broodjes'}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              {hasOrders 
-                ? 'Ontdek de meest bestelde categorieën bij onze klanten.'
-                : 'Van versgebakken broodjes tot ambachtelijke kazen - ontdek onze selectie.'
-              }
+              {hasOrders ? 'Ontdek de meest bestelde categorieën bij onze klanten.' : 'Van versgebakken broodjes tot ambachtelijke kazen - ontdek onze selectie.'}
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {displayCategories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Link 
-                  to={category.link}
-                  className="group block overflow-hidden rounded-2xl shadow-card hover:shadow-glow transition-all duration-300"
-                >
+            {displayCategories.map((category, index) => <motion.div key={category.id} initial={{
+            opacity: 0,
+            scale: 0.95
+          }} whileInView={{
+            opacity: 1,
+            scale: 1
+          }} viewport={{
+            once: true
+          }} transition={{
+            duration: 0.5,
+            delay: index * 0.1
+          }}>
+                <Link to={category.link} className="group block overflow-hidden rounded-2xl shadow-card hover:shadow-glow transition-all duration-300">
                   <div className="relative h-64 overflow-hidden">
-                    <img 
-                      src={category.image} 
-                      alt={category.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
+                    <img src={category.image} alt={category.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
-                      {category.isPopular && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/20 px-2 py-1 rounded-full mb-2">
+                      {category.isPopular && <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/20 px-2 py-1 rounded-full mb-2">
                           <TrendingUp className="h-3 w-3" />
                           Populair
-                        </span>
-                      )}
+                        </span>}
                       <h3 className="text-2xl font-display font-bold text-card mb-2">
                         {category.title}
                       </h3>
@@ -200,17 +199,21 @@ const Index = () => {
                     </div>
                   </div>
                 </Link>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center mt-12"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} whileInView={{
+          opacity: 1,
+          y: 0
+        }} viewport={{
+          once: true
+        }} transition={{
+          duration: 0.6,
+          delay: 0.3
+        }} className="text-center mt-12">
             <Button variant="default" size="lg" asChild>
               <Link to="/assortiment">
                 Bekijk Alles
@@ -224,13 +227,17 @@ const Index = () => {
       {/* Delivery Check + CTA Section */}
       <section className="py-20 bg-secondary rounded-3xl mx-4 md:mx-8 mb-8">
         <div className="container">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} whileInView={{
+          opacity: 1,
+          y: 0
+        }} viewport={{
+          once: true
+        }} transition={{
+          duration: 0.6
+        }} className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-6">
               Klaar om te Bestellen?
             </h2>
@@ -251,8 +258,6 @@ const Index = () => {
           </motion.div>
         </div>
       </section>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Index;
