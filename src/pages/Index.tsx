@@ -16,12 +16,12 @@ const features = [
   {
     icon: Users,
     title: 'Persoonlijke Aandacht',
-    description: 'Bij Fris Versshop staat de persoonlijke aandacht voor onze klanten voorop. Wij hechten veel waarde aan de wensen van onze klanten.',
+    description: 'Bij Frisversshop staat de persoonlijke aandacht voor onze klanten voorop. Wij hechten veel waarde aan de wensen van onze klanten.',
   },
   {
     icon: Award,
     title: 'Sinds 1986',
-    description: 'Al meer dan 35 jaar ervaring in Gouda. Wij hebben een sterke band met onze klanten gecreëerd en hun vertrouwen gewonnen.',
+    description: 'Al meer dan 40 jaar ervaring in Gouda. Wij hebben een sterke band met onze klanten gecreëerd en hun vertrouwen gewonnen.',
   },
   {
     icon: ChefHat,
@@ -89,9 +89,9 @@ const Index = () => {
               <span className="text-primary">Lokaal Genieten.</span>
             </h1>
             <p className="text-lg md:text-xl text-card/90 mb-8 leading-relaxed">
-              Bij Fris Versshop combineren we onze liefde voor kaas, delicatessen en belegde 
-              broodjes met meer dan 35 jaar ervaring in Gouda. Bestel online, kom langs in onze 
-              winkel of laat je lunch duurzaam bezorgen.
+              Bij Frisversshop combineren we onze liefde voor kaas, delicatessen en belegde 
+              broodjes met meer dan 40 jaar ervaring in Gouda. Bestel online, kom langs in onze 
+              winkel of laat je lunch bezorgen.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <OrderButton variant="hero" size="xl" />
@@ -114,7 +114,7 @@ const Index = () => {
               Waarom FrisVersshop?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Ontdek wat ons al meer dan 35 jaar de favoriete delicatessenwinkel van Gouda maakt.
+              Ontdek wat ons al meer dan 40 jaar de favoriete delicatessenwinkel van Gouda maakt.
             </p>
           </motion.div>
 
@@ -154,7 +154,7 @@ const Index = () => {
             className="text-center mb-14"
           >
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-              {hasOrders ? 'Populaire Categorieën' : 'Ons Assortiment'}
+              {hasOrders ? 'Populaire Categorieën' : 'Onze Broodjes'}
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               {hasOrders 

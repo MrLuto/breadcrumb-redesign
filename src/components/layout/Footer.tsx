@@ -9,7 +9,7 @@ const Footer = () => {
   const { data: closedDays, isLoading: loadingClosed } = useActiveClosedDays();
 
   // Reorder days: Monday (1) to Sunday (0)
-  const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+  const orderedDays = [1, 2, 3, 4, 5, 6];
 
   const formatTime = (time: string) => {
     return time.substring(0, 5);
@@ -79,7 +79,7 @@ const Footer = () => {
               />
             </Link>
             <p className="text-secondary-foreground/80 mb-4 leading-relaxed">
-              Al meer dan 35 jaar combineren wij onze liefde voor kaas, delicatessen 
+              Al meer dan 40 jaar combineren wij onze liefde voor kaas, delicatessen 
               en belegde broodjes in Gouda.
             </p>
             <a 
@@ -118,7 +118,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>Willem en Marialaan 46<br />2803 PH Gouda</span>
+                <span>Willem en Marialaan 46<br />2805 AR Gouda</span>
               </li>
               <li>
                 <a href="tel:0182524926" className="flex items-center gap-3 hover:text-primary transition-colors">

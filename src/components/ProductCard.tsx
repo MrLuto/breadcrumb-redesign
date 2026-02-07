@@ -62,7 +62,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
         {product.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-4">
             {product.description}
           </p>
         )}

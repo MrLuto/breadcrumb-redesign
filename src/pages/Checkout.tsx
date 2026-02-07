@@ -114,8 +114,8 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 const PAYMENT_METHODS = [
   { value: 'ideal', label: 'iDEAL' },
-  { value: 'pin', label: 'PIN (bij bezorgen/afhalen)' },
-  { value: 'invoice', label: 'Op factuur' },
+  { value: 'pin', label: 'PIN' },
+  { value: 'invoice', label: 'Op factuur', businessOnly: true },
   { value: 'cash', label: 'Contant' },
 ];
 
@@ -325,7 +325,8 @@ const Checkout = () => {
     if (isToday(watchedDeliveryDate)) {
       const now = new Date();
       const selectedTime = parse(watchedDeliveryTime, 'HH:mm', watchedDeliveryDate);
-      const minPrepTime = shopSettings?.min_preparation_time_minutes || 60;
+      // Use zone-specific prep time if available, otherwise use global shop setting
+      const minPrepTime = currentZone?.min_preparation_time_minutes ?? shopSettings?.min_preparation_time_minutes ?? 60;
       const earliestTime = addMinutes(now, minPrepTime);
 
       if (isBefore(selectedTime, earliestTime)) {
@@ -636,32 +637,6 @@ const Checkout = () => {
                               </FormItem>
                             )}
                           />
-                          <FormField
-                            control={form.control}
-                            name="kvk_number"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>KvK-nummer</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="12345678" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="department"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Afdeling (optioneel)</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Bijv. Receptie, HR" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
                         </>
                       )}
                       <FormField
@@ -706,43 +681,17 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Address / Postcode */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
-                    <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="delivery_address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Straat en huisnummer *</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Address / Postcode - only show for delivery */}
+                  {watchedOrderType === 'delivery' && (
+                    <div className="bg-card rounded-xl p-6 shadow-card">
+                      <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
-                          name="postcode"
+                          name="delivery_address"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Postcode *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="1234 AB" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Plaats *</FormLabel>
+                              <FormLabel>Straat en huisnummer *</FormLabel>
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
@@ -750,9 +699,37 @@ const Checkout = () => {
                             </FormItem>
                           )}
                         />
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="postcode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Postcode *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="1234 AB" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Plaats *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Billing Address for Business */}
                   {watchedCustomerType === 'business' && (
@@ -976,11 +953,13 @@ const Checkout = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {PAYMENT_METHODS.map((method) => (
-                                <SelectItem key={method.value} value={method.value}>
-                                  {method.label}
-                                </SelectItem>
-                              ))}
+                              {PAYMENT_METHODS
+                                .filter((method) => !method.businessOnly || watchedCustomerType === 'business')
+                                .map((method) => (
+                                  <SelectItem key={method.value} value={method.value}>
+                                    {method.label}
+                                  </SelectItem>
+                                ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

@@ -10,6 +10,7 @@ export interface DeliveryZone {
   is_active: boolean;
   min_order_amount: number | null;
   free_delivery_threshold: number | null;
+  min_preparation_time_minutes: number | null;
   created_at: string;
   updated_at: string;
 }

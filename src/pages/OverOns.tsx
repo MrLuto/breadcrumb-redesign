@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Heart, Users, Award, Leaf } from 'lucide-react';
+import { ArrowRight, Heart, Users, Award } from 'lucide-react';
 import heroOriginal from '@/assets/hero-original.jpg';
 
 const values = [
@@ -20,11 +20,6 @@ const values = [
     icon: Award,
     title: 'Kwaliteit',
     description: 'Wij werken alleen met de beste ingrediënten en leveranciers voor optimale kwaliteit.',
-  },
-  {
-    icon: Leaf,
-    title: 'Duurzaam',
-    description: 'Waar mogelijk kiezen wij voor duurzame en lokale producten.',
   },
 ];
 
@@ -45,8 +40,13 @@ const timeline = [
     description: 'We starten met onze bezorgservice om nog meer klanten te kunnen bedienen.',
   },
   {
+    year: '2025',
+    title: 'Nieuwe Winkel',
+    description: 'Frisversshop opent de deuren in een nieuwe winkel, in dezelfde straat.',
+  },
+  {
     year: 'Nu',
-    title: '35+ Jaar Ervaring',
+    title: '40 Jaar Ervaring',
     description: 'Nog steeds dezelfde passie voor kwaliteit en service als op dag één.',
   },
 ];
@@ -73,7 +73,7 @@ const OverOns = () => {
               Over <span className="text-primary">FrisVersshop</span>
             </h1>
             <p className="text-lg text-card/90 leading-relaxed">
-              Al meer dan 35 jaar de vertrouwde naam voor kaas, delicatessen en belegde broodjes in Gouda.
+              Al meer dan 40 jaar de vertrouwde naam voor kaas, delicatessen en belegde broodjes in Gouda.
             </p>
           </motion.div>
         </div>
@@ -94,7 +94,7 @@ const OverOns = () => {
               </h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  Bij Fris Versshop staat de persoonlijke aandacht voor onze klanten voorop. 
+                  Bij Frisversshop staat de persoonlijke aandacht voor onze klanten voorop. 
                   Wij hechten veel waarde aan de wensen van onze klanten. Sinds 1986 hebben wij 
                   een sterke band met onze klanten gecreëerd en hun vertrouwen gewonnen.
                 </p>
@@ -126,7 +126,7 @@ const OverOns = () => {
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-primary text-primary-foreground rounded-2xl p-6 shadow-glow">
-                <div className="text-4xl font-display font-bold">35+</div>
+                <div className="text-4xl font-display font-bold">40</div>
                 <div className="text-sm">Jaar Ervaring</div>
               </div>
             </motion.div>

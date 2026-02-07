@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useOpeningHours, getDayName } from '@/hooks/useOpeningHours';
@@ -17,7 +18,7 @@ const baseContactInfo = [
   {
     icon: MapPin,
     title: 'Adres',
-    details: ['Willem en Marialaan 46', '2803 PH Gouda'],
+    details: ['Willem en Marialaan 46', '2805 AR Gouda'],
   },
   {
     icon: Phone,
@@ -44,6 +45,7 @@ const Contact = () => {
     phone: '',
     subject: '',
     message: '',
+    contactMethod: 'whatsapp' as 'whatsapp' | 'email',
   });
 
   // Build opening hours details dynamically
@@ -85,8 +87,8 @@ const Contact = () => {
       );
     };
 
-    // Ordered days: Monday (1) to Sunday (0)
-    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+    // Ordered days: Monday (1) to Saturday (6) - excluding Sunday
+    const orderedDays = [1, 2, 3, 4, 5, 6];
     
     return orderedDays.map((dayIndex) => {
       const dayHours = openingHours.find((h) => h.day_of_week === dayIndex);
@@ -127,7 +129,8 @@ const Contact = () => {
     
     if (!trimmedName || !trimmedEmail || !trimmedSubject || !trimmedMessage) return;
     
-    const fullMessage = `*Nieuw bericht via contactformulier*
+    if (formData.contactMethod === 'whatsapp') {
+      const fullMessage = `*Nieuw bericht via contactformulier*
 
 *Naam:* ${trimmedName}
 *E-mail:* ${trimmedEmail}
@@ -135,18 +138,35 @@ ${trimmedPhone ? `*Telefoon:* ${trimmedPhone}\n` : ''}*Onderwerp:* ${trimmedSubj
 
 *Bericht:*
 ${trimmedMessage}`;
+      
+      const encodedMessage = encodeURIComponent(fullMessage);
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+      
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: 'WhatsApp geopend!',
+        description: 'Verstuur het bericht in WhatsApp om uw aanvraag te verzenden.',
+      });
+    } else {
+      // Email
+      const subject = encodeURIComponent(trimmedSubject);
+      const body = encodeURIComponent(`Naam: ${trimmedName}
+E-mail: ${trimmedEmail}
+${trimmedPhone ? `Telefoon: ${trimmedPhone}\n` : ''}
+Bericht:
+${trimmedMessage}`);
+      
+      const mailtoUrl = `mailto:info@frisversshop.nl?subject=${subject}&body=${body}`;
+      window.location.href = mailtoUrl;
+      
+      toast({
+        title: 'E-mail geopend!',
+        description: 'Verstuur het bericht via uw e-mailprogramma.',
+      });
+    }
     
-    const encodedMessage = encodeURIComponent(fullMessage);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-    
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-    
-    toast({
-      title: 'WhatsApp geopend!',
-      description: 'Verstuur het bericht in WhatsApp om uw aanvraag te verzenden.',
-    });
-    
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    setFormData({ name: '', email: '', phone: '', subject: '', message: '', contactMethod: formData.contactMethod });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -301,9 +321,36 @@ ${trimmedMessage}`;
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Verstuur via WhatsApp
+                  <div className="space-y-3">
+                    <Label>Hoe wilt u contact opnemen?</Label>
+                    <RadioGroup 
+                      value={formData.contactMethod} 
+                      onValueChange={(value: 'whatsapp' | 'email') => setFormData({ ...formData, contactMethod: value })}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="whatsapp" id="contact-whatsapp" />
+                        <Label htmlFor="contact-whatsapp" className="font-normal cursor-pointer">WhatsApp</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="email" id="contact-email" />
+                        <Label htmlFor="contact-email" className="font-normal cursor-pointer">E-mail</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <Button type="submit" size="lg" className={formData.contactMethod === 'whatsapp' ? 'w-full bg-[#25D366] hover:bg-[#20BD5A] text-white' : 'w-full'}>
+                    {formData.contactMethod === 'whatsapp' ? (
+                      <>
+                        <MessageCircle className="w-5 h-5 mr-2" />
+                        Verstuur via WhatsApp
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-5 h-5 mr-2" />
+                        Verstuur via E-mail
+                      </>
+                    )}
                   </Button>
                 </form>
               </div>

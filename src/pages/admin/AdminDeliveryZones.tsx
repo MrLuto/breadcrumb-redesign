@@ -31,6 +31,7 @@ interface ZoneFormData {
   delivery_cost: number;
   min_order_amount: number;
   free_delivery_threshold: number | null;
+  min_preparation_time_minutes: number | null;
   is_active: boolean;
 }
 
@@ -40,6 +41,7 @@ const emptyForm: ZoneFormData = {
   delivery_cost: 7.5,
   min_order_amount: 0,
   free_delivery_threshold: null,
+  min_preparation_time_minutes: null,
   is_active: true,
 };
 
@@ -74,6 +76,7 @@ export default function AdminDeliveryZones() {
       delivery_cost: zone.delivery_cost,
       min_order_amount: zone.min_order_amount || 0,
       free_delivery_threshold: zone.free_delivery_threshold,
+      min_preparation_time_minutes: zone.min_preparation_time_minutes,
       is_active: zone.is_active,
     });
     setDialogOpen(true);
@@ -203,6 +206,25 @@ export default function AdminDeliveryZones() {
                   />
                   <p className="text-xs text-muted-foreground">
                     Laat leeg om de globale instelling te gebruiken
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="min_preparation_time_minutes">Bereidingstijd (minuten)</Label>
+                  <Input
+                    id="min_preparation_time_minutes"
+                    type="number"
+                    step="15"
+                    min="0"
+                    value={form.min_preparation_time_minutes ?? ''}
+                    onChange={(e) => setForm({ 
+                      ...form, 
+                      min_preparation_time_minutes: e.target.value ? parseInt(e.target.value) : null 
+                    })}
+                    placeholder="Gebruik globale instelling"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minimale bereidingstijd voor deze zone. Laat leeg om de globale instelling te gebruiken.
                   </p>
                 </div>
 
