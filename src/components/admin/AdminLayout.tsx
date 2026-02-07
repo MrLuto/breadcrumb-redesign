@@ -12,7 +12,8 @@ import {
   X,
   Users,
   Truck,
-  Clock
+  Clock,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -24,6 +25,7 @@ interface AdminLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Assortiment', href: '/admin/catalog', icon: Package },
+  { name: 'Product Opties', href: '/admin/product-options', icon: Settings },
   { name: 'Bestellingen', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Klanten', href: '/admin/companies', icon: Building2 },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },

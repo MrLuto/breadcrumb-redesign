@@ -32,6 +32,7 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
 import AdminOpeningHours from "./pages/admin/AdminOpeningHours";
+import AdminProductOptions from "./pages/admin/AdminProductOptions";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -109,6 +110,11 @@ const App = () => (
                 <Route path="/admin/opening-hours" element={
                   <ProtectedRoute>
                     <AdminOpeningHours />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/product-options" element={
+                  <ProtectedRoute>
+                    <AdminProductOptions />
                   </ProtectedRoute>
                 } />
                 
