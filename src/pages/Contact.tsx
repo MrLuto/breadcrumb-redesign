@@ -87,8 +87,12 @@ const Contact = () => {
       );
     };
 
-    // Ordered days: Monday (1) to Saturday (6) - excluding Sunday
-    const orderedDays = [1, 2, 3, 4, 5, 6];
+    // All days Monday (1) to Sunday (0), filter out permanently closed days
+    const allDays = [1, 2, 3, 4, 5, 6, 0];
+    const orderedDays = allDays.filter(dayIndex => {
+      const dayHours = openingHours.find((h) => h.day_of_week === dayIndex);
+      return !dayHours?.is_closed;
+    });
     
     return orderedDays.map((dayIndex) => {
       const dayHours = openingHours.find((h) => h.day_of_week === dayIndex);

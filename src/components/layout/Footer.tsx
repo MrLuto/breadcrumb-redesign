@@ -8,8 +8,13 @@ const Footer = () => {
   const { data: openingHours, isLoading: loadingHours } = useOpeningHours();
   const { data: closedDays, isLoading: loadingClosed } = useActiveClosedDays();
 
-  // Reorder days: Monday (1) to Sunday (0)
-  const orderedDays = [1, 2, 3, 4, 5, 6];
+  // Get all days Monday (1) to Sunday (0), filter out closed days dynamically
+  const allDays = [1, 2, 3, 4, 5, 6, 0];
+  const orderedDays = allDays.filter(dayIndex => {
+    const dayHours = openingHours?.find((h) => h.day_of_week === dayIndex);
+    // Hide days that are permanently closed
+    return !dayHours?.is_closed;
+  });
 
   const formatTime = (time: string) => {
     return time.substring(0, 5);
