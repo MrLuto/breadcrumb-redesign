@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
 
     // Create Pay.nl order using their Pioneer API
     // API docs: https://developer.pay.nl/docs/initiate-a-transaction-1
-    const authString = btoa(`${paynlApiToken}:`);
+    // Pioneer API uses Bearer token authentication
     
     const paynlPayload = {
       serviceId: paynlServiceId,
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Basic ${authString}`,
+        'Authorization': `Bearer ${paynlApiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(paynlPayload),
