@@ -373,6 +373,41 @@ export type Database = {
         }
         Relationships: []
       }
+      order_item_options: {
+        Row: {
+          created_at: string
+          id: string
+          option_group_name: string
+          option_name: string
+          order_item_id: string
+          price_adjustment: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_group_name: string
+          option_name: string
+          order_item_id: string
+          price_adjustment?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_group_name?: string
+          option_name?: string
+          order_item_id?: string
+          price_adjustment?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_options_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -552,6 +587,110 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_option_groups: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_required: boolean
+          max_selections: number
+          min_selections: number
+          name: string
+          product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          max_selections?: number
+          min_selections?: number
+          name: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          max_selections?: number
+          min_selections?: number
+          name?: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_available: boolean
+          is_default: boolean
+          name: string
+          option_group_id: string
+          price_adjustment: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          name: string
+          option_group_id: string
+          price_adjustment?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          is_default?: boolean
+          name?: string
+          option_group_id?: string
+          price_adjustment?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_option_group_id_fkey"
+            columns: ["option_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
             referencedColumns: ["id"]
           },
         ]

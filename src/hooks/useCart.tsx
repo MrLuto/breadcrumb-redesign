@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Database } from '@/integrations/supabase/types';
+import type { SelectedOption } from '@/hooks/useProductOptions';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
@@ -7,14 +8,17 @@ export interface CartItem {
   product: Product;
   quantity: number;
   notes?: string;
+  selectedOptions?: SelectedOption[];
+  // Unique key to differentiate same product with different options
+  cartItemKey: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number, notes?: string) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  updateNotes: (productId: string, notes: string) => void;
+  addItem: (product: Product, quantity?: number, notes?: string, selectedOptions?: SelectedOption[]) => void;
+  removeItem: (cartItemKey: string) => void;
+  updateQuantity: (cartItemKey: string, quantity: number) => void;
+  updateNotes: (cartItemKey: string, notes: string) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -24,16 +28,38 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'frisversshop-cart';
 
+// Generate a unique key for a cart item based on product and selected options
+function generateCartItemKey(productId: string, selectedOptions?: SelectedOption[]): string {
+  if (!selectedOptions || selectedOptions.length === 0) {
+    return productId;
+  }
+  const optionIds = selectedOptions
+    .map(opt => opt.optionId)
+    .sort()
+    .join('-');
+  return `${productId}:${optionIds}`;
+}
+
+// Calculate total price adjustment from selected options
+function calculateOptionsPrice(selectedOptions?: SelectedOption[]): number {
+  if (!selectedOptions) return 0;
+  return selectedOptions.reduce((sum, opt) => sum + opt.priceAdjustment, 0);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem(CART_STORAGE_KEY);
         if (saved) {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          // Migrate old cart items without cartItemKey
+          return parsed.map((item: any) => ({
+            ...item,
+            cartItemKey: item.cartItemKey || generateCartItemKey(item.product.id, item.selectedOptions),
+          }));
         }
       } catch (e) {
-        // localStorage might be blocked (privacy mode) or quota exceeded
         console.warn('Failed to read cart from localStorage:', e);
       }
     }
@@ -45,14 +71,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     } catch (e) {
-      // localStorage might be blocked (privacy mode) or quota exceeded
       console.warn('Failed to persist cart to localStorage:', e);
     }
   }, [items]);
 
-  const addItem = (product: Product, quantity = 1, notes?: string) => {
+  const addItem = (product: Product, quantity = 1, notes?: string, selectedOptions?: SelectedOption[]) => {
+    const cartItemKey = generateCartItemKey(product.id, selectedOptions);
+    
     setItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
+      const existingIndex = prev.findIndex((item) => item.cartItemKey === cartItemKey);
       
       if (existingIndex >= 0) {
         const updated = [...prev];
@@ -63,31 +90,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return updated;
       }
       
-      return [...prev, { product, quantity, notes }];
+      return [...prev, { product, quantity, notes, selectedOptions, cartItemKey }];
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeItem = (cartItemKey: string) => {
+    setItems((prev) => prev.filter((item) => item.cartItemKey !== cartItemKey));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cartItemKey: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(cartItemKey);
       return;
     }
     
     setItems((prev) =>
       prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.cartItemKey === cartItemKey ? { ...item, quantity } : item
       )
     );
   };
 
-  const updateNotes = (productId: string, notes: string) => {
+  const updateNotes = (cartItemKey: string, notes: string) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.product.id === productId ? { ...item, notes } : item
+        item.cartItemKey === cartItemKey ? { ...item, notes } : item
       )
     );
   };
@@ -98,10 +125,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  );
+  const subtotal = items.reduce((sum, item) => {
+    const optionsPrice = calculateOptionsPrice(item.selectedOptions);
+    return sum + (item.product.price + optionsPrice) * item.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider
@@ -127,4 +154,16 @@ export function useCart() {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
+}
+
+// Helper to get item price including options
+export function getCartItemPrice(item: CartItem): number {
+  const optionsPrice = calculateOptionsPrice(item.selectedOptions);
+  return item.product.price + optionsPrice;
+}
+
+// Helper to format selected options for display
+export function formatSelectedOptions(selectedOptions?: SelectedOption[]): string {
+  if (!selectedOptions || selectedOptions.length === 0) return '';
+  return selectedOptions.map(opt => opt.optionName).join(', ');
 }
