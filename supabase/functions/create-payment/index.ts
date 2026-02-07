@@ -30,9 +30,10 @@ Deno.serve(async (req) => {
 
     if (!paynlApiToken || !paynlServiceId) {
       console.error('Pay.nl credentials not configured');
+      // Return 200 with error message so frontend can handle gracefully
       return new Response(
         JSON.stringify({ error: 'Payment service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
