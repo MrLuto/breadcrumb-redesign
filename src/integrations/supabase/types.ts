@@ -220,6 +220,7 @@ export type Database = {
           id: string
           is_active: boolean
           min_order_amount: number | null
+          min_preparation_time_minutes: number | null
           postcode_prefix: string
           updated_at: string
           zone_name: string
@@ -231,6 +232,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_order_amount?: number | null
+          min_preparation_time_minutes?: number | null
           postcode_prefix: string
           updated_at?: string
           zone_name: string
@@ -242,6 +244,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           min_order_amount?: number | null
+          min_preparation_time_minutes?: number | null
           postcode_prefix?: string
           updated_at?: string
           zone_name?: string
