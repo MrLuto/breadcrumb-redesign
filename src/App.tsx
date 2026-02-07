@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import Assortiment from "./pages/Assortiment";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import PaymentReturn from "./pages/PaymentReturn";
 import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/bestellen" element={<Navigate to="/assortiment" replace />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/bestelling-bevestigd/:orderId" element={<OrderConfirmation />} />
+                <Route path="/betaling/:orderId" element={<PaymentReturn />} />
                 <Route path="/over-ons" element={<OverOns />} />
                 <Route path="/contact" element={<Contact />} />
                 
