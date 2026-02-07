@@ -477,6 +477,59 @@ const Checkout = () => {
         }
       }
 
+      // For iDEAL payments, initiate payment flow
+      if (data.payment_method === 'ideal') {
+        try {
+          const returnUrl = `${window.location.origin}/betaling/${orderResult.orderId}?token=${orderResult.confirmationToken}`;
+          
+          const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('create-payment', {
+            body: {
+              orderId: orderResult.orderId,
+              returnUrl,
+            },
+          });
+
+          if (paymentError) {
+            console.error('Payment creation error:', paymentError);
+            throw new Error('Failed to create payment');
+          }
+
+          if (paymentResult?.error) {
+            // Payment service not configured - fallback to confirmation page
+            if (paymentResult.error === 'Payment service not configured') {
+              toast({
+                title: 'iDEAL nog niet beschikbaar',
+                description: 'Online betalen is nog niet geconfigureerd. Je bestelling is geplaatst en je kunt later betalen.',
+              });
+              clearCart();
+              navigate(`/bestelling-bevestigd/${orderResult.orderId}?token=${orderResult.confirmationToken}`);
+              return;
+            }
+            throw new Error(paymentResult.error);
+          }
+
+          if (paymentResult?.redirectUrl) {
+            // Clear cart before redirecting to payment
+            clearCart();
+            // Redirect to Pay.nl payment page
+            window.location.href = paymentResult.redirectUrl;
+            return;
+          } else {
+            throw new Error('No payment redirect URL received');
+          }
+        } catch (paymentErr) {
+          console.error('Payment error:', paymentErr);
+          toast({
+            title: 'Betaling starten mislukt',
+            description: 'Probeer het opnieuw of kies een andere betaalmethode.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // For non-iDEAL payments, go directly to confirmation
       clearCart();
       navigate(`/bestelling-bevestigd/${orderResult.orderId}?token=${orderResult.confirmationToken}`);
     } catch (error) {
