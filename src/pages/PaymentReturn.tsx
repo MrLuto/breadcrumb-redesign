@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type PaymentStatus = 'checking' | 'paid' | 'pending' | 'failed';
@@ -18,6 +18,7 @@ const PaymentReturn = () => {
   const [status, setStatus] = useState<PaymentStatus>('checking');
   const [orderNumber, setOrderNumber] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -83,6 +84,40 @@ const PaymentReturn = () => {
     }
   }, [status, orderId, confirmationToken, navigate]);
 
+  const handleRetryPayment = async () => {
+    if (!orderId || !confirmationToken) return;
+    
+    setIsRetrying(true);
+    try {
+      // Call create-payment again for the same order
+      const response = await supabase.functions.invoke('create-payment', {
+        body: {
+          orderId,
+          returnUrl: `${window.location.origin}/betaling/${orderId}?token=${confirmationToken}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const data = response.data;
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        throw new Error('No payment URL received');
+      }
+    } catch (error) {
+      console.error('Retry payment failed:', error);
+      setIsRetrying(false);
+    }
+  };
+
   if (status === 'checking') {
     return (
       <Layout>
@@ -107,7 +142,7 @@ const PaymentReturn = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', duration: 0.6 }}
-              className="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-6"
+              className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full mb-6"
             >
               <CheckCircle className="h-10 w-10" />
             </motion.div>
@@ -130,7 +165,7 @@ const PaymentReturn = () => {
             animate={{ opacity: 1, y: 0 }}
             className="max-w-md mx-auto text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-100 text-amber-600 rounded-full mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full mb-6">
               <Clock className="h-10 w-10" />
             </div>
             <h1 className="text-2xl font-bold mb-4">Betaling in behandeling</h1>
@@ -157,7 +192,7 @@ const PaymentReturn = () => {
     );
   }
 
-  // Failed status
+  // Failed status - offer retry payment for same order
   return (
     <Layout>
       <div className="container py-16">
@@ -166,20 +201,31 @@ const PaymentReturn = () => {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md mx-auto text-center"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 text-red-600 rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-destructive/10 text-destructive rounded-full mb-6">
             <XCircle className="h-10 w-10" />
           </div>
           <h1 className="text-2xl font-bold mb-4">Betaling mislukt</h1>
           <p className="text-muted-foreground mb-6">
-            De betaling is geannuleerd of mislukt. Je bestelling is niet verwerkt.
+            De betaling is geannuleerd of mislukt.
+            {orderNumber && (
+              <span className="block font-medium text-foreground mt-2">
+                Bestelnummer: {orderNumber}
+              </span>
+            )}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/">
               <Button variant="outline">Terug naar home</Button>
             </Link>
-            <Link to="/afrekenen">
-              <Button>Opnieuw proberen</Button>
-            </Link>
+            {orderId && confirmationToken ? (
+              <Button onClick={handleRetryPayment} disabled={isRetrying}>
+                {isRetrying ? 'Bezig...' : 'Opnieuw betalen'}
+              </Button>
+            ) : (
+              <Link to="/assortiment">
+                <Button>Opnieuw bestellen</Button>
+              </Link>
+            )}
           </div>
         </motion.div>
       </div>
