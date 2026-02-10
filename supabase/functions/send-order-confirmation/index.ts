@@ -9,12 +9,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface OrderItemOption {
+  group_name: string;
+  name: string;
+  price_adjustment: number;
+}
+
 interface OrderItem {
   product_name: string;
   quantity: number;
   unit_price: number;
   total_price: number;
   notes?: string;
+  options?: OrderItemOption[];
 }
 
 interface OrderConfirmationRequest {
