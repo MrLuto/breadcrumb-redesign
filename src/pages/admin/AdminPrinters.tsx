@@ -216,8 +216,23 @@ export default function AdminPrinters() {
             </div>
 
             <div className="space-y-2">
-              <Label>Printernaam (leeg = standaard)</Label>
-              <Input value={formPrinterName} onChange={(e) => setFormPrinterName(e.target.value)} placeholder="Bijv. HP LaserJet" />
+              <Label>Printer</Label>
+              {editClient?.available_printers && editClient.available_printers.length > 0 ? (
+                <Select value={formPrinterName} onValueChange={setFormPrinterName}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer een printer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Standaard printer</SelectItem>
+                    {editClient.available_printers.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={formPrinterName} onChange={(e) => setFormPrinterName(e.target.value)} placeholder="Geen printers gevonden — voer naam handmatig in" />
+              )}
+            </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
