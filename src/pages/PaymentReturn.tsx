@@ -28,14 +28,15 @@ const PaymentReturn = () => {
       }
 
       try {
-        // Fetch order to check payment status
+        // Fetch order to check payment status - include x-confirmation-token header for RLS
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=order_number,payment_status,confirmation_token`,
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=order_number,payment_status,payment_method`,
           {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               'Content-Type': 'application/json',
+              'x-confirmation-token': confirmationToken,
             },
           }
         );
