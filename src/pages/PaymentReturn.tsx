@@ -21,6 +21,9 @@ const PaymentReturn = () => {
   const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
+    // Clean up payment redirect flag
+    sessionStorage.removeItem('payment_redirect');
+    
     const checkPaymentStatus = async () => {
       if (!orderId || !confirmationToken) {
         setStatus('failed');
