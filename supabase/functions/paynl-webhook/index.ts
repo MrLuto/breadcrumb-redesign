@@ -138,14 +138,26 @@ Deno.serve(async (req) => {
 
     console.log(`Webhook received for payment: ${paymentId}, action: ${action}`);
 
-    // Fetch payment status from Pay.nl Pioneer API using Bearer auth
-    const statusResponse = await fetch(`https://connect.pay.nl/v1/orders/${paymentId}`, {
+    // Fetch payment status from Pay.nl Pioneer API
+    // Try with Bearer auth first, fallback to no auth (basic status info)
+    let statusResponse = await fetch(`https://connect.pay.nl/v1/orders/${paymentId}/status`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${paynlApiToken}`,
       },
     });
+
+    // If Bearer fails, try without auth (returns basic status)
+    if (!statusResponse.ok) {
+      console.log(`Bearer auth failed (${statusResponse.status}), trying without auth...`);
+      statusResponse = await fetch(`https://connect.pay.nl/v1/orders/${paymentId}/status`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+    }
 
     if (!statusResponse.ok) {
       const errorBody = await statusResponse.text();
