@@ -54,7 +54,7 @@ De Go-client wordt **niet** in Lovable gebouwd maar als apart project. Hieronder
 
 ```text
 Bouw een Go CLI applicatie "fvs-printer" die automatisch bestellingen ophaalt 
-van een API en uitprint op een lokale printer.
+van een API en uitprint op een lokale printer via HTML rendering.
 
 ## Configuratie (config.yaml)
 
@@ -62,66 +62,23 @@ printer_name: "HP LaserJet"       # OS printer naam
 api_url: "https://erqvlccnuqjyszayxfuc.supabase.co/functions/v1"
 api_key: "jouw-print-api-key"
 poll_interval_seconds: 15
-print_format: "text"              # "text" of "escpos"
 
 ## Werking
 
 1. Poll elke `poll_interval_seconds` naar GET {api_url}/get-print-queue
    met header X-Print-Key: {api_key}
 2. Voor elke order in de response:
-   a. Render de order als plain text bon (zie format hieronder)
-   b. Stuur naar de OS printer via het "lp" commando (Linux/Mac) 
-      of "print" via Win32 API (Windows)
-   c. Bij succes: POST {api_url}/mark-printed met body {"order_id": "..."}
+   a. Haal de HTML-bon op via GET {api_url}/generate-print-html?order_id={id}
+      met header X-Print-Key: {api_key}
+   b. Sla de HTML op als tijdelijk bestand
+   c. Print via het OS print commando:
+      - Windows: Start-Process met -Verb Print parameter
+      - Linux: wkhtmltopdf + lp, of xdg-open
+      - Mac: wkhtmltopdf + lp
+   d. Bij succes: POST {api_url}/mark-printed met body {"order_id": "..."}
       en header X-Print-Key: {api_key}
-   d. Log resultaat naar stdout
-
-## Print Format (plain text bon)
-
-================================================
-               BESTELLING
-================================================
-Bestelnummer:  FVS-2026-0042
-Besteldatum:   10 feb 2026 14:30
-
-KLANT
------
-Type:          Zakelijk
-Bedrijf:       Bakkerij Jansen
-Contact:       Jan de Vries
-Telefoon:      06-12345678
-Email:         jan@bakkerij.nl
-
-BEZORGING
----------
-Type:          Bezorgen
-Adres:         Kerkstraat 12
-               2741 AB Waddinxveen
-Datum:         maandag 10 februari 2026
-Tijd:          12:00
-
-PRODUCTEN
----------
-2x  Luxe broodje zalm              EUR 4,50    EUR 9,00
-    > Broodsoort: Tijgerbol
-    > Opmerking: zonder ui
-3x  Koffie                         EUR 2,00    EUR 6,00
-
-                          Subtotaal: EUR 15,00
-                      Bezorgkosten:  EUR 12,50
-                      ========================
-                           TOTAAL:  EUR 27,50
-
-Betaalwijze: iDEAL
-Betaalstatus: Betaald
-
-OPMERKINGEN
------------
-Graag voor 11:30 bezorgen
-
-================================================
-Afgedrukt: 10 feb 2026 14:31
-================================================
+   e. Verwijder het tijdelijke bestand
+   f. Log resultaat naar stdout
 
 ## Technische eisen
 
@@ -131,62 +88,34 @@ Afgedrukt: 10 feb 2026 14:31
 - Retry logica: bij API fout max 3 retries met exponential backoff
 - Log naar stdout met timestamp
 - Cross-platform printer support:
-  - Linux/Mac: exec "lp -d {printer_name}" met stdin
-  - Windows: exec "powershell -c Get-Printer" check, 
-    dan "Out-Printer -Name {printer_name}"
+  - Windows: exec "rundll32 mshtml.dll,PrintHTML {file}" 
+    of SumatraPDF CLI voor betere controle
+  - Linux/Mac: wkhtmltopdf naar PDF, dan "lp -d {printer_name}" 
 
 ## Structuur
 
 fvs-printer/
   main.go          - entry point, config loading, polling loop
-  printer.go       - OS printer abstraction
-  api.go           - HTTP client voor get-print-queue en mark-printed
-  formatter.go     - Order naar plain text formatting
+  printer.go       - OS printer abstraction (HTML printing)
+  api.go           - HTTP client voor get-print-queue, generate-print-html en mark-printed
   config.yaml      - voorbeeld config
   go.mod
   README.md
 
-## API Response format (get-print-queue)
+## API Endpoints
 
-{
-  "orders": [
-    {
-      "id": "uuid",
-      "order_number": "FVS-2026-0042",
-      "created_at": "2026-02-10T14:30:00Z",
-      "company_name": "Bakkerij Jansen",
-      "contact_person": "Jan de Vries",
-      "customer_type": "business",
-      "phone": "06-12345678",
-      "email": "jan@bakkerij.nl",
-      "order_type": "delivery",
-      "delivery_address": "Kerkstraat 12",
-      "postcode": "2741AB",
-      "city": "Waddinxveen",
-      "delivery_date": "2026-02-10",
-      "delivery_time": "12:00",
-      "delivery_asap": false,
-      "subtotal": 15.00,
-      "delivery_cost": 12.50,
-      "total": 27.50,
-      "payment_method": "ideal",
-      "payment_status": "paid",
-      "notes": "Graag voor 11:30 bezorgen",
-      "order_items": [
-        {
-          "product_name": "Luxe broodje zalm",
-          "quantity": 2,
-          "unit_price": 4.50,
-          "total_price": 9.00,
-          "notes": "zonder ui",
-          "options": [
-            {"group": "Broodsoort", "name": "Tijgerbol", "price": 0}
-          ]
-        }
-      ]
-    }
-  ]
-}
+### GET /get-print-queue
+Header: X-Print-Key: {api_key}
+Response: { "orders": [{ "id": "uuid", "order_number": "...", ... }] }
+
+### GET /generate-print-html?order_id={uuid}
+Header: X-Print-Key: {api_key}
+Response: Complete HTML document (text/html) met inline CSS, klaar om te printen
+
+### POST /mark-printed
+Header: X-Print-Key: {api_key}
+Body: { "order_id": "uuid" }
+Response: { "success": true }
 ```
 
 ---
