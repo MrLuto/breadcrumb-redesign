@@ -127,17 +127,6 @@ export default function AdminPrinters() {
                 Download Client
               </a>
             </Button>
-            <input
-              type="file"
-              accept=".exe"
-              className="hidden"
-              id="upload-client"
-              onChange={handleUpload}
-            />
-            <Button variant="outline" onClick={() => document.getElementById('upload-client')?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              Nieuwe versie uploaden
-            </Button>
           </CardContent>
         </Card>
 
