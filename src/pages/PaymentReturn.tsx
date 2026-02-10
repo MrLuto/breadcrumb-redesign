@@ -62,10 +62,10 @@ const PaymentReturn = () => {
           setStatus('paid');
         } else if (order.payment_status === 'pending') {
           // Payment might still be processing, wait a bit and check again
-          if (retryCount < 5) {
+          if (retryCount < 10) {
             setTimeout(() => {
               setRetryCount(prev => prev + 1);
-            }, 2000);
+            }, 3000);
           } else {
             setStatus('pending');
           }
