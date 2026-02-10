@@ -605,6 +605,7 @@ export type Database = {
       print_clients: {
         Row: {
           auto_print: boolean
+          available_printers: Json
           copies: number
           created_at: string
           desktop_name: string
@@ -620,6 +621,7 @@ export type Database = {
         }
         Insert: {
           auto_print?: boolean
+          available_printers?: Json
           copies?: number
           created_at?: string
           desktop_name: string
@@ -635,6 +637,7 @@ export type Database = {
         }
         Update: {
           auto_print?: boolean
+          available_printers?: Json
           copies?: number
           created_at?: string
           desktop_name?: string
