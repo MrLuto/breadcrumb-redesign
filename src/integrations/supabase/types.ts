@@ -602,6 +602,54 @@ export type Database = {
           },
         ]
       }
+      print_clients: {
+        Row: {
+          auto_print: boolean
+          copies: number
+          created_at: string
+          desktop_name: string
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          machine_id: string
+          margin_mm: number
+          paper_width_mm: number
+          poll_interval_seconds: number
+          printer_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_print?: boolean
+          copies?: number
+          created_at?: string
+          desktop_name: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          machine_id: string
+          margin_mm?: number
+          paper_width_mm?: number
+          poll_interval_seconds?: number
+          printer_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_print?: boolean
+          copies?: number
+          created_at?: string
+          desktop_name?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          machine_id?: string
+          margin_mm?: number
+          paper_width_mm?: number
+          poll_interval_seconds?: number
+          printer_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_option_groups: {
         Row: {
           category_id: string | null
