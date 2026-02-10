@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { OrderWithItems, ORDER_STATUSES, PAYMENT_STATUSES } from '@/hooks/useOrders';
+import { OrderWithItems, ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS } from '@/hooks/useOrders';
 
 interface OrderDetailDialogProps {
   order: OrderWithItems | null;
