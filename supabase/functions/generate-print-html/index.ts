@@ -296,8 +296,7 @@ function generateInvoiceA4Html(order: any): string {
   <div class="page">
     <div class="top-bar">
       <div class="company-info">
-        <h1>FVS Catering</h1>
-        <p>Vers &amp; Snel — Uw cateringpartner</p>
+        <h1>Frisversshop</h1>
       </div>
       <div class="doc-meta">
         <div class="doc-type">Pakbon</div>
