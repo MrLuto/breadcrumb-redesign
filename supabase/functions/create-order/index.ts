@@ -445,7 +445,8 @@ Deno.serve(async (req) => {
     let subtotal = 0;
     for (const item of items) {
       const product = productMap.get(item.product_id)!;
-      subtotal += product.price * item.quantity;
+      const optionsPrice = (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceAdjustment || 0), 0);
+      subtotal += (product.price + optionsPrice) * item.quantity;
     }
 
     // Calculate delivery cost
