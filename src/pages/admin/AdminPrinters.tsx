@@ -122,12 +122,43 @@ export default function AdminPrinters() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
+         <div>
           <h1 className="text-3xl font-bold">Printers</h1>
           <p className="text-muted-foreground mt-1">
             Beheer de print clients die bonnen printen. Clients registreren zichzelf automatisch.
           </p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Print Client Downloaden
+            </CardTitle>
+            <CardDescription>
+              Download of upload de Go print client (.exe) voor Windows.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center gap-3">
+            <Button asChild>
+              <a href={downloadUrl} download>
+                <Download className="h-4 w-4 mr-2" />
+                Download Client
+              </a>
+            </Button>
+            <input
+              type="file"
+              accept=".exe"
+              className="hidden"
+              id="upload-client"
+              onChange={handleUpload}
+            />
+            <Button variant="outline" onClick={() => document.getElementById('upload-client')?.click()} disabled={uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              Nieuwe versie uploaden
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
