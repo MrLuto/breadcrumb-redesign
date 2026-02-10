@@ -48,27 +48,8 @@ export default function AdminPrinters() {
   const [formPollInterval, setFormPollInterval] = useState(10);
   const [formCopies, setFormCopies] = useState(1);
   const [formActive, setFormActive] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const downloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/printer-client/fvs-printer.exe`;
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { error } = await supabase.storage
-        .from('printer-client')
-        .upload('fvs-printer.exe', file, { upsert: true });
-      if (error) throw error;
-      toast({ title: 'Client geüpload' });
-    } catch {
-      toast({ title: 'Upload mislukt', variant: 'destructive' });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const openEdit = (client: PrintClient) => {
     setEditClient(client);
