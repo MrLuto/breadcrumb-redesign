@@ -562,10 +562,46 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+
+    // Auth: accept either x-print-key (for print clients) or admin JWT (for admin UI)
+    let authorized = false;
+
+    // Check print API key first (used by Go print client)
     const apiKey = req.headers.get("x-print-key") || url.searchParams.get("_key");
     const expectedKey = Deno.env.get("PRINT_API_KEY");
+    if (apiKey && expectedKey && apiKey === expectedKey) {
+      authorized = true;
+    }
 
-    if (!apiKey || apiKey !== expectedKey) {
+    // Check admin JWT (used by admin UI for test/preview)
+    if (!authorized) {
+      const authHeader = req.headers.get("authorization");
+      if (authHeader) {
+        const supabaseAuth = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!
+        );
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user } } = await supabaseAuth.auth.getUser(token);
+        if (user) {
+          const adminCheck = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          );
+          const { data: roleData } = await adminCheck
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("role", "admin")
+            .maybeSingle();
+          if (roleData) {
+            authorized = true;
+          }
+        }
+      }
+    }
+
+    if (!authorized) {
       return new Response("Unauthorized", {
         status: 401,
         headers: corsHeaders,
