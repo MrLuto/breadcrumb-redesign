@@ -55,7 +55,7 @@ export function useOrder(id: string | undefined) {
       if (!id) return null;
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, order_item_options(*))')
         .eq('id', id)
         .single();
 
