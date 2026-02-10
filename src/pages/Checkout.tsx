@@ -59,7 +59,7 @@ const checkoutSchema = z.object({
   department: z.string().optional(),
   contact_person: z.string().min(1, 'Naam is verplicht'),
   email: z.string().email('Ongeldig e-mailadres'),
-  phone: z.string().min(10, 'Telefoonnummer is verplicht'),
+  phone: z.string().min(10, 'Telefoonnummer moet minimaal 10 cijfers bevatten').regex(/^[\d\s+\-()]+$/, 'Telefoonnummer mag alleen cijfers, spaties, + en - bevatten'),
   delivery_address: z.string().optional(),
   postcode: z.string().optional(),
   city: z.string().optional(),
