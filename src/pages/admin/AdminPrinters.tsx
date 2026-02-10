@@ -24,6 +24,7 @@ const PRINT_API_KEY = '688a88ab-543c-4c34-b35b-b34070ab3afd';
 
 const templateLabels: Record<string, string> = {
   receipt: 'Standaard bon',
+  plain_text: 'Minimalistische tekst',
   invoice_a4: 'A4 Pakbon / Factuur',
 };
 

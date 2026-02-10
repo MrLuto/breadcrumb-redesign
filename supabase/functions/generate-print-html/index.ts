@@ -527,7 +527,9 @@ Deno.serve(async (req) => {
 
     const html = template === "invoice_a4"
       ? generateInvoiceA4Html(formattedOrder)
-      : generateReceiptHtml(formattedOrder);
+      : template === "plain_text"
+        ? generatePlainTextHtml(formattedOrder)
+        : generateReceiptHtml(formattedOrder);
 
     return new Response(html, {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
