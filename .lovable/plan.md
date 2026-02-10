@@ -1,190 +1,220 @@
 
 
-# Plan: Alle Klantfeedback Verbeterpunten Implementeren
+# Printclient Systeem - Plan
 
 ## Overzicht
 
-Dit plan behandelt alle overgebleven verbeterpunten van de klant. Zondag gesloten is al gedaan (database update). De overige punten zijn hieronder gegroepeerd.
+We bouwen twee onderdelen:
+1. **Edge functions** (in Lovable) - API endpoints waarmee de Go-client communiceert
+2. **Go printer-client** (apart project, Codex prompt) - Draait lokaal op een PC, pollt voor nieuwe bestellingen en print ze automatisch
 
----
+## Hoe het werkt
 
-## Fase 1: Tekstaanpassingen (Eenvoudig)
-
-### 1.1 Homepage (`src/pages/Index.tsx`)
-
-| Wijziging | Huidige tekst | Nieuwe tekst |
-|-----------|---------------|--------------|
-| Regel 19 | "Bij Fris Versshop" | "Bij Frisversshop" |
-| Regel 24 | "35 jaar ervaring" | "40 jaar ervaring" |
-| Regel 92-94 | "Fris Versshop...35 jaar...duurzaam bezorgen" | "Frisversshop...40 jaar" + verwijder "duurzaam" |
-| Regel 117 | "35 jaar" | "40 jaar" |
-| Regel 157 | "Ons Assortiment" | "Onze Broodjes" |
-
-### 1.2 Over Ons (`src/pages/OverOns.tsx`)
-
-| Wijziging | Huidige | Nieuw |
-|-----------|---------|-------|
-| Regel 76 | "35 jaar" | "40 jaar" |
-| Regel 97 | "Fris Versshop" | "Frisversshop" |
-| Regel 129 | "35+" | "40" |
-| Regel 49 | "35+ Jaar" | "40 Jaar Ervaring" |
-| Regel 26-28 | Duurzaam waarde | Verwijderen uit values array |
-| Nieuw timeline item | - | Oktober 2025: "Frisversshop opent de deuren in een nieuwe winkel, in dezelfde straat." |
-
-### 1.3 Footer (`src/components/layout/Footer.tsx`)
-
-| Wijziging | Huidige | Nieuw |
-|-----------|---------|-------|
-| Regel 82 | "35 jaar" | "40 jaar" |
-| Regel 121 | "2803 PH Gouda" | "2805 AR Gouda" |
-
-### 1.4 Contact (`src/pages/Contact.tsx`)
-
-| Wijziging | Huidige | Nieuw |
-|-----------|---------|-------|
-| Regel 20 | "2803 PH Gouda" | "2805 AR Gouda" |
-
----
-
-## Fase 2: Zondag uit openingstijden display halen
-
-Nu zondag in de database als `is_closed: true` staat, wordt zondag automatisch als "Gesloten" getoond. De klant wil dat zondag helemaal niet meer getoond wordt.
-
-### Contact pagina (`src/pages/Contact.tsx`)
-- Regel 89: `orderedDays` van `[1, 2, 3, 4, 5, 6, 0]` naar `[1, 2, 3, 4, 5, 6]` (zonder zondag)
-
-### Footer (`src/components/layout/Footer.tsx`)
-- Regel 12: `orderedDays` van `[1, 2, 3, 4, 5, 6, 0]` naar `[1, 2, 3, 4, 5, 6]` (zonder zondag)
-
----
-
-## Fase 3: Checkout Formulier Aanpassingen
-
-### 3.1 KvK-nummer veld verwijderen (`src/pages/Checkout.tsx`)
-- Verwijder regels 639-651 (het kvk_number FormField)
-- Schema blijft intact (veld is al optioneel in database)
-
-### 3.2 Bezorgadres verbergen bij afhalen
-- Wrap de bezorgadres sectie (regels 709-755) met een conditie: alleen tonen als `watchedOrderType === 'delivery'`
-
-### 3.3 Betaalmethoden aanpassen (regels 115-120)
-
-| Huidige | Nieuwe |
-|---------|--------|
-| `monthly_invoice` optie | Verwijderen (staat in schema maar niet in PAYMENT_METHODS) |
-| "PIN (bij bezorgen/afhalen)" | "PIN" |
-| "Op factuur" | Alleen voor zakelijke klanten tonen |
-
-De filtering wordt dynamisch gemaakt op basis van `watchedCustomerType`.
-
----
-
-## Fase 4: Contact Formulier - WhatsApp/Email Keuze
-
-### 4.1 Radio buttons toevoegen (`src/pages/Contact.tsx`)
-
-Voeg een nieuw veld toe aan formData:
-```typescript
-contactMethod: 'whatsapp' | 'email'
+```text
++------------------+       HTTPS/polling        +-------------------+
+|  Go Print Client |  <--------------------->   |  Edge Functions   |
+|  (lokale PC)     |   GET /print-queue         |  (Lovable Cloud)  |
+|                  |   POST /mark-printed       |                   |
+|  -> ESC/POS of   |                            |  -> orders tabel  |
+|     plain text   |                            |     (print_count, |
+|     naar printer |                            |      printed_at)  |
++------------------+                            +-------------------+
 ```
 
-UI wijzigingen:
-- Voeg RadioGroup toe met twee opties: "WhatsApp" en "E-mail"
-- Bij WhatsApp: bestaande logica (wa.me URL)
-- Bij Email: mailto: link met pre-filled content
+## Deel 1: Edge Functions (bouw ik in Lovable)
+
+### 1a. `get-print-queue` edge function
+
+- **Authenticatie**: API-key in header (`X-Print-Key`) geverifieerd tegen een secret
+- **Logica**: Haalt alle orders op waar `order_status = 'new'` en `printed_at IS NULL`
+- **Response**: JSON array met volledige orderdata inclusief items en opties
+- **Sortering**: Op `created_at` ascending (oudste eerst)
+
+### 1b. `mark-printed` edge function
+
+- **Authenticatie**: Zelfde API-key check
+- **Input**: `{ "order_id": "uuid" }`
+- **Logica**:
+  - Update `printed_at` naar `now()`
+  - Increment `print_count`
+  - Zet `order_status` naar `'confirmed'` (= "Geprint")
+- **Response**: `{ "success": true }`
+
+### 1c. Secret toevoegen
+
+- `PRINT_API_KEY` - een willekeurige API key die zowel in de edge functions als in de Go config gebruikt wordt
+
+## Deel 2: Go Printer Client (Codex Prompt)
+
+De Go-client wordt **niet** in Lovable gebouwd maar als apart project. Hieronder de volledige Codex prompt die je kunt gebruiken.
 
 ---
 
-## Fase 5: Productbeschrijvingen Uitbreiden
+### Codex Prompt
 
-### 5.1 ProductCard (`src/components/ProductCard.tsx`)
-- Regel 65: `line-clamp-2` wijzigen naar `line-clamp-4` of verwijderen
-- Optioneel: hover-effect om volledige beschrijving te tonen
+```text
+Bouw een Go CLI applicatie "fvs-printer" die automatisch bestellingen ophaalt 
+van een API en uitprint op een lokale printer.
 
----
+## Configuratie (config.yaml)
 
-## Fase 6: Zone-specifieke Bereidingstijd (Waddinxveen)
+printer_name: "HP LaserJet"       # OS printer naam
+api_url: "https://erqvlccnuqjyszayxfuc.supabase.co/functions/v1"
+api_key: "jouw-print-api-key"
+poll_interval_seconds: 15
+print_format: "text"              # "text" of "escpos"
 
-### 6.1 Database migratie
-Voeg kolom toe aan `delivery_zones`:
-```sql
-ALTER TABLE delivery_zones 
-ADD COLUMN min_preparation_time_minutes INTEGER DEFAULT NULL;
+## Werking
+
+1. Poll elke `poll_interval_seconds` naar GET {api_url}/get-print-queue
+   met header X-Print-Key: {api_key}
+2. Voor elke order in de response:
+   a. Render de order als plain text bon (zie format hieronder)
+   b. Stuur naar de OS printer via het "lp" commando (Linux/Mac) 
+      of "print" via Win32 API (Windows)
+   c. Bij succes: POST {api_url}/mark-printed met body {"order_id": "..."}
+      en header X-Print-Key: {api_key}
+   d. Log resultaat naar stdout
+
+## Print Format (plain text bon)
+
+================================================
+               BESTELLING
+================================================
+Bestelnummer:  FVS-2026-0042
+Besteldatum:   10 feb 2026 14:30
+
+KLANT
+-----
+Type:          Zakelijk
+Bedrijf:       Bakkerij Jansen
+Contact:       Jan de Vries
+Telefoon:      06-12345678
+Email:         jan@bakkerij.nl
+
+BEZORGING
+---------
+Type:          Bezorgen
+Adres:         Kerkstraat 12
+               2741 AB Waddinxveen
+Datum:         maandag 10 februari 2026
+Tijd:          12:00
+
+PRODUCTEN
+---------
+2x  Luxe broodje zalm              EUR 4,50    EUR 9,00
+    > Broodsoort: Tijgerbol
+    > Opmerking: zonder ui
+3x  Koffie                         EUR 2,00    EUR 6,00
+
+                          Subtotaal: EUR 15,00
+                      Bezorgkosten:  EUR 12,50
+                      ========================
+                           TOTAAL:  EUR 27,50
+
+Betaalwijze: iDEAL
+Betaalstatus: Betaald
+
+OPMERKINGEN
+-----------
+Graag voor 11:30 bezorgen
+
+================================================
+Afgedrukt: 10 feb 2026 14:31
+================================================
+
+## Technische eisen
+
+- Go 1.22+
+- Gebruik gopkg.in/yaml.v3 voor config parsing
+- Graceful shutdown via SIGINT/SIGTERM
+- Retry logica: bij API fout max 3 retries met exponential backoff
+- Log naar stdout met timestamp
+- Cross-platform printer support:
+  - Linux/Mac: exec "lp -d {printer_name}" met stdin
+  - Windows: exec "powershell -c Get-Printer" check, 
+    dan "Out-Printer -Name {printer_name}"
+
+## Structuur
+
+fvs-printer/
+  main.go          - entry point, config loading, polling loop
+  printer.go       - OS printer abstraction
+  api.go           - HTTP client voor get-print-queue en mark-printed
+  formatter.go     - Order naar plain text formatting
+  config.yaml      - voorbeeld config
+  go.mod
+  README.md
+
+## API Response format (get-print-queue)
+
+{
+  "orders": [
+    {
+      "id": "uuid",
+      "order_number": "FVS-2026-0042",
+      "created_at": "2026-02-10T14:30:00Z",
+      "company_name": "Bakkerij Jansen",
+      "contact_person": "Jan de Vries",
+      "customer_type": "business",
+      "phone": "06-12345678",
+      "email": "jan@bakkerij.nl",
+      "order_type": "delivery",
+      "delivery_address": "Kerkstraat 12",
+      "postcode": "2741AB",
+      "city": "Waddinxveen",
+      "delivery_date": "2026-02-10",
+      "delivery_time": "12:00",
+      "delivery_asap": false,
+      "subtotal": 15.00,
+      "delivery_cost": 12.50,
+      "total": 27.50,
+      "payment_method": "ideal",
+      "payment_status": "paid",
+      "notes": "Graag voor 11:30 bezorgen",
+      "order_items": [
+        {
+          "product_name": "Luxe broodje zalm",
+          "quantity": 2,
+          "unit_price": 4.50,
+          "total_price": 9.00,
+          "notes": "zonder ui",
+          "options": [
+            {"group": "Broodsoort", "name": "Tijgerbol", "price": 0}
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
 
-### 6.2 Waddinxveen zone toevoegen
-```sql
-INSERT INTO delivery_zones (postcode_prefix, zone_name, delivery_cost, min_order_amount, min_preparation_time_minutes)
-VALUES ('2741', 'Waddinxveen', 12.50, 75.00, 120);
-```
-Exacte waarden kunnen later aangepast worden in admin.
-
-### 6.3 Frontend aanpassing (`src/pages/Checkout.tsx`)
-- Bij tijdvalidatie: gebruik `currentZone?.min_preparation_time_minutes` indien beschikbaar, anders standaard waarde
-
 ---
 
-## Fase 7: Product Opties Systeem (Grotere Feature - Later)
+## Deel 3: Aanpassingen in het admin panel
 
-Dit vereist:
-- Nieuwe database tabellen (`product_options`, `product_option_groups`)
-- Admin interface voor opties beheer
-- Product detail pagina met opties selectie
-- Cart aanpassing voor opties opslag
-
-**Aanbeveling**: Dit als aparte implementatie plannen vanwege complexiteit.
-
----
-
-## Fase 8: iDEAL Integratie (Pay.nl Pioneer - Later)
-
-Dit vereist:
-- Pay.nl account setup
-- Edge function voor payment processing
-- Webhook voor betalingsstatus
-- Order flow aanpassing
-
-**Aanbeveling**: Dit als aparte implementatie plannen.
-
----
-
-## Samenvatting per Fase
-
-| Fase | Omschrijving | Complexiteit | Prioriteit |
-|------|--------------|--------------|------------|
-| 1 | Tekstaanpassingen (35→40 jaar, Frisversshop, postcode) | Laag | Hoog |
-| 2 | Zondag uit display halen | Laag | Hoog |
-| 3 | Checkout: KvK weg, bezorgadres verbergen, betaalmethoden | Gemiddeld | Hoog |
-| 4 | Contact: WhatsApp/Email keuze | Gemiddeld | Gemiddeld |
-| 5 | Productbeschrijvingen uitbreiden | Laag | Gemiddeld |
-| 6 | Zone-specifieke bereidingstijd | Gemiddeld | Gemiddeld |
-| 7 | Product opties systeem | Hoog | Later |
-| 8 | Pay.nl iDEAL integratie | Hoog | Later |
-
----
+Na het bouwen van de edge functions voegen we ook een simpele status-indicator toe in het admin panel:
+- Een print-icoon bij elke order die aangeeft of deze al geprint is
+- Het `printed_at` en `print_count` veld tonen in de OrderDetailDialog
 
 ## Technische Details
 
-### Bestanden die aangepast worden
+### Nieuwe bestanden
 
 ```text
-src/pages/Index.tsx          - Tekstaanpassingen
-src/pages/OverOns.tsx        - Tekst + timeline + duurzaam weg
-src/pages/Contact.tsx        - Postcode + zondag weg + WhatsApp/Email keuze
-src/components/layout/Footer.tsx - Postcode + 40 jaar + zondag weg
-src/pages/Checkout.tsx       - KvK weg, bezorgadres conditie, betaalmethoden
-src/components/ProductCard.tsx - line-clamp aanpassen
+supabase/functions/get-print-queue/index.ts    - Ophalen ongeprinte orders
+supabase/functions/mark-printed/index.ts       - Order als geprint markeren
 ```
 
-### Database wijzigingen
+### Aan te passen bestanden
 
-```sql
--- Zone-specifieke bereidingstijd kolom
-ALTER TABLE delivery_zones 
-ADD COLUMN min_preparation_time_minutes INTEGER DEFAULT NULL;
-
--- Waddinxveen zone (optioneel, waarden af te stemmen)
-INSERT INTO delivery_zones (postcode_prefix, zone_name, delivery_cost, min_order_amount, min_preparation_time_minutes, is_active)
-VALUES ('2741', 'Waddinxveen', 12.50, 75.00, 120, true);
+```text
+supabase/config.toml                            - Nieuwe functions registreren
+src/components/admin/OrderDetailDialog.tsx       - Print-info tonen
+src/pages/admin/AdminOrders.tsx                  - Print-icoon tonen
 ```
+
+### Secret
+
+Een nieuw secret `PRINT_API_KEY` moet worden ingesteld. Dit is een zelfgekozen API key die je ook in de Go client config.yaml zet.
 
