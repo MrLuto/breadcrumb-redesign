@@ -26,8 +26,7 @@ import {
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 import { usePrintClients, useUpdatePrintClient, useDeletePrintClient, PrintClient } from '@/hooks/usePrintClients';
 import { toast } from '@/hooks/use-toast';
-import { Download, Loader2, Printer, Settings, Trash2, Upload, Wifi, WifiOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Download, Loader2, Printer, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
