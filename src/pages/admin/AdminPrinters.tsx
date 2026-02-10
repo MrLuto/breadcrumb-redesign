@@ -218,12 +218,12 @@ export default function AdminPrinters() {
             <div className="space-y-2">
               <Label>Printer</Label>
               {editClient?.available_printers && editClient.available_printers.length > 0 ? (
-                <Select value={formPrinterName} onValueChange={setFormPrinterName}>
+              <Select value={formPrinterName || "__default__"} onValueChange={(v) => setFormPrinterName(v === "__default__" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecteer een printer" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Standaard printer</SelectItem>
+                    <SelectItem value="__default__">Standaard printer</SelectItem>
                     {editClient.available_printers.map((p) => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
