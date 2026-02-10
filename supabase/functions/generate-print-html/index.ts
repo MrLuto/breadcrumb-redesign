@@ -479,7 +479,7 @@ function generatePlainTextHtml(order: any): string {
 
 function generateTestHtml(template: string): string {
   const testOrder = {
-    order_number: "FVS-TEST-0001",
+    order_number: "FRIS-TEST-0001",
     created_at: new Date().toISOString(),
     customer_type: "business",
     company_name: "Test Bedrijf B.V.",
