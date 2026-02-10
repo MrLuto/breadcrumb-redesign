@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     // Try by payment_id first
     const { data: orderByPaymentId } = await supabase
       .from('orders')
-      .select('id, order_number, payment_status, order_status')
+      .select('id, order_number, payment_status, order_status, payment_method, confirmation_token, contact_person, email, company_name, order_type, delivery_address, postcode, city, delivery_date, delivery_time, delivery_asap, subtotal, delivery_cost, total, notes')
       .eq('payment_id', paymentId)
       .maybeSingle();
 
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
       // Try by order_number (reference)
       const { data: orderByRef } = await supabase
         .from('orders')
-        .select('id, order_number, payment_status, order_status')
+        .select('id, order_number, payment_status, order_status, payment_method, confirmation_token, contact_person, email, company_name, order_type, delivery_address, postcode, city, delivery_date, delivery_time, delivery_asap, subtotal, delivery_cost, total, notes')
         .eq('order_number', reference)
         .maybeSingle();
       order = orderByRef;
@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
         .update({
           payment_status: newPaymentStatus,
           order_status: newOrderStatus,
-          payment_id: paymentId, // Ensure payment_id is stored
+          payment_id: paymentId,
         })
         .eq('id', order.id);
 
@@ -213,6 +213,65 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Order ${order.order_number} updated: payment_status=${newPaymentStatus}, order_status=${newOrderStatus}`);
+
+      // Send confirmation email after successful iDEAL payment
+      if (statusCode === PAYNL_STATUS.PAID && order.payment_method === 'ideal') {
+        try {
+          // Fetch order items for the email
+          const { data: orderItems } = await supabase
+            .from('order_items')
+            .select('product_name, quantity, unit_price, total_price, notes')
+            .eq('order_id', order.id);
+
+          const siteUrl = Deno.env.get('SITE_URL') || 'https://frisversbroodjes.nl';
+
+          const emailPayload = {
+            orderId: order.id,
+            orderNumber: order.order_number,
+            confirmationToken: order.confirmation_token,
+            customerEmail: order.email,
+            customerName: order.contact_person,
+            companyName: order.company_name || undefined,
+            orderType: order.order_type,
+            deliveryAddress: order.delivery_address || '',
+            postcode: order.postcode || '',
+            city: order.city || '',
+            deliveryDate: order.delivery_date,
+            deliveryTime: order.delivery_time || undefined,
+            deliveryAsap: order.delivery_asap,
+            items: (orderItems || []).map(item => ({
+              product_name: item.product_name,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+              total_price: item.total_price,
+              notes: item.notes || undefined,
+            })),
+            subtotal: order.subtotal,
+            deliveryCost: order.delivery_cost,
+            total: order.total,
+            notes: order.notes || undefined,
+            paymentMethod: order.payment_method,
+            siteUrl,
+          };
+
+          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify(emailPayload),
+          });
+
+          if (emailResponse.ok) {
+            console.log(`Confirmation email sent for paid iDEAL order ${order.order_number}`);
+          } else {
+            console.error(`Failed to send confirmation email for order ${order.order_number}:`, emailResponse.status);
+          }
+        } catch (emailError) {
+          console.error('Error sending confirmation email from webhook:', emailError);
+        }
+      }
     }
 
     // Pay.nl expects a "TRUE" response to acknowledge the webhook
