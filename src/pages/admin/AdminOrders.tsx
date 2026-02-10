@@ -142,6 +142,7 @@ export default function AdminOrders() {
                 <TableHead>Bezorgdatum</TableHead>
                 <TableHead>Totaal</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Betaalwijze</TableHead>
                 <TableHead>Betaling</TableHead>
                 <TableHead className="text-right">Acties</TableHead>
               </TableRow>
