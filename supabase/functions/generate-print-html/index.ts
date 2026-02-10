@@ -469,7 +469,7 @@ function generatePlainTextHtml(order: any): string {
   <meta charset="UTF-8">
   <title>Bestelling ${order.order_number}</title>
   <style>
-    @page { margin: 10mm; }
+    @page { size: A4; margin: 15mm; }
     body { font-family: 'Courier New', Courier, monospace; font-size: 10pt; white-space: pre; line-height: 1.3; background: #fff; color: #000; margin: 10mm; }
     @media print { body { margin: 0; } }
   </style>
