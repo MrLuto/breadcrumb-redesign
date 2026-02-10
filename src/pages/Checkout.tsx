@@ -509,9 +509,10 @@ const Checkout = () => {
           }
 
           if (paymentResult?.redirectUrl) {
-            // Clear cart before redirecting to payment
+            // Clear cart and redirect to Pay.nl payment page
+            // Set a flag so the empty cart screen doesn't flash
+            sessionStorage.setItem('payment_redirect', 'true');
             clearCart();
-            // Redirect to Pay.nl payment page
             window.location.href = paymentResult.redirectUrl;
             return;
           } else {
@@ -544,7 +545,8 @@ const Checkout = () => {
     }
   };
 
-  if (items.length === 0) {
+  // Don't show empty cart screen if we're redirecting to payment
+  if (items.length === 0 && !isSubmitting && !sessionStorage.getItem('payment_redirect')) {
     return (
       <Layout>
         <div className="container py-16">

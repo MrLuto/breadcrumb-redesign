@@ -21,6 +21,9 @@ const PaymentReturn = () => {
   const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
+    // Clean up payment redirect flag
+    sessionStorage.removeItem('payment_redirect');
+    
     const checkPaymentStatus = async () => {
       if (!orderId || !confirmationToken) {
         setStatus('failed');
@@ -28,14 +31,15 @@ const PaymentReturn = () => {
       }
 
       try {
-        // Fetch order to check payment status
+        // Fetch order to check payment status - include x-confirmation-token header for RLS
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=order_number,payment_status,confirmation_token`,
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=order_number,payment_status,payment_method`,
           {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               'Content-Type': 'application/json',
+              'x-confirmation-token': confirmationToken,
             },
           }
         );
@@ -46,7 +50,7 @@ const PaymentReturn = () => {
 
         const orders = await response.json();
         
-        if (orders.length === 0 || orders[0].confirmation_token !== confirmationToken) {
+        if (orders.length === 0) {
           setStatus('failed');
           return;
         }
@@ -58,10 +62,10 @@ const PaymentReturn = () => {
           setStatus('paid');
         } else if (order.payment_status === 'pending') {
           // Payment might still be processing, wait a bit and check again
-          if (retryCount < 5) {
+          if (retryCount < 10) {
             setTimeout(() => {
               setRetryCount(prev => prev + 1);
-            }, 2000);
+            }, 3000);
           } else {
             setStatus('pending');
           }
