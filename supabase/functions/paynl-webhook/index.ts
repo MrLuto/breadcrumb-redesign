@@ -99,13 +99,13 @@ Deno.serve(async (req) => {
       return new Response('Configuration error', { status: 500 });
     }
 
-    // Pay.nl sends webhook as form-urlencoded or query params
+    // Pay.nl Pioneer sends webhook with 'id' field (not 'order_id')
     let paymentId: string | null = null;
     let action: string | null = null;
 
     // Try to get from query params first (GET request)
     const url = new URL(req.url);
-    paymentId = url.searchParams.get('order_id') || url.searchParams.get('orderId');
+    paymentId = url.searchParams.get('id') || url.searchParams.get('order_id') || url.searchParams.get('orderId');
     action = url.searchParams.get('action');
 
     // If not in query, try body for POST
@@ -114,13 +114,21 @@ Deno.serve(async (req) => {
       
       if (contentType.includes('application/x-www-form-urlencoded')) {
         const formData = await req.formData();
-        paymentId = formData.get('order_id')?.toString() || formData.get('orderId')?.toString() || null;
+        paymentId = formData.get('id')?.toString() || formData.get('order_id')?.toString() || null;
         action = formData.get('action')?.toString() || null;
       } else if (contentType.includes('application/json')) {
         const body = await req.json();
-        paymentId = body.order_id || body.orderId;
+        console.log('Webhook JSON body:', JSON.stringify(body));
+        paymentId = body.id || body.order_id || body.orderId;
         action = body.action;
       }
+    }
+
+    // If still no paymentId, log the full request for debugging
+    if (!paymentId) {
+      console.log('Webhook URL:', req.url);
+      console.log('Webhook method:', req.method);
+      console.log('Webhook content-type:', req.headers.get('content-type'));
     }
 
     if (!paymentId) {
