@@ -5,10 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface OrderItemOption {
+  optionGroupName: string;
+  optionName: string;
+  priceAdjustment: number;
+}
+
 interface OrderItem {
   product_id: string;
   quantity: number;
   notes?: string;
+  selectedOptions?: OrderItemOption[];
 }
 
 interface OrderFormData {
@@ -438,7 +445,8 @@ Deno.serve(async (req) => {
     let subtotal = 0;
     for (const item of items) {
       const product = productMap.get(item.product_id)!;
-      subtotal += product.price * item.quantity;
+      const optionsPrice = (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceAdjustment || 0), 0);
+      subtotal += (product.price + optionsPrice) * item.quantity;
     }
 
     // Calculate delivery cost
@@ -551,28 +559,67 @@ Deno.serve(async (req) => {
     // Create order items
     const orderItems = items.map(item => {
       const product = productMap.get(item.product_id)!;
+      const optionsPrice = (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceAdjustment || 0), 0);
       return {
         order_id: order.id,
         product_id: item.product_id,
         product_name: product.name,
         quantity: item.quantity,
-        unit_price: product.price,
-        total_price: product.price * item.quantity,
+        unit_price: product.price + optionsPrice,
+        total_price: (product.price + optionsPrice) * item.quantity,
         notes: item.notes?.trim() || null,
+        selectedOptions: item.selectedOptions || [],
       };
     });
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    // Separate selectedOptions from the DB insert data
+    const orderItemsForDb = orderItems.map(({ selectedOptions, ...rest }) => rest);
 
-    if (itemsError) {
+    const { data: insertedItems, error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItemsForDb)
+      .select('id');
+
+    if (itemsError || !insertedItems) {
       console.error('Error creating order items:', itemsError);
       await supabase.from('orders').delete().eq('id', order.id);
       return new Response(
         JSON.stringify({ error: 'Failed to create order items' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Save selected options for each order item
+    const allItemOptions: Array<{
+      order_item_id: string;
+      option_group_name: string;
+      option_name: string;
+      price_adjustment: number;
+    }> = [];
+
+    insertedItems.forEach((insertedItem, index) => {
+      const options = orderItems[index].selectedOptions;
+      if (options && options.length > 0) {
+        options.forEach(opt => {
+          allItemOptions.push({
+            order_item_id: insertedItem.id,
+            option_group_name: opt.optionGroupName,
+            option_name: opt.optionName,
+            price_adjustment: opt.priceAdjustment || 0,
+          });
+        });
+      }
+    });
+
+    if (allItemOptions.length > 0) {
+      const { error: optionsError } = await supabase
+        .from('order_item_options')
+        .insert(allItemOptions);
+
+      if (optionsError) {
+        console.error('Error creating order item options:', optionsError);
+        // Don't fail the order, just log the error
+      }
     }
 
     // Log order creation without PII
@@ -603,6 +650,11 @@ Deno.serve(async (req) => {
             unit_price: item.unit_price,
             total_price: item.total_price,
             notes: item.notes || undefined,
+            options: item.selectedOptions.length > 0 ? item.selectedOptions.map(opt => ({
+              group_name: opt.optionGroupName,
+              name: opt.optionName,
+              price_adjustment: opt.priceAdjustment,
+            })) : undefined,
           })),
           subtotal,
           deliveryCost,

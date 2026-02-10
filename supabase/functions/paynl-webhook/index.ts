@@ -217,10 +217,10 @@ Deno.serve(async (req) => {
       // Send confirmation email after successful iDEAL payment
       if (statusCode === PAYNL_STATUS.PAID && order.payment_method === 'ideal') {
         try {
-          // Fetch order items for the email
+          // Fetch order items with options for the email
           const { data: orderItems } = await supabase
             .from('order_items')
-            .select('product_name, quantity, unit_price, total_price, notes')
+            .select('product_name, quantity, unit_price, total_price, notes, order_item_options(option_group_name, option_name, price_adjustment)')
             .eq('order_id', order.id);
 
           const siteUrl = Deno.env.get('SITE_URL') || 'https://frisversbroodjes.nl';
@@ -239,12 +239,17 @@ Deno.serve(async (req) => {
             deliveryDate: order.delivery_date,
             deliveryTime: order.delivery_time || undefined,
             deliveryAsap: order.delivery_asap,
-            items: (orderItems || []).map(item => ({
+            items: (orderItems || []).map((item: any) => ({
               product_name: item.product_name,
               quantity: item.quantity,
               unit_price: item.unit_price,
               total_price: item.total_price,
               notes: item.notes || undefined,
+              options: item.order_item_options?.length > 0 ? item.order_item_options.map((opt: any) => ({
+                group_name: opt.option_group_name,
+                name: opt.option_name,
+                price_adjustment: opt.price_adjustment,
+              })) : undefined,
             })),
             subtotal: order.subtotal,
             deliveryCost: order.delivery_cost,

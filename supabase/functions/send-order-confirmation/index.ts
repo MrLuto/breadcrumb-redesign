@@ -9,12 +9,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface OrderItemOption {
+  group_name: string;
+  name: string;
+  price_adjustment: number;
+}
+
 interface OrderItem {
   product_name: string;
   quantity: number;
   unit_price: number;
   total_price: number;
   notes?: string;
+  options?: OrderItemOption[];
 }
 
 interface OrderConfirmationRequest {
@@ -85,17 +92,28 @@ const handler = async (req: Request): Promise<Response> => {
     const confirmationUrl = `${data.siteUrl}/bestelling-bevestigd/${data.orderId}?token=${data.confirmationToken}`;
 
     // Build items HTML
-    const itemsHtml = data.items.map(item => `
-      <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
-          ${item.quantity}x ${item.product_name}
-          ${item.notes ? `<br><small style="color: #666;">Opmerking: ${item.notes}</small>` : ''}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right;">
-          ${formatPrice(item.total_price)}
-        </td>
-      </tr>
-    `).join('');
+    const itemsHtml = data.items.map(item => {
+      const optionsHtml = item.options && item.options.length > 0
+        ? `<br><small style="color: #555;">↳ ${item.options.map(opt => 
+            opt.price_adjustment > 0 
+              ? `${opt.name} (+${formatPrice(opt.price_adjustment)})` 
+              : opt.name
+          ).join(', ')}</small>`
+        : '';
+      
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+            ${item.quantity}x ${item.product_name}
+            ${optionsHtml}
+            ${item.notes ? `<br><small style="color: #666;">Opmerking: ${item.notes}</small>` : ''}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right;">
+            ${formatPrice(item.total_price)}
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     const emailResponse = await resend.emails.send({
       from: "FrisVers Broodjes <frisvers@sites.byluto.nl>",

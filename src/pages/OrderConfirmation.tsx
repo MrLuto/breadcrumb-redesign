@@ -13,9 +13,14 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Order = Database['public']['Tables']['orders']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
+type OrderItemOption = Database['public']['Tables']['order_item_options']['Row'];
+
+type OrderItemWithOptions = OrderItem & {
+  order_item_options: OrderItemOption[];
+};
 
 type OrderWithItems = Order & {
-  order_items: OrderItem[];
+  order_items: OrderItemWithOptions[];
 };
 
 const OrderConfirmation = () => {
@@ -40,7 +45,7 @@ const OrderConfirmation = () => {
       try {
         // Use fetch with custom headers to pass the confirmation token for RLS verification
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*)`,
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*,order_item_options(*))`,
           {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
@@ -211,13 +216,27 @@ const OrderConfirmation = () => {
               {/* Order Items */}
               <div>
                 <h3 className="font-semibold mb-3">Bestelde producten</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {order.order_items.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
-                      <span>
-                        {item.quantity}x {item.product_name}
-                      </span>
-                      <span className="font-medium">{formatPrice(item.total_price)}</span>
+                      <div>
+                        <span>{item.quantity}x {item.product_name}</span>
+                        {item.order_item_options && item.order_item_options.length > 0 && (
+                          <div className="text-xs text-muted-foreground ml-4 mt-0.5">
+                            ↳ {item.order_item_options.map(opt => 
+                              opt.price_adjustment > 0 
+                                ? `${opt.option_name} (+${formatPrice(opt.price_adjustment)})` 
+                                : opt.option_name
+                            ).join(', ')}
+                          </div>
+                        )}
+                        {item.notes && (
+                          <div className="text-xs text-muted-foreground ml-4 mt-0.5 italic">
+                            Opmerking: {item.notes}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap ml-4">{formatPrice(item.total_price)}</span>
                     </div>
                   ))}
                 </div>
