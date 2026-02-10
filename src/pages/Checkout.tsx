@@ -400,6 +400,11 @@ const Checkout = () => {
             product_id: item.product.id,
             quantity: item.quantity,
             notes: item.notes || undefined,
+            selectedOptions: item.selectedOptions?.map(opt => ({
+              optionGroupName: opt.groupName,
+              optionName: opt.optionName,
+              priceAdjustment: opt.priceAdjustment,
+            })) || undefined,
           })),
           formData: {
             customer_type: data.customer_type,

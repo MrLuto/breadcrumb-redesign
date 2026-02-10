@@ -559,14 +559,16 @@ Deno.serve(async (req) => {
     // Create order items
     const orderItems = items.map(item => {
       const product = productMap.get(item.product_id)!;
+      const optionsPrice = (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceAdjustment || 0), 0);
       return {
         order_id: order.id,
         product_id: item.product_id,
         product_name: product.name,
         quantity: item.quantity,
-        unit_price: product.price,
-        total_price: product.price * item.quantity,
+        unit_price: product.price + optionsPrice,
+        total_price: (product.price + optionsPrice) * item.quantity,
         notes: item.notes?.trim() || null,
+        selectedOptions: item.selectedOptions || [],
       };
     });
 
