@@ -16,7 +16,8 @@ import {
   Settings,
   ChevronDown,
   FolderTree,
-  ShoppingBasket
+  ShoppingBasket,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
@@ -53,6 +54,7 @@ const navigation: NavItem[] = [
   { name: 'Klanten', href: '/admin/companies', icon: Building2 },
   { name: 'Bezorgzones', href: '/admin/delivery-zones', icon: Truck },
   { name: 'Openingstijden', href: '/admin/opening-hours', icon: Clock },
+  { name: 'Printers', href: '/admin/printers', icon: Printer },
   { name: 'Accounts', href: '/admin/settings', icon: Users },
 ];
 

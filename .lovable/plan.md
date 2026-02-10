@@ -55,26 +55,43 @@ De Go-client wordt **niet** in Lovable gebouwd maar als apart project. Hieronder
 ```text
 Bouw een Go CLI applicatie "fvs-printer" die automatisch bestellingen ophaalt 
 van een API en uitprint op een lokale printer via HTML rendering.
+De client haalt zijn instellingen op van de server bij elke startup en periodiek.
 
 ## Configuratie (config.yaml)
 
-printer_name: "HP LaserJet"       # OS printer naam
 api_url: "https://erqvlccnuqjyszayxfuc.supabase.co/functions/v1"
 api_key: "jouw-print-api-key"
-poll_interval_seconds: 15
 
 ## Werking
 
-1. Poll elke `poll_interval_seconds` naar GET {api_url}/get-print-queue
+1. Genereer een uniek machine_id op basis van hardware (bijv. MAC-adres + hostname hash)
+2. Bij startup: GET {api_url}/print-client-settings?machine_id={id}&desktop_name={hostname}
    met header X-Print-Key: {api_key}
-2. Voor elke order in de response:
+   Response bevat alle instellingen:
+   {
+     "id": "uuid",
+     "machine_id": "...",
+     "desktop_name": "...",
+     "is_active": true,
+     "printer_name": "",
+     "paper_width_mm": 80,
+     "margin_mm": 5,
+     "auto_print": true,
+     "poll_interval_seconds": 10,
+     "copies": 1
+   }
+   Als is_active=false, log een melding en stop de polling.
+3. Poll elke `poll_interval_seconds` (uit server settings) naar GET {api_url}/get-print-queue
+   met header X-Print-Key: {api_key}
+4. Elke 60 seconden: herlaad settings via print-client-settings endpoint (heartbeat)
+5. Voor elke order in de response:
    a. Haal de HTML-bon op via GET {api_url}/generate-print-html?order_id={id}
       met header X-Print-Key: {api_key}
    b. Sla de HTML op als tijdelijk bestand
-   c. Print via het OS print commando:
-      - Windows: Start-Process met -Verb Print parameter
-      - Linux: wkhtmltopdf + lp, of xdg-open
-      - Mac: wkhtmltopdf + lp
+   c. Print `copies` exemplaren via het OS print commando:
+      - Windows: Start-Process met -Verb Print parameter, gebruik printer_name als die gezet is
+      - Linux: wkhtmltopdf + lp -d {printer_name}
+      - Mac: wkhtmltopdf + lp -d {printer_name}
    d. Bij succes: POST {api_url}/mark-printed met body {"order_id": "..."}
       en header X-Print-Key: {api_key}
    e. Verwijder het tijdelijke bestand
@@ -87,22 +104,25 @@ poll_interval_seconds: 15
 - Graceful shutdown via SIGINT/SIGTERM
 - Retry logica: bij API fout max 3 retries met exponential backoff
 - Log naar stdout met timestamp
-- Cross-platform printer support:
-  - Windows: exec "rundll32 mshtml.dll,PrintHTML {file}" 
-    of SumatraPDF CLI voor betere controle
-  - Linux/Mac: wkhtmltopdf naar PDF, dan "lp -d {printer_name}" 
+- Machine ID: gebruik een combinatie van MAC-adres en hostname, gehashed
+- Cross-platform printer support
 
 ## Structuur
 
 fvs-printer/
-  main.go          - entry point, config loading, polling loop
+  main.go          - entry point, config loading, polling loop, settings refresh
   printer.go       - OS printer abstraction (HTML printing)
-  api.go           - HTTP client voor get-print-queue, generate-print-html en mark-printed
-  config.yaml      - voorbeeld config
+  api.go           - HTTP client voor alle endpoints
+  config.yaml      - voorbeeld config (alleen api_url + api_key)
   go.mod
   README.md
 
 ## API Endpoints
+
+### GET /print-client-settings?machine_id={id}&desktop_name={name}
+Header: X-Print-Key: {api_key}
+Response: { "id": "uuid", "is_active": true, "printer_name": "", "paper_width_mm": 80, ... }
+Registreert de client automatisch bij eerste call (upsert), update last_seen_at
 
 ### GET /get-print-queue
 Header: X-Print-Key: {api_key}

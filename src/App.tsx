@@ -34,6 +34,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminDeliveryZones from "./pages/admin/AdminDeliveryZones";
 import AdminOpeningHours from "./pages/admin/AdminOpeningHours";
 import AdminProductOptions from "./pages/admin/AdminProductOptions";
+import AdminPrinters from "./pages/admin/AdminPrinters";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -117,6 +118,11 @@ const App = () => (
                 <Route path="/admin/product-options" element={
                   <ProtectedRoute>
                     <AdminProductOptions />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/printers" element={
+                  <ProtectedRoute>
+                    <AdminPrinters />
                   </ProtectedRoute>
                 } />
                 
