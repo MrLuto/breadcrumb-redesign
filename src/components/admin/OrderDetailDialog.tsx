@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { OrderWithItems, ORDER_STATUSES, PAYMENT_STATUSES } from '@/hooks/useOrders';
+import { OrderWithItems, ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS } from '@/hooks/useOrders';
 
 interface OrderDetailDialogProps {
   order: OrderWithItems | null;
@@ -21,6 +21,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
 
   const orderStatus = ORDER_STATUSES.find(s => s.value === order.order_status);
   const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
+  const paymentMethod = PAYMENT_METHODS.find(m => m.value === order.payment_method);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -171,9 +172,15 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           </div>
 
           {/* Payment Info */}
-          <div className="flex items-center gap-4 pt-2">
-            <span className="text-sm text-muted-foreground">Betaalstatus:</span>
-            <Badge className={paymentStatus?.color}>{paymentStatus?.label}</Badge>
+          <div className="flex items-center gap-6 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Betaalwijze:</span>
+              <Badge variant="outline">{paymentMethod?.label || order.payment_method}</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Betaalstatus:</span>
+              <Badge className={paymentStatus?.color}>{paymentStatus?.label}</Badge>
+            </div>
           </div>
 
           {/* Notes */}

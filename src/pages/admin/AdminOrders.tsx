@@ -28,6 +28,7 @@ import {
   useDeleteOrder,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
+  PAYMENT_METHODS,
   OrderWithItems
 } from '@/hooks/useOrders';
 import { OrderDetailDialog } from '@/components/admin/OrderDetailDialog';
@@ -141,6 +142,7 @@ export default function AdminOrders() {
                 <TableHead>Bezorgdatum</TableHead>
                 <TableHead>Totaal</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Betaalwijze</TableHead>
                 <TableHead>Betaling</TableHead>
                 <TableHead className="text-right">Acties</TableHead>
               </TableRow>
@@ -148,13 +150,13 @@ export default function AdminOrders() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     Laden...
                   </TableCell>
                 </TableRow>
               ) : filteredOrders?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Geen bestellingen gevonden
                   </TableCell>
                 </TableRow>
@@ -162,6 +164,7 @@ export default function AdminOrders() {
                 filteredOrders?.map((order) => {
                   const orderStatus = ORDER_STATUSES.find(s => s.value === order.order_status);
                   const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
+                  const paymentMethod = PAYMENT_METHODS.find(m => m.value === order.payment_method);
                   
                   return (
                     <TableRow key={order.id}>
@@ -201,6 +204,11 @@ export default function AdminOrders() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {paymentMethod?.label || order.payment_method}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Select
