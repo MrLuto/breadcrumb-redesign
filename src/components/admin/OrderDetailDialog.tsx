@@ -172,9 +172,15 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           </div>
 
           {/* Payment Info */}
-          <div className="flex items-center gap-4 pt-2">
-            <span className="text-sm text-muted-foreground">Betaalstatus:</span>
-            <Badge className={paymentStatus?.color}>{paymentStatus?.label}</Badge>
+          <div className="flex items-center gap-6 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Betaalwijze:</span>
+              <Badge variant="outline">{paymentMethod?.label || order.payment_method}</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Betaalstatus:</span>
+              <Badge className={paymentStatus?.color}>{paymentStatus?.label}</Badge>
+            </div>
           </div>
 
           {/* Notes */}
