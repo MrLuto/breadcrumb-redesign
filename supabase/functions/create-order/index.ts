@@ -441,6 +441,52 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Validate notes length limits
+    if (formData.notes && formData.notes.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Opmerkingen mogen maximaal 1000 tekens bevatten' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate item notes and options structure
+    for (const item of items) {
+      if (item.notes && item.notes.length > 500) {
+        return new Response(
+          JSON.stringify({ error: 'Product opmerkingen mogen maximaal 500 tekens bevatten' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      for (const opt of item.selectedOptions || []) {
+        if (!opt.optionGroupName || typeof opt.optionGroupName !== 'string' || opt.optionGroupName.length > 200) {
+          return new Response(
+            JSON.stringify({ error: 'Ongeldige optie structuur' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (!opt.optionName || typeof opt.optionName !== 'string' || opt.optionName.length > 200) {
+          return new Response(
+            JSON.stringify({ error: 'Ongeldige optie structuur' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (typeof opt.priceAdjustment !== 'number' || opt.priceAdjustment < -100 || opt.priceAdjustment > 100) {
+          return new Response(
+            JSON.stringify({ error: 'Ongeldige optieprijs' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // Validate address field lengths
+    if (formData.delivery_address && formData.delivery_address.length > 500) {
+      return new Response(
+        JSON.stringify({ error: 'Adres mag maximaal 500 tekens bevatten' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Calculate subtotal
     let subtotal = 0;
     for (const item of items) {
