@@ -97,19 +97,29 @@ export default function AdminPrinters() {
     }
   };
 
-  const handleTestPreview = () => {
-    const url = `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`;
-    window.open(url + `&_key=${PRINT_API_KEY}`, '_blank');
+  const fetchTestHtml = async (): Promise<string> => {
+    const res = await fetch(
+      `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`,
+      { headers: { 'x-print-key': PRINT_API_KEY } }
+    );
+    if (!res.ok) throw new Error('Fetch failed');
+    return res.text();
+  };
+
+  const handleTestPreview = async () => {
+    try {
+      const html = await fetchTestHtml();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch {
+      toast({ title: 'Preview laden mislukt', variant: 'destructive' });
+    }
   };
 
   const handleTestPrint = async () => {
     try {
-      const res = await fetch(
-        `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`,
-        { headers: { 'x-print-key': PRINT_API_KEY } }
-      );
-      if (!res.ok) throw new Error('Fetch failed');
-      const html = await res.text();
+      const html = await fetchTestHtml();
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(html);
