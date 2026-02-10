@@ -453,6 +453,9 @@ function generateTestHtml(template: string): string {
   if (template === "invoice_a4") {
     return generateInvoiceA4Html(testOrder);
   }
+  if (template === "plain_text") {
+    return generatePlainTextHtml(testOrder);
+  }
   return generateReceiptHtml(testOrder);
 }
 
