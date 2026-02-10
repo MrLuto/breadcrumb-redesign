@@ -383,57 +383,85 @@ function generateInvoiceA4Html(order: any): string {
 }
 
 function generatePlainTextHtml(order: any): string {
-  const line = (len: number) => "\u2500".repeat(len);
-  const pad = (s: string, len: number) => s.padEnd(len);
-  const padL = (s: string, len: number) => s.padStart(len);
+  const W = 48;
+  const eq = (len: number) => "=".repeat(len);
+  const dash = (len: number) => "-".repeat(len);
+  const center = (s: string, len: number) => {
+    const pad = Math.max(0, len - s.length);
+    const left = Math.floor(pad / 2);
+    return " ".repeat(left) + s + " ".repeat(pad - left);
+  };
+
+  const fmtDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  };
+  const fmtDT = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+  const fmtP = (n: number) => formatPrice(n).replace(/\s/g, " ");
 
   const itemLines = order.order_items
     .map((item: any) => {
-      let l = `  ${pad(item.quantity + "x", 4)} ${pad(item.product_name, 28)} ${padL(formatPrice(item.total_price), 10)}`;
+      const qty = item.quantity + "x";
+      const name = item.product_name;
+      const up = fmtP(item.unit_price);
+      const tp = fmtP(item.total_price);
+      let l = `${qty.padEnd(4)}${name.padEnd(22)}${up.padStart(10)} ${tp.padStart(10)}`;
       const extras: string[] = [];
       (item.options || []).forEach((opt: any) => {
-        extras.push(`       > ${opt.group}: ${opt.name}${opt.price > 0 ? ` (+${formatPrice(opt.price)})` : ""}`);
+        extras.push(`     > ${opt.group}: ${opt.name}${opt.price > 0 ? " (+" + fmtP(opt.price) + ")" : ""}`);
       });
-      if (item.notes) extras.push(`       -> ${item.notes}`);
+      if (item.notes) extras.push(`     -> ${item.notes}`);
       return [l, ...extras].join("\n");
     })
     .join("\n");
 
-  const text = `
-${line(44)}
-  BESTELLING: ${order.order_number}
-  Datum: ${formatDateTime(order.created_at)}
-${line(44)}
-
-  KLANT
-  ${order.company_name}
-  ${order.contact_person}
-  ${order.phone}
-  ${order.email}
-
-  ${(orderTypeLabels[order.order_type] || "BEZORGING").toUpperCase()}
-${order.order_type === "delivery" ? `  ${order.delivery_address}\n  ${order.postcode} ${order.city}` : "  Afhalen bij FVS"}
-  Datum: ${formatDate(order.delivery_date)}
-  Tijd:  ${order.delivery_asap ? "Zo snel mogelijk" : order.delivery_time || "-"}
-
-${line(44)}
-  PRODUCTEN
-${line(44)}
-${itemLines}
-${line(44)}
-  ${pad("Subtotaal", 32)} ${padL(formatPrice(order.subtotal), 10)}
-  ${pad("Bezorgkosten", 32)} ${padL(formatPrice(order.delivery_cost), 10)}
-${line(44)}
-  ${pad("TOTAAL", 32)} ${padL(formatPrice(order.total), 10)}
-${line(44)}
-
-  Betaalwijze: ${paymentMethodLabels[order.payment_method] || order.payment_method}
-  Status:      ${paymentStatusLabels[order.payment_status] || order.payment_status}
-${order.notes ? `\n  OPMERKINGEN\n  ${order.notes}` : ""}
-
-${line(44)}
-  Afgedrukt: ${formatDateTime(new Date().toISOString())}
-`;
+  const text = [
+    eq(W),
+    center("BESTELLING", W),
+    eq(W),
+    `Bestelnummer: ${order.order_number}`,
+    `Besteldatum:  ${fmtDT(order.created_at)}`,
+    "",
+    "KLANT",
+    dash(6),
+    `  Type:      ${customerTypeLabels[order.customer_type] || order.customer_type}`,
+    `  Bedrijf:   ${order.company_name}`,
+    `  Contact:   ${order.contact_person}`,
+    `  Telefoon:  ${order.phone}`,
+    `  Email:     ${order.email}`,
+    ...(order.kvk_number ? [`  KvK:       ${order.kvk_number}`] : []),
+    ...(order.department ? [`  Afdeling:  ${order.department}`] : []),
+    "",
+    (orderTypeLabels[order.order_type] || "BEZORGING").toUpperCase(),
+    dash(10),
+    ...(order.order_type === "delivery"
+      ? [`  Adres:     ${order.delivery_address}`, `             ${order.postcode} ${order.city}`]
+      : [`  Type:      Afhalen`]),
+    `  Datum:     ${fmtDate(order.delivery_date)}`,
+    `  Tijd:      ${order.delivery_asap ? "Zo snel mogelijk" : order.delivery_time || "-"}`,
+    "",
+    "PRODUCTEN",
+    dash(W),
+    itemLines,
+    "",
+    `${"Subtotaal:".padEnd(28)}${fmtP(order.subtotal).padStart(18)}`,
+    `${"Bezorgkosten:".padEnd(28)}${fmtP(order.delivery_cost).padStart(18)}`,
+    eq(24).padStart(W),
+    `${"TOTAAL:".padEnd(28)}${fmtP(order.total).padStart(18)}`,
+    "",
+    `Betaalwijze:   ${paymentMethodLabels[order.payment_method] || order.payment_method}`,
+    `Betaalstatus:  ${paymentStatusLabels[order.payment_status] || order.payment_status}`,
+    ...(order.notes
+      ? ["", "OPMERKINGEN", dash(12), order.notes]
+      : []),
+    "",
+    eq(W),
+    `Afgedrukt: ${fmtDT(new Date().toISOString())}`,
+    eq(W),
+  ].join("\n");
 
   return `<!DOCTYPE html>
 <html lang="nl">
@@ -442,7 +470,7 @@ ${line(44)}
   <title>Bestelling ${order.order_number}</title>
   <style>
     @page { margin: 10mm; }
-    body { font-family: 'Courier New', Courier, monospace; font-size: 11pt; white-space: pre; line-height: 1.4; background: #fff; color: #000; }
+    body { font-family: 'Courier New', Courier, monospace; font-size: 10pt; white-space: pre; line-height: 1.3; background: #fff; color: #000; margin: 10mm; }
     @media print { body { margin: 0; } }
   </style>
 </head>
