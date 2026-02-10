@@ -13,9 +13,14 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Order = Database['public']['Tables']['orders']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
+type OrderItemOption = Database['public']['Tables']['order_item_options']['Row'];
+
+type OrderItemWithOptions = OrderItem & {
+  order_item_options: OrderItemOption[];
+};
 
 type OrderWithItems = Order & {
-  order_items: OrderItem[];
+  order_items: OrderItemWithOptions[];
 };
 
 const OrderConfirmation = () => {
