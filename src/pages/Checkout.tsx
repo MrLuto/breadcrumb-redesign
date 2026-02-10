@@ -401,7 +401,7 @@ const Checkout = () => {
             quantity: item.quantity,
             notes: item.notes || undefined,
             selectedOptions: item.selectedOptions?.map(opt => ({
-              optionGroupName: opt.groupName,
+              optionGroupName: opt.optionGroupName,
               optionName: opt.optionName,
               priceAdjustment: opt.priceAdjustment,
             })) || undefined,
