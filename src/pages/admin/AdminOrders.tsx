@@ -164,6 +164,8 @@ export default function AdminOrders() {
                 filteredOrders?.map((order) => {
                   const orderStatus = ORDER_STATUSES.find(s => s.value === order.order_status);
                   const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
+                  const paymentMethod = PAYMENT_METHODS.find(m => m.value === order.payment_method);
+                  const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
                   
                   return (
                     <TableRow key={order.id}>
