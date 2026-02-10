@@ -512,13 +512,11 @@ Deno.serve(async (req) => {
       cityValue = cityValue || 'Gouda';
     }
 
-    // Create order with unique temp order number
-    const tempOrderNumber = `TEMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+    // Empty order_number so the database trigger generates FRIS-YYYY-XXXX
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        order_number: tempOrderNumber,
+        order_number: '',
         customer_type: formData.customer_type,
         order_type: formData.order_type,
         company_name: formData.company_name?.trim() || (formData.customer_type === 'private' ? formData.contact_person.trim() : 'Particulier'),
