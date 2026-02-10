@@ -21,6 +21,7 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
 
   const orderStatus = ORDER_STATUSES.find(s => s.value === order.order_status);
   const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
+  const paymentMethod = PAYMENT_METHODS.find(m => m.value === order.payment_method);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
