@@ -572,17 +572,54 @@ Deno.serve(async (req) => {
       };
     });
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    // Separate selectedOptions from the DB insert data
+    const orderItemsForDb = orderItems.map(({ selectedOptions, ...rest }) => rest);
 
-    if (itemsError) {
+    const { data: insertedItems, error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItemsForDb)
+      .select('id');
+
+    if (itemsError || !insertedItems) {
       console.error('Error creating order items:', itemsError);
       await supabase.from('orders').delete().eq('id', order.id);
       return new Response(
         JSON.stringify({ error: 'Failed to create order items' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Save selected options for each order item
+    const allItemOptions: Array<{
+      order_item_id: string;
+      option_group_name: string;
+      option_name: string;
+      price_adjustment: number;
+    }> = [];
+
+    insertedItems.forEach((insertedItem, index) => {
+      const options = orderItems[index].selectedOptions;
+      if (options && options.length > 0) {
+        options.forEach(opt => {
+          allItemOptions.push({
+            order_item_id: insertedItem.id,
+            option_group_name: opt.optionGroupName,
+            option_name: opt.optionName,
+            price_adjustment: opt.priceAdjustment || 0,
+          });
+        });
+      }
+    });
+
+    if (allItemOptions.length > 0) {
+      const { error: optionsError } = await supabase
+        .from('order_item_options')
+        .insert(allItemOptions);
+
+      if (optionsError) {
+        console.error('Error creating order item options:', optionsError);
+        // Don't fail the order, just log the error
+      }
     }
 
     // Log order creation without PII
