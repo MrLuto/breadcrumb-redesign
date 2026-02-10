@@ -650,6 +650,11 @@ Deno.serve(async (req) => {
             unit_price: item.unit_price,
             total_price: item.total_price,
             notes: item.notes || undefined,
+            options: item.selectedOptions.length > 0 ? item.selectedOptions.map(opt => ({
+              group_name: opt.optionGroupName,
+              name: opt.optionName,
+              price_adjustment: opt.priceAdjustment,
+            })) : undefined,
           })),
           subtotal,
           deliveryCost,
