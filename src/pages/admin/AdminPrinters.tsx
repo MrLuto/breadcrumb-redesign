@@ -233,7 +233,6 @@ export default function AdminPrinters() {
                 <Input value={formPrinterName} onChange={(e) => setFormPrinterName(e.target.value)} placeholder="Geen printers gevonden — voer naam handmatig in" />
               )}
             </div>
-            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
