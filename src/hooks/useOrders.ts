@@ -19,7 +19,7 @@ export type OrderWithItems = Order & {
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string; color: string }[] = [
   { value: 'new', label: 'Nieuw', color: 'bg-blue-500' },
-  { value: 'confirmed', label: 'Bevestigd', color: 'bg-cyan-500' },
+  { value: 'confirmed', label: 'Geprint', color: 'bg-cyan-500' },
   { value: 'preparing', label: 'In bereiding', color: 'bg-yellow-500' },
   { value: 'out_for_delivery', label: 'Onderweg', color: 'bg-orange-500' },
   { value: 'delivered', label: 'Bezorgd', color: 'bg-green-500' },
