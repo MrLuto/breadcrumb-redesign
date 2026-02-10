@@ -207,6 +207,11 @@ export default function AdminOrders() {
                         </Select>
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {paymentMethod?.label || order.payment_method}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={order.payment_status}
                           onValueChange={(value) => 

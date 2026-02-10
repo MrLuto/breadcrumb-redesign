@@ -27,10 +27,19 @@ export const ORDER_STATUSES: { value: OrderStatus; label: string; color: string 
 ];
 
 export const PAYMENT_STATUSES: { value: PaymentStatus; label: string; color: string }[] = [
-  { value: 'pending', label: 'In afwachting', color: 'bg-yellow-500' },
+  { value: 'pending', label: 'Niet betaald', color: 'bg-yellow-500' },
   { value: 'paid', label: 'Betaald', color: 'bg-green-500' },
   { value: 'invoiced', label: 'Gefactureerd', color: 'bg-blue-500' },
   { value: 'refunded', label: 'Terugbetaald', color: 'bg-red-500' },
+];
+
+export const PAYMENT_METHODS: { value: string; label: string }[] = [
+  { value: 'ideal', label: 'iDEAL' },
+  { value: 'pin', label: 'PIN' },
+  { value: 'cash', label: 'Contant' },
+  { value: 'invoice', label: 'Factuur' },
+  { value: 'direct', label: 'Direct' },
+  { value: 'monthly_invoice', label: 'Maandfactuur' },
 ];
 
 export function useOrders() {
