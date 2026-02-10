@@ -462,6 +462,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
     const apiKey = req.headers.get("x-print-key") || url.searchParams.get("_key");
     const expectedKey = Deno.env.get("PRINT_API_KEY");
 
@@ -472,9 +473,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const url2 = new URL(req.url);
-
-    const url = new URL(req.url);
     const orderId = url.searchParams.get("order_id");
     const template = url.searchParams.get("template") || "receipt";
     const isTest = url.searchParams.get("test") === "true";
