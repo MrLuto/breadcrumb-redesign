@@ -148,7 +148,8 @@ Deno.serve(async (req) => {
     });
 
     if (!statusResponse.ok) {
-      console.error('Failed to fetch payment status from Pay.nl');
+      const errorBody = await statusResponse.text();
+      console.error('Failed to fetch payment status from Pay.nl:', statusResponse.status, errorBody);
       return new Response('Failed to verify payment', { status: 500 });
     }
 
