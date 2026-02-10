@@ -382,6 +382,74 @@ function generateInvoiceA4Html(order: any): string {
 </html>`;
 }
 
+function generatePlainTextHtml(order: any): string {
+  const line = (len: number) => "\u2500".repeat(len);
+  const pad = (s: string, len: number) => s.padEnd(len);
+  const padL = (s: string, len: number) => s.padStart(len);
+
+  const itemLines = order.order_items
+    .map((item: any) => {
+      let l = `  ${pad(item.quantity + "x", 4)} ${pad(item.product_name, 28)} ${padL(formatPrice(item.total_price), 10)}`;
+      const extras: string[] = [];
+      (item.options || []).forEach((opt: any) => {
+        extras.push(`       > ${opt.group}: ${opt.name}${opt.price > 0 ? ` (+${formatPrice(opt.price)})` : ""}`);
+      });
+      if (item.notes) extras.push(`       -> ${item.notes}`);
+      return [l, ...extras].join("\n");
+    })
+    .join("\n");
+
+  const text = `
+${line(44)}
+  BESTELLING: ${order.order_number}
+  Datum: ${formatDateTime(order.created_at)}
+${line(44)}
+
+  KLANT
+  ${order.company_name}
+  ${order.contact_person}
+  ${order.phone}
+  ${order.email}
+
+  ${(orderTypeLabels[order.order_type] || "BEZORGING").toUpperCase()}
+${order.order_type === "delivery" ? `  ${order.delivery_address}\n  ${order.postcode} ${order.city}` : "  Afhalen bij FVS"}
+  Datum: ${formatDate(order.delivery_date)}
+  Tijd:  ${order.delivery_asap ? "Zo snel mogelijk" : order.delivery_time || "-"}
+
+${line(44)}
+  PRODUCTEN
+${line(44)}
+${itemLines}
+${line(44)}
+  ${pad("Subtotaal", 32)} ${padL(formatPrice(order.subtotal), 10)}
+  ${pad("Bezorgkosten", 32)} ${padL(formatPrice(order.delivery_cost), 10)}
+${line(44)}
+  ${pad("TOTAAL", 32)} ${padL(formatPrice(order.total), 10)}
+${line(44)}
+
+  Betaalwijze: ${paymentMethodLabels[order.payment_method] || order.payment_method}
+  Status:      ${paymentStatusLabels[order.payment_status] || order.payment_status}
+${order.notes ? `\n  OPMERKINGEN\n  ${order.notes}` : ""}
+
+${line(44)}
+  Afgedrukt: ${formatDateTime(new Date().toISOString())}
+`;
+
+  return `<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Bestelling ${order.order_number}</title>
+  <style>
+    @page { margin: 10mm; }
+    body { font-family: 'Courier New', Courier, monospace; font-size: 11pt; white-space: pre; line-height: 1.4; background: #fff; color: #000; }
+    @media print { body { margin: 0; } }
+  </style>
+</head>
+<body>${text}</body>
+</html>`;
+}
+
 function generateTestHtml(template: string): string {
   const testOrder = {
     order_number: "FVS-TEST-0001",
@@ -452,6 +520,9 @@ function generateTestHtml(template: string): string {
 
   if (template === "invoice_a4") {
     return generateInvoiceA4Html(testOrder);
+  }
+  if (template === "plain_text") {
+    return generatePlainTextHtml(testOrder);
   }
   return generateReceiptHtml(testOrder);
 }
@@ -524,7 +595,9 @@ Deno.serve(async (req) => {
 
     const html = template === "invoice_a4"
       ? generateInvoiceA4Html(formattedOrder)
-      : generateReceiptHtml(formattedOrder);
+      : template === "plain_text"
+        ? generatePlainTextHtml(formattedOrder)
+        : generateReceiptHtml(formattedOrder);
 
     return new Response(html, {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
