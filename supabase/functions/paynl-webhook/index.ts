@@ -138,14 +138,12 @@ Deno.serve(async (req) => {
 
     console.log(`Webhook received for payment: ${paymentId}, action: ${action}`);
 
-    // Fetch payment status from Pay.nl API to verify
-    const authString = btoa(`${paynlApiToken}:`);
-    
+    // Fetch payment status from Pay.nl Pioneer API using Bearer auth
     const statusResponse = await fetch(`https://connect.pay.nl/v1/orders/${paymentId}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Basic ${authString}`,
+        'Authorization': `Bearer ${paynlApiToken}`,
       },
     });
 
