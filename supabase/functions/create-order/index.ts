@@ -578,62 +578,64 @@ Deno.serve(async (req) => {
     // Log order creation without PII
     console.log(`Order created: ${order.order_number} | email: ${maskEmail(formData.email)} | phone: ${maskPhone(formData.phone)}`);
 
-    // Send confirmation email (fire and forget - don't block order creation)
-    const siteUrl = Deno.env.get('SITE_URL') || 'https://frisversbroodjes.nl';
-    
-    try {
-      const emailPayload = {
-        orderId: order.id,
-        orderNumber: order.order_number,
-        confirmationToken: order.confirmation_token,
-        customerEmail: formData.email.trim().toLowerCase(),
-        customerName: formData.contact_person.trim(),
-        companyName: formData.company_name?.trim() || undefined,
-        orderType: formData.order_type,
-        deliveryAddress: deliveryAddress || '',
-        postcode: postcodeValue || '',
-        city: cityValue || '',
-        deliveryDate: formData.delivery_date,
-        deliveryTime: formData.delivery_time || undefined,
-        deliveryAsap: formData.delivery_asap,
-        items: orderItems.map(item => ({
-          product_name: item.product_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-          notes: item.notes || undefined,
-        })),
-        subtotal,
-        deliveryCost,
-        total,
-        notes: formData.notes?.trim() || undefined,
-        paymentMethod: formData.payment_method,
-        siteUrl,
-      };
-
-      // Call the email function via internal Supabase function invoke
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Send confirmation email - but NOT for iDEAL payments (email is sent after payment confirmation via webhook)
+    if (formData.payment_method !== 'ideal') {
+      const siteUrl = Deno.env.get('SITE_URL') || 'https://frisversbroodjes.nl';
       
-      fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify(emailPayload),
-      }).then(res => {
-        if (res.ok) {
-          console.log('Order confirmation email queued successfully');
-        } else {
-          console.error('Failed to send confirmation email:', res.status);
-        }
-      }).catch(err => {
-        console.error('Error sending confirmation email:', err);
-      });
-    } catch (emailError) {
-      // Log but don't fail the order if email fails
-      console.error('Error preparing confirmation email:', emailError);
+      try {
+        const emailPayload = {
+          orderId: order.id,
+          orderNumber: order.order_number,
+          confirmationToken: order.confirmation_token,
+          customerEmail: formData.email.trim().toLowerCase(),
+          customerName: formData.contact_person.trim(),
+          companyName: formData.company_name?.trim() || undefined,
+          orderType: formData.order_type,
+          deliveryAddress: deliveryAddress || '',
+          postcode: postcodeValue || '',
+          city: cityValue || '',
+          deliveryDate: formData.delivery_date,
+          deliveryTime: formData.delivery_time || undefined,
+          deliveryAsap: formData.delivery_asap,
+          items: orderItems.map(item => ({
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+            notes: item.notes || undefined,
+          })),
+          subtotal,
+          deliveryCost,
+          total,
+          notes: formData.notes?.trim() || undefined,
+          paymentMethod: formData.payment_method,
+          siteUrl,
+        };
+
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        
+        fetch(`${supabaseUrl}/functions/v1/send-order-confirmation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify(emailPayload),
+        }).then(res => {
+          if (res.ok) {
+            console.log('Order confirmation email queued successfully');
+          } else {
+            console.error('Failed to send confirmation email:', res.status);
+          }
+        }).catch(err => {
+          console.error('Error sending confirmation email:', err);
+        });
+      } catch (emailError) {
+        console.error('Error preparing confirmation email:', emailError);
+      }
+    } else {
+      console.log(`Skipping confirmation email for iDEAL order ${order.order_number} - will be sent after payment`);
     }
 
     return new Response(
