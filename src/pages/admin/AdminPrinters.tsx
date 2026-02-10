@@ -52,6 +52,7 @@ export default function AdminPrinters() {
   const [testTemplate, setTestTemplate] = useState('receipt');
 
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const storageBase = `${baseUrl}/storage/v1/object/public/printer-client`;
 
   const downloads = [
     { label: 'Windows (x64)', file: 'fvs-printer-windows-amd64.exe', icon: '🪟' },
@@ -175,7 +176,7 @@ export default function AdminPrinters() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {downloads.map((d) => (
                   <Button key={d.file} variant="outline" asChild className="justify-start">
-                    <a href={`/downloads/${d.file}`} download>
+                    <a href={`${storageBase}/${d.file}`} download>
                       <span className="mr-2">{d.icon}</span>
                       {d.label}
                       <Download className="h-3 w-3 ml-auto" />
