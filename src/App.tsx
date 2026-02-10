@@ -120,6 +120,11 @@ const App = () => (
                     <AdminProductOptions />
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/printers" element={
+                  <ProtectedRoute>
+                    <AdminPrinters />
+                  </ProtectedRoute>
+                } />
                 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
