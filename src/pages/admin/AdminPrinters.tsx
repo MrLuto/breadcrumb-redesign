@@ -51,8 +51,16 @@ export default function AdminPrinters() {
   // Test print state
   const [testTemplate, setTestTemplate] = useState('receipt');
 
-  const downloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/printer-client/fvs-printer.exe`;
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  const downloads = [
+    { label: 'Windows (x64)', file: 'fvs-printer-windows-amd64.exe', icon: '🪟' },
+    { label: 'Windows (ARM)', file: 'fvs-printer-windows-arm64.exe', icon: '🪟' },
+    { label: 'macOS (Intel)', file: 'fvs-printer-darwin-amd64', icon: '🍎' },
+    { label: 'macOS (Apple Silicon)', file: 'fvs-printer-darwin-arm64', icon: '🍎' },
+    { label: 'Linux (x64)', file: 'fvs-printer-linux-amd64', icon: '🐧' },
+    { label: 'Linux (ARM)', file: 'fvs-printer-linux-arm64', icon: '🐧' },
+  ];
 
   const openEdit = (client: PrintClient) => {
     setEditClient(client);
@@ -157,19 +165,24 @@ export default function AdminPrinters() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
-                Print Client
+                Print Client Downloads
               </CardTitle>
               <CardDescription>
-                Download de Go print client (.exe) voor Windows.
+                Download de print client voor jouw besturingssysteem.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild>
-                <a href={downloadUrl} download>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Client
-                </a>
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {downloads.map((d) => (
+                  <Button key={d.file} variant="outline" asChild className="justify-start">
+                    <a href={`/downloads/${d.file}`} download>
+                      <span className="mr-2">{d.icon}</span>
+                      {d.label}
+                      <Download className="h-3 w-3 ml-auto" />
+                    </a>
+                  </Button>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
