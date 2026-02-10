@@ -72,7 +72,11 @@ worden opgehaald van de server via het print-client-settings endpoint.
 ## Werking
 
 1. Genereer een uniek machine_id op basis van hardware (bijv. MAC-adres + hostname hash)
-2. Bij startup: GET {apiURL}/print-client-settings?machine_id={id}&desktop_name={hostname}
+2. Detecteer alle beschikbare printers op het systeem:
+   - Windows: `wmic printer list brief` of PowerShell `Get-Printer`
+   - Linux: `lpstat -a`
+   - Mac: `lpstat -a`
+3. Bij startup: GET {apiURL}/print-client-settings?machine_id={id}&desktop_name={hostname}&printers={komma-gescheiden-lijst}
    met header X-Print-Key: {apiKey}
    Response bevat alle instellingen:
    {
