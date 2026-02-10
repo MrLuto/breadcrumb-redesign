@@ -5,11 +5,16 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Order = Database['public']['Tables']['orders']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
+type OrderItemOption = Database['public']['Tables']['order_item_options']['Row'];
 type OrderStatus = Database['public']['Enums']['order_status_type'];
 type PaymentStatus = Database['public']['Enums']['payment_status_type'];
 
+export type OrderItemWithOptions = OrderItem & {
+  order_item_options: OrderItemOption[];
+};
+
 export type OrderWithItems = Order & {
-  order_items: OrderItem[];
+  order_items: OrderItemWithOptions[];
 };
 
 export const ORDER_STATUSES: { value: OrderStatus; label: string; color: string }[] = [
@@ -34,7 +39,7 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, order_item_options(*))')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,7 +55,7 @@ export function useOrder(id: string | undefined) {
       if (!id) return null;
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, order_item_options(*))')
         .eq('id', id)
         .single();
 

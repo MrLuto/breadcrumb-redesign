@@ -132,6 +132,16 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
                     <p className="text-sm text-muted-foreground">
                       {item.quantity}x @ {formatPrice(item.unit_price)}
                     </p>
+                    {item.order_item_options && item.order_item_options.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {item.order_item_options.map((opt) => (
+                          <p key={opt.id} className="text-sm text-muted-foreground">
+                            {opt.option_group_name}: {opt.option_name}
+                            {opt.price_adjustment > 0 && ` (+${formatPrice(opt.price_adjustment)})`}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     {item.notes && (
                       <p className="text-sm italic text-muted-foreground">{item.notes}</p>
                     )}
