@@ -26,8 +26,7 @@ import {
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 import { usePrintClients, useUpdatePrintClient, useDeletePrintClient, PrintClient } from '@/hooks/usePrintClients';
 import { toast } from '@/hooks/use-toast';
-import { Download, Loader2, Printer, Settings, Trash2, Upload, Wifi, WifiOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Download, Loader2, Printer, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -48,27 +47,8 @@ export default function AdminPrinters() {
   const [formPollInterval, setFormPollInterval] = useState(10);
   const [formCopies, setFormCopies] = useState(1);
   const [formActive, setFormActive] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const downloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/printer-client/fvs-printer.exe`;
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { error } = await supabase.storage
-        .from('printer-client')
-        .upload('fvs-printer.exe', file, { upsert: true });
-      if (error) throw error;
-      toast({ title: 'Client geüpload' });
-    } catch {
-      toast({ title: 'Upload mislukt', variant: 'destructive' });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const openEdit = (client: PrintClient) => {
     setEditClient(client);
@@ -145,17 +125,6 @@ export default function AdminPrinters() {
                 <Download className="h-4 w-4 mr-2" />
                 Download Client
               </a>
-            </Button>
-            <input
-              type="file"
-              accept=".exe"
-              className="hidden"
-              id="upload-client"
-              onChange={handleUpload}
-            />
-            <Button variant="outline" onClick={() => document.getElementById('upload-client')?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              Nieuwe versie uploaden
             </Button>
           </CardContent>
         </Card>
