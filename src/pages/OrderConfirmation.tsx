@@ -45,7 +45,7 @@ const OrderConfirmation = () => {
       try {
         // Use fetch with custom headers to pass the confirmation token for RLS verification
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*)`,
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*,order_items(*,order_item_options(*))`,
           {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
