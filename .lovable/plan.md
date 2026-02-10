@@ -57,16 +57,23 @@ Bouw een Go CLI applicatie "fvs-printer" die automatisch bestellingen ophaalt
 van een API en uitprint op een lokale printer via HTML rendering.
 De client haalt zijn instellingen op van de server bij elke startup en periodiek.
 
-## Configuratie (config.yaml)
+## Configuratie
 
-api_url: "https://erqvlccnuqjyszayxfuc.supabase.co/functions/v1"
-api_key: "jouw-print-api-key"
+Hardcoded als constanten in main.go:
+
+const (
+    apiURL = "https://erqvlccnuqjyszayxfuc.supabase.co/functions/v1"
+    apiKey = "688a88ab-543c-4c34-b35b-b34070ab3afd"
+)
+
+Geen config file nodig. Alle overige instellingen (printer, papier, interval, etc.)
+worden opgehaald van de server via het print-client-settings endpoint.
 
 ## Werking
 
 1. Genereer een uniek machine_id op basis van hardware (bijv. MAC-adres + hostname hash)
-2. Bij startup: GET {api_url}/print-client-settings?machine_id={id}&desktop_name={hostname}
-   met header X-Print-Key: {api_key}
+2. Bij startup: GET {apiURL}/print-client-settings?machine_id={id}&desktop_name={hostname}
+   met header X-Print-Key: {apiKey}
    Response bevat alle instellingen:
    {
      "id": "uuid",
@@ -81,26 +88,26 @@ api_key: "jouw-print-api-key"
      "copies": 1
    }
    Als is_active=false, log een melding en stop de polling.
-3. Poll elke `poll_interval_seconds` (uit server settings) naar GET {api_url}/get-print-queue
-   met header X-Print-Key: {api_key}
+3. Poll elke `poll_interval_seconds` (uit server settings) naar GET {apiURL}/get-print-queue
+   met header X-Print-Key: {apiKey}
 4. Elke 60 seconden: herlaad settings via print-client-settings endpoint (heartbeat)
 5. Voor elke order in de response:
-   a. Haal de HTML-bon op via GET {api_url}/generate-print-html?order_id={id}
-      met header X-Print-Key: {api_key}
+   a. Haal de HTML-bon op via GET {apiURL}/generate-print-html?order_id={id}
+      met header X-Print-Key: {apiKey}
    b. Sla de HTML op als tijdelijk bestand
    c. Print `copies` exemplaren via het OS print commando:
       - Windows: Start-Process met -Verb Print parameter, gebruik printer_name als die gezet is
       - Linux: wkhtmltopdf + lp -d {printer_name}
       - Mac: wkhtmltopdf + lp -d {printer_name}
-   d. Bij succes: POST {api_url}/mark-printed met body {"order_id": "..."}
-      en header X-Print-Key: {api_key}
+   d. Bij succes: POST {apiURL}/mark-printed met body {"order_id": "..."}
+      en header X-Print-Key: {apiKey}
    e. Verwijder het tijdelijke bestand
    f. Log resultaat naar stdout
 
 ## Technische eisen
 
 - Go 1.22+
-- Gebruik gopkg.in/yaml.v3 voor config parsing
+- Geen externe config file nodig (api_url en api_key hardcoded)
 - Graceful shutdown via SIGINT/SIGTERM
 - Retry logica: bij API fout max 3 retries met exponential backoff
 - Log naar stdout met timestamp
@@ -110,10 +117,9 @@ api_key: "jouw-print-api-key"
 ## Structuur
 
 fvs-printer/
-  main.go          - entry point, config loading, polling loop, settings refresh
+  main.go          - entry point, hardcoded config, polling loop, settings refresh
   printer.go       - OS printer abstraction (HTML printing)
   api.go           - HTTP client voor alle endpoints
-  config.yaml      - voorbeeld config (alleen api_url + api_key)
   go.mod
   README.md
 
