@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import { Download, Eye, Loader2, Printer, Settings, Trash2, Wifi, WifiOff } from
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
-const PRINT_API_KEY = '688a88ab-543c-4c34-b35b-b34070ab3afd';
+
 
 const templateLabels: Record<string, string> = {
   receipt: 'Standaard bon',
@@ -99,9 +100,11 @@ export default function AdminPrinters() {
   };
 
   const fetchTestHtml = async (): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
     const res = await fetch(
       `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`,
-      { headers: { 'x-print-key': PRINT_API_KEY } }
+      { headers: { 'Authorization': `Bearer ${session.access_token}` } }
     );
     if (!res.ok) throw new Error('Fetch failed');
     return res.text();
