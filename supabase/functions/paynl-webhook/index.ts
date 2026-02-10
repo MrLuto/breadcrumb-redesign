@@ -204,10 +204,7 @@ Deno.serve(async (req) => {
 
     if (statusCode === PAYNL_STATUS.PAID) {
       newPaymentStatus = 'paid';
-      // Only update order status if it's still 'new'
-      if (order.order_status === 'new') {
-        newOrderStatus = 'confirmed';
-      }
+      // Keep order_status as 'new' - only change to 'confirmed' (geprint) when admin prints
     } else if (statusCode === PAYNL_STATUS.CANCEL || statusCode === PAYNL_STATUS.DENIED || statusCode === PAYNL_STATUS.EXPIRED) {
       // Payment failed/cancelled - keep as pending so customer can retry
       newPaymentStatus = 'pending';
