@@ -30,6 +30,11 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const machineId = url.searchParams.get("machine_id");
     const desktopName = url.searchParams.get("desktop_name");
+    // Available printers can be passed as comma-separated query param
+    const printersParam = url.searchParams.get("printers");
+    const availablePrinters = printersParam
+      ? printersParam.split(",").map((p) => p.trim()).filter(Boolean)
+      : undefined;
 
     if (!machineId) {
       return new Response(JSON.stringify({ error: "machine_id is required" }), {
@@ -39,18 +44,21 @@ Deno.serve(async (req) => {
     }
 
     if (req.method === "GET") {
-      // Register/heartbeat + fetch settings
-      // Upsert the client record (register if new, update last_seen if existing)
+      // Build upsert payload
+      const upsertData: Record<string, unknown> = {
+        machine_id: machineId,
+        desktop_name: desktopName || "Onbekend",
+        last_seen_at: new Date().toISOString(),
+      };
+
+      // Include available printers if provided
+      if (availablePrinters !== undefined) {
+        upsertData.available_printers = availablePrinters;
+      }
+
       const { data: client, error: upsertError } = await supabase
         .from("print_clients")
-        .upsert(
-          {
-            machine_id: machineId,
-            desktop_name: desktopName || "Onbekend",
-            last_seen_at: new Date().toISOString(),
-          },
-          { onConflict: "machine_id" }
-        )
+        .upsert(upsertData, { onConflict: "machine_id" })
         .select()
         .single();
 
