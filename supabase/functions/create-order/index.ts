@@ -5,10 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface OrderItemOption {
+  optionGroupName: string;
+  optionName: string;
+  priceAdjustment: number;
+}
+
 interface OrderItem {
   product_id: string;
   quantity: number;
   notes?: string;
+  selectedOptions?: OrderItemOption[];
 }
 
 interface OrderFormData {
