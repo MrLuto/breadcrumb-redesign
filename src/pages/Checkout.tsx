@@ -545,7 +545,8 @@ const Checkout = () => {
     }
   };
 
-  if (items.length === 0) {
+  // Don't show empty cart screen if we're redirecting to payment
+  if (items.length === 0 && !isSubmitting && !sessionStorage.getItem('payment_redirect')) {
     return (
       <Layout>
         <div className="container py-16">

@@ -47,7 +47,7 @@ const PaymentReturn = () => {
 
         const orders = await response.json();
         
-        if (orders.length === 0 || orders[0].confirmation_token !== confirmationToken) {
+        if (orders.length === 0) {
           setStatus('failed');
           return;
         }
