@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Eye, Trash2, Search } from 'lucide-react';
+import { Eye, Trash2, Search, Printer, PrinterCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { 
