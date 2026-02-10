@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.paynl-webhook]
 verify_jwt = false
+
+[functions.get-print-queue]
+verify_jwt = false
+
+[functions.mark-printed]
+verify_jwt = false

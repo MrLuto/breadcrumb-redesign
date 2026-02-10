@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Eye, Trash2, Search } from 'lucide-react';
+import { Eye, Trash2, Search, Printer, PrinterCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { 
@@ -238,6 +238,11 @@ export default function AdminOrders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {order.printed_at ? (
+                            <PrinterCheck className="h-4 w-4 text-primary mt-2" />
+                          ) : (
+                            <Printer className="h-4 w-4 text-muted-foreground mt-2" />
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
