@@ -462,7 +462,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = req.headers.get("x-print-key");
+    const apiKey = req.headers.get("x-print-key") || url.searchParams.get("_key");
     const expectedKey = Deno.env.get("PRINT_API_KEY");
 
     if (!apiKey || apiKey !== expectedKey) {
@@ -471,6 +471,8 @@ Deno.serve(async (req) => {
         headers: corsHeaders,
       });
     }
+
+    const url2 = new URL(req.url);
 
     const url = new URL(req.url);
     const orderId = url.searchParams.get("order_id");
