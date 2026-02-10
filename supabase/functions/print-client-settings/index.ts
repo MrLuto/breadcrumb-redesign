@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
           auto_print: client.auto_print,
           poll_interval_seconds: client.poll_interval_seconds,
           copies: client.copies,
+          print_template: client.print_template,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -616,6 +616,7 @@ export type Database = {
           margin_mm: number
           paper_width_mm: number
           poll_interval_seconds: number
+          print_template: string
           printer_name: string | null
           updated_at: string
         }
@@ -632,6 +633,7 @@ export type Database = {
           margin_mm?: number
           paper_width_mm?: number
           poll_interval_seconds?: number
+          print_template?: string
           printer_name?: string | null
           updated_at?: string
         }
@@ -648,6 +650,7 @@ export type Database = {
           margin_mm?: number
           paper_width_mm?: number
           poll_interval_seconds?: number
+          print_template?: string
           printer_name?: string | null
           updated_at?: string
         }
