@@ -28,6 +28,7 @@ import {
   useDeleteOrder,
   ORDER_STATUSES,
   PAYMENT_STATUSES,
+  PAYMENT_METHODS,
   OrderWithItems
 } from '@/hooks/useOrders';
 import { OrderDetailDialog } from '@/components/admin/OrderDetailDialog';
