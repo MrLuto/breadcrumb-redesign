@@ -238,6 +238,11 @@ export default function AdminOrders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {order.printed_at ? (
+                            <PrinterCheck className="h-4 w-4 text-green-500 mt-2" title={`Geprint: ${order.print_count}x`} />
+                          ) : (
+                            <Printer className="h-4 w-4 text-muted-foreground mt-2" />
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"

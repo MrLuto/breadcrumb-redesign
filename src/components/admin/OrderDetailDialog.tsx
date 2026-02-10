@@ -183,6 +183,23 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
             </div>
           </div>
 
+          {/* Print Info */}
+          {order.printed_at && (
+            <>
+              <Separator />
+              <div className="flex items-center gap-6 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Geprint op:</span>{' '}
+                  <span className="font-medium">{format(new Date(order.printed_at), 'PPP HH:mm', { locale: nl })}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Aantal keer geprint:</span>{' '}
+                  <span className="font-medium">{order.print_count || 0}</span>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Notes */}
           {order.notes && (
             <>
