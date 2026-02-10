@@ -16,7 +16,8 @@ import {
   Settings,
   ChevronDown,
   FolderTree,
-  ShoppingBasket
+  ShoppingBasket,
+  Printer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/logo.png';
