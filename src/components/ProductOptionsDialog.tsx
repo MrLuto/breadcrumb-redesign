@@ -177,7 +177,7 @@ export function ProductOptionsDialog({ product, open, onOpenChange }: ProductOpt
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 -mx-6 px-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 220px)' }}>
           {isLoading ? (
             <div className="py-8 text-center text-muted-foreground">Laden...</div>
           ) : hasOptions ? (
