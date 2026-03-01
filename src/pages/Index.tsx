@@ -81,8 +81,7 @@ const Index = () => {
         }} transition={{
           duration: 0.8
         }} className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-card leading-tight mb-6">vers. ambachtelijk.
-lokaal genieten.<br />
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-card leading-tight mb-6">vers. ambachtelijk.<br />
               <span className="text-primary">lokaal genieten.</span>
             </h1>
             <p className="text-lg md:text-xl text-card/90 mb-8 leading-relaxed">
