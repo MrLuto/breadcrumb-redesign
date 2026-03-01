@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.print-client-update]
 verify_jwt = false
+
+[functions.request-test-print]
+verify_jwt = false

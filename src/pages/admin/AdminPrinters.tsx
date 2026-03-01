@@ -17,7 +17,7 @@ import {
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 import { usePrintClients, useUpdatePrintClient, useDeletePrintClient, PrintClient } from '@/hooks/usePrintClients';
 import { toast } from '@/hooks/use-toast';
-import { Download, Eye, Loader2, Printer, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { Download, Eye, Loader2, Printer, Send, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -108,6 +108,29 @@ export default function AdminPrinters() {
     }
   };
 
+  const handleSendTestPrint = async (clientId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const res = await fetch(
+        `${baseUrl}/functions/v1/request-test-print`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ client_id: clientId, template: testTemplate }),
+        }
+      );
+      if (!res.ok) throw new Error('Request failed');
+      toast({ title: 'Test print verstuurd naar printer' });
+    } catch {
+      toast({ title: 'Test print versturen mislukt', variant: 'destructive' });
+    }
+  };
+
   const fetchTestHtml = async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not authenticated');
@@ -127,21 +150,6 @@ export default function AdminPrinters() {
       window.open(url, '_blank');
     } catch {
       toast({ title: 'Preview laden mislukt', variant: 'destructive' });
-    }
-  };
-
-  const handleTestPrint = async () => {
-    try {
-      const html = await fetchTestHtml();
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      }
-    } catch {
-      toast({ title: 'Test print mislukt', variant: 'destructive' });
     }
   };
 
@@ -216,11 +224,26 @@ export default function AdminPrinters() {
                   <Eye className="h-4 w-4 mr-2" />
                   Preview
                 </Button>
-                <Button onClick={handleTestPrint}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print
-                </Button>
               </div>
+              {clients && clients.length > 0 && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Verstuur naar printer</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {clients.map((client) => (
+                      <Button
+                        key={client.id}
+                        size="sm"
+                        variant={isOnline(client.last_seen_at) ? "default" : "secondary"}
+                        onClick={() => handleSendTestPrint(client.id)}
+                        disabled={!client.is_active}
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        {client.desktop_name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -77,11 +77,36 @@ Deno.serve(async (req) => {
           poll_interval_seconds: client.poll_interval_seconds,
           copies: client.copies,
           print_template: client.print_template,
+          test_print_requested_at: client.test_print_requested_at,
+          test_print_template: client.test_print_template,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // POST: acknowledge test print (Go client calls this after printing)
+    if (req.method === "POST") {
+      const body = await req.json();
+
+      if (body.action === "ack_test_print" && machineId) {
+        const { error: ackError } = await supabase
+          .from("print_clients")
+          .update({ test_print_requested_at: null })
+          .eq("machine_id", machineId);
+
+        if (ackError) throw ackError;
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ error: "Unknown action" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
