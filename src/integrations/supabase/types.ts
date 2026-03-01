@@ -618,6 +618,8 @@ export type Database = {
           poll_interval_seconds: number
           print_template: string
           printer_name: string | null
+          test_print_requested_at: string | null
+          test_print_template: string | null
           updated_at: string
         }
         Insert: {
@@ -635,6 +637,8 @@ export type Database = {
           poll_interval_seconds?: number
           print_template?: string
           printer_name?: string | null
+          test_print_requested_at?: string | null
+          test_print_template?: string | null
           updated_at?: string
         }
         Update: {
@@ -652,6 +656,8 @@ export type Database = {
           poll_interval_seconds?: number
           print_template?: string
           printer_name?: string | null
+          test_print_requested_at?: string | null
+          test_print_template?: string | null
           updated_at?: string
         }
         Relationships: []
