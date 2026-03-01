@@ -18,9 +18,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Eye, Trash2, Search, Printer, PrinterCheck } from 'lucide-react';
+import { Eye, Trash2, Search, Printer, PrinterCheck, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { 
   useOrders, 
   useUpdateOrderStatus, 
@@ -42,11 +44,37 @@ export default function AdminOrders() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
+  const [reprintingOrderId, setReprintingOrderId] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useOrders();
   const updateOrderStatus = useUpdateOrderStatus();
   const updatePaymentStatus = useUpdatePaymentStatus();
   const deleteOrder = useDeleteOrder();
+
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  const handleReprintOrder = async (orderId: string) => {
+    setReprintingOrderId(orderId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const res = await fetch(`${baseUrl}/functions/v1/reprint-order`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+      toast({ title: 'Bestelling in printwachtrij geplaatst' });
+    } catch {
+      toast({ title: 'Printopdracht mislukt', variant: 'destructive' });
+    } finally {
+      setReprintingOrderId(null);
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('nl-NL', {
@@ -237,12 +265,22 @@ export default function AdminOrders() {
                         </Select>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {order.printed_at ? (
-                            <PrinterCheck className="h-4 w-4 text-primary mt-2" />
-                          ) : (
-                            <Printer className="h-4 w-4 text-muted-foreground mt-2" />
-                          )}
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleReprintOrder(order.id)}
+                            disabled={reprintingOrderId === order.id}
+                            title={order.printed_at ? 'Opnieuw printen' : 'Printen'}
+                          >
+                            {reprintingOrderId === order.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : order.printed_at ? (
+                              <PrinterCheck className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Printer className="h-4 w-4" />
+                            )}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
