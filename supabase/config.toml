@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.request-test-print]
 verify_jwt = false
+
+[functions.reprint-order]
+verify_jwt = false
