@@ -144,7 +144,7 @@ const Checkout = () => {
 
   // Find first available delivery date (skip closed days)
   const findFirstAvailableDate = useMemo(() => {
-    let date = addDays(startOfDay(new Date()), 1); // Start with tomorrow
+    let date = startOfDay(new Date()); // Start with today
     const maxDaysToCheck = 30; // Prevent infinite loop
     
     for (let i = 0; i < maxDaysToCheck; i++) {
@@ -292,10 +292,10 @@ const Checkout = () => {
 
   // Disable closed days and past dates
   const disabledDays = (date: Date) => {
-    const tomorrow = addDays(startOfDay(new Date()), 1);
+    const today = startOfDay(new Date());
     
-    // Disable past dates (must be at least tomorrow)
-    if (isBefore(date, tomorrow)) {
+    // Disable past dates (must be at least today)
+    if (isBefore(date, today)) {
       return true;
     }
 
