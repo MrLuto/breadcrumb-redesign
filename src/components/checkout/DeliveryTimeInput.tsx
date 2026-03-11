@@ -37,7 +37,7 @@ const getEarliestTime = (minPrepTimeMinutes: number): { hours: number; minutes: 
 
 // Parse HH:mm string to hours and minutes
 const parseTime = (timeString: string): { hours: number; minutes: number } => {
-  if (!timeString) return { hours: 10, minutes: 0 };
+  if (!timeString) return { hours: 0, minutes: 0 };
   const [h, m] = timeString.split(':').map(Number);
   return { hours: h || 0, minutes: m || 0 };
 };
@@ -224,6 +224,14 @@ export function DeliveryTimeInput({
   }, [deliveryTime, selectedDate, minPrepTimeMinutes, hours, minutes, isTimeValid, dayOpeningHours, openingMinutes, closingMinutes]);
 
   const incrementHours = () => {
+    const newHours = hours >= 23 ? 0 : hours + 1;
+    const newTimeInMinutes = newHours * 60 + minutes;
+    
+    // Check against closing hours
+    if (closingMinutes !== null && newTimeInMinutes > closingMinutes) {
+      return;
+    }
+    
     if (hours >= 23) {
       // Wrap to next day
       if (selectedDate && onDateChange) {
@@ -234,7 +242,7 @@ export function DeliveryTimeInput({
         onTimeChange(formatTime(0, minutes));
       }
     } else {
-      onTimeChange(formatTime(hours + 1, minutes));
+      onTimeChange(formatTime(newHours, minutes));
     }
   };
 
