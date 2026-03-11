@@ -350,6 +350,11 @@ export default function AdminPrinters() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nickname</Label>
+              <Input value={formNickname} onChange={(e) => setFormNickname(e.target.value)} placeholder="Bijv. Keuken, Balie, Kantoor" />
+            </div>
+
             <div className="flex items-center justify-between">
               <Label>Actief</Label>
               <Switch checked={formActive} onCheckedChange={setFormActive} />

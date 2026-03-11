@@ -13,6 +13,7 @@ export interface PrintClient {
   poll_interval_seconds: number;
   copies: number;
   print_template: string;
+  nickname: string | null;
   available_printers: string[];
   last_seen_at: string | null;
   created_at: string;
