@@ -74,6 +74,7 @@ export default function AdminPrinters() {
     setFormCopies(client.copies);
     setFormActive(client.is_active);
     setFormTemplate(client.print_template || 'receipt');
+    setFormNickname(client.nickname || '');
   };
 
   const handleSave = async () => {
