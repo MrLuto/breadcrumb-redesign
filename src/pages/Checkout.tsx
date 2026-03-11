@@ -142,26 +142,69 @@ const Checkout = () => {
     });
   }, [items, allProducts]);
 
-  // Find first available delivery date (skip closed days)
+  // Check if a day is closed via opening_hours
+  const isDayClosedViaOpeningHours = (date: Date): boolean => {
+    if (!openingHours) return false;
+    const dayOfWeek = date.getDay();
+    const dayHours = openingHours.find((h) => h.day_of_week === dayOfWeek);
+    if (!dayHours) return false;
+    return dayHours.is_closed;
+  };
+
+  // Check if today still has enough time before closing for an order
+  const hasSufficientTimeToday = (date: Date): boolean => {
+    if (!isToday(date)) return true;
+    if (!openingHours) return true;
+    
+    const dayOfWeek = date.getDay();
+    const dayHours = openingHours.find((h) => h.day_of_week === dayOfWeek);
+    if (!dayHours || dayHours.is_closed) return false;
+    
+    const [closeH, closeM] = dayHours.close_time.split(':').map(Number);
+    const closingMinutes = closeH * 60 + closeM;
+    
+    const now = new Date();
+    const minPrepTime = shopSettings?.min_preparation_time_minutes ?? 60;
+    const earliest = addMinutes(now, minPrepTime);
+    const earliestMinutes = earliest.getHours() * 60 + earliest.getMinutes();
+    
+    // If the earliest possible time is past closing, today is not available
+    return earliestMinutes <= closingMinutes;
+  };
+
+  // Find first available delivery date (skip closed days AND opening hours)
   const findFirstAvailableDate = useMemo(() => {
     let date = startOfDay(new Date()); // Start with today
     const maxDaysToCheck = 30; // Prevent infinite loop
     
     for (let i = 0; i < maxDaysToCheck; i++) {
+      // Check closed_days table
       if (closedDays) {
         const { isClosed } = isDateClosed(date, closedDays);
-        if (!isClosed) {
-          return date;
+        if (isClosed) {
+          date = addDays(date, 1);
+          continue;
         }
-      } else {
-        return date;
       }
-      date = addDays(date, 1);
+      
+      // Check opening_hours (is_closed flag)
+      if (isDayClosedViaOpeningHours(date)) {
+        date = addDays(date, 1);
+        continue;
+      }
+      
+      // For today: check if there's still enough time before closing
+      if (isToday(date) && !hasSufficientTimeToday(date)) {
+        date = addDays(date, 1);
+        continue;
+      }
+      
+      return date;
     }
     
     // Fallback to tomorrow if no open day found
     return addDays(startOfDay(new Date()), 1);
-  }, [closedDays]);
+  }, [closedDays, openingHours, shopSettings]);
 
   // Default delivery date is first available date
   const defaultDeliveryDate = findFirstAvailableDate;
@@ -215,18 +258,34 @@ const Checkout = () => {
     }
   }, [watchedCustomerType]);
 
-  // Update delivery date to first available when closed days are loaded
+  // Update delivery date to first available when closed days or opening hours are loaded
   useEffect(() => {
-    if (closedDays) {
-      const currentDate = form.getValues('delivery_date');
-      if (currentDate && closedDays) {
+    const currentDate = form.getValues('delivery_date');
+    if (currentDate) {
+      let needsUpdate = false;
+      
+      // Check closed_days
+      if (closedDays) {
         const { isClosed } = isDateClosed(currentDate, closedDays);
-        if (isClosed) {
-          form.setValue('delivery_date', findFirstAvailableDate);
-        }
+        if (isClosed) needsUpdate = true;
+      }
+      
+      // Check opening_hours
+      if (!needsUpdate && isDayClosedViaOpeningHours(currentDate)) {
+        needsUpdate = true;
+      }
+      
+      // Check if today still has time
+      if (!needsUpdate && isToday(currentDate) && !hasSufficientTimeToday(currentDate)) {
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        form.setValue('delivery_date', findFirstAvailableDate);
+        form.setValue('delivery_time', ''); // Reset time so it gets recalculated
       }
     }
-  }, [closedDays, findFirstAvailableDate]);
+  }, [closedDays, openingHours, findFirstAvailableDate]);
 
   // Auto-fill form from profile
   useEffect(() => {
@@ -299,11 +358,17 @@ const Checkout = () => {
       return true;
     }
 
-    // Disable closed days
+    // Disable closed days from closed_days table
     if (closedDays) {
       const { isClosed } = isDateClosed(date, closedDays);
       if (isClosed) return true;
     }
+
+    // Disable days closed via opening_hours
+    if (isDayClosedViaOpeningHours(date)) return true;
+
+    // Disable today if no sufficient time left before closing
+    if (isToday(date) && !hasSufficientTimeToday(date)) return true;
 
     return false;
   };

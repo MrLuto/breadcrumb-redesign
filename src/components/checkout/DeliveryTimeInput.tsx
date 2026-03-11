@@ -133,14 +133,24 @@ export function DeliveryTimeInput({
 
   // Set initial time on mount and when date/opening hours change
   useEffect(() => {
-    if (selectedDate && !deliveryTime) {
+    if (selectedDate) {
+      // Always recalculate when date or opening hours change
       const minTime = getMinTime();
-      // Round to next quarter hour
       const minInMinutes = minTime.hours * 60 + minTime.minutes;
       const roundedMinutes = Math.ceil(minInMinutes / 15) * 15;
       const roundedHours = Math.floor(roundedMinutes / 60);
       const roundedMins = roundedMinutes % 60;
-      onTimeChange(formatTime(roundedHours, roundedMins));
+      
+      if (!deliveryTime) {
+        // No time set yet, initialize it
+        onTimeChange(formatTime(roundedHours, roundedMins));
+      } else {
+        // Time is set, but check if it's still valid
+        const { hours: currentH, minutes: currentM } = parseTime(deliveryTime);
+        if (!isTimeValid(currentH, currentM)) {
+          onTimeChange(formatTime(roundedHours, roundedMins));
+        }
+      }
     }
   }, [selectedDate, openingHours]);
 
