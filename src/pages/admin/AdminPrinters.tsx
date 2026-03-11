@@ -236,6 +236,15 @@ export default function AdminPrinters() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSendTestPrint(client.id)}
+                            disabled={!client.is_active}
+                            title="Test print versturen"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(client)} title="Instellingen">
                             <Settings className="h-4 w-4" />
                           </Button>
