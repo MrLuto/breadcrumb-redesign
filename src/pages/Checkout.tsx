@@ -1038,6 +1038,7 @@ const Checkout = () => {
                                   disabled={disabledDays}
                                   locale={nl}
                                   initialFocus
+                                  className="pointer-events-auto"
                                 />
                               </PopoverContent>
                             </Popover>
