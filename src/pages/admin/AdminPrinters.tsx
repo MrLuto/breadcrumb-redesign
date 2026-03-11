@@ -17,7 +17,7 @@ import {
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
 import { usePrintClients, useUpdatePrintClient, useDeletePrintClient, PrintClient } from '@/hooks/usePrintClients';
 import { toast } from '@/hooks/use-toast';
-import { Download, Eye, Loader2, Printer, Send, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
+import { Download, Loader2, Printer, Send, Settings, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -49,8 +49,6 @@ export default function AdminPrinters() {
   const [formTemplate, setFormTemplate] = useState('receipt');
   const [formNickname, setFormNickname] = useState('');
 
-  // Test print state
-  const [testTemplate, setTestTemplate] = useState('receipt');
 
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   const storageBase = `${baseUrl}/storage/v1/object/public/printer-client`;
@@ -113,8 +111,10 @@ export default function AdminPrinters() {
 
   const handleSendTestPrint = async (clientId: string) => {
     try {
+      const client = clients?.find(c => c.id === clientId);
+      const tpl = client?.print_template || 'receipt';
       const { error } = await supabase.functions.invoke('request-test-print', {
-        body: { client_id: clientId, template: testTemplate },
+        body: { client_id: clientId, template: tpl },
       });
 
       if (error) throw error;
@@ -128,27 +128,6 @@ export default function AdminPrinters() {
     }
   };
 
-  const fetchTestHtml = async (): Promise<string> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error('Not authenticated');
-    const res = await fetch(
-      `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`,
-      { headers: { 'Authorization': `Bearer ${session.access_token}` } }
-    );
-    if (!res.ok) throw new Error('Fetch failed');
-    return res.text();
-  };
-
-  const handleTestPreview = async () => {
-    try {
-      const html = await fetchTestHtml();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch {
-      toast({ title: 'Preview laden mislukt', variant: 'destructive' });
-    }
-  };
 
   const isOnline = (lastSeen: string | null) => {
     if (!lastSeen) return false;
@@ -166,8 +145,7 @@ export default function AdminPrinters() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
@@ -178,7 +156,7 @@ export default function AdminPrinters() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {downloads.map((d) => (
                   <Button key={d.file} variant="outline" asChild className="justify-start">
                     <a href={`${storageBase}/${d.file}`} download>
@@ -191,59 +169,6 @@ export default function AdminPrinters() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Test Print
-              </CardTitle>
-              <CardDescription>
-                Bekijk of print een voorbeeld met testdata.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label>Template</Label>
-                <Select value={testTemplate} onValueChange={setTestTemplate}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(templateLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleTestPreview}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
-              </div>
-              {clients && clients.length > 0 && (
-                <div className="space-y-2 pt-2 border-t">
-                  <Label>Verstuur naar printer</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {clients.map((client) => (
-                      <Button
-                        key={client.id}
-                        size="sm"
-                        variant={isOnline(client.last_seen_at) ? "default" : "secondary"}
-                        onClick={() => handleSendTestPrint(client.id)}
-                        disabled={!client.is_active}
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        {client.nickname || client.desktop_name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
         <Card>
           <CardHeader>
@@ -311,6 +236,15 @@ export default function AdminPrinters() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSendTestPrint(client.id)}
+                            disabled={!client.is_active}
+                            title="Test print versturen"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(client)} title="Instellingen">
                             <Settings className="h-4 w-4" />
                           </Button>
