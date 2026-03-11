@@ -113,8 +113,10 @@ export default function AdminPrinters() {
 
   const handleSendTestPrint = async (clientId: string) => {
     try {
+      const client = clients?.find(c => c.id === clientId);
+      const tpl = client?.print_template || 'receipt';
       const { error } = await supabase.functions.invoke('request-test-print', {
-        body: { client_id: clientId, template: testTemplate },
+        body: { client_id: clientId, template: tpl },
       });
 
       if (error) throw error;
