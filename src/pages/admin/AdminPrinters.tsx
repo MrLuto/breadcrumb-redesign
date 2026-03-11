@@ -90,6 +90,7 @@ export default function AdminPrinters() {
         copies: formCopies,
         is_active: formActive,
         print_template: formTemplate,
+        nickname: formNickname || null,
       });
       toast({ title: 'Instellingen opgeslagen' });
       setEditClient(null);
