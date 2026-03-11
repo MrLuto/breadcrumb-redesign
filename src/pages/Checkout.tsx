@@ -1050,7 +1050,7 @@ const Checkout = () => {
                         <DeliveryTimeInput
                           selectedDate={watchedDeliveryDate}
                           deliveryTime={watchedDeliveryTime}
-                          minPrepTimeMinutes={shopSettings?.min_preparation_time_minutes || 60}
+                          minPrepTimeMinutes={currentZone?.min_preparation_time_minutes ?? shopSettings?.min_preparation_time_minutes ?? 60}
                           onTimeChange={(time) => form.setValue('delivery_time', time)}
                           onDateChange={(date) => form.setValue('delivery_date', date)}
                           error={timeError || undefined}
