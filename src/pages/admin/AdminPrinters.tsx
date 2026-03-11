@@ -243,7 +243,7 @@ export default function AdminPrinters() {
                             disabled={!client.is_active}
                             title="Test print versturen"
                           >
-                            <Send className="h-4 w-4" />
+                            <Printer className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => openEdit(client)} title="Instellingen">
                             <Settings className="h-4 w-4" />
