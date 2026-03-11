@@ -342,11 +342,17 @@ const Checkout = () => {
       return true;
     }
 
-    // Disable closed days
+    // Disable closed days from closed_days table
     if (closedDays) {
       const { isClosed } = isDateClosed(date, closedDays);
       if (isClosed) return true;
     }
+
+    // Disable days closed via opening_hours
+    if (isDayClosedViaOpeningHours(date)) return true;
+
+    // Disable today if no sufficient time left before closing
+    if (isToday(date) && !hasSufficientTimeToday(date)) return true;
 
     return false;
   };
