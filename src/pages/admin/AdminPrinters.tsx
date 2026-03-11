@@ -49,8 +49,6 @@ export default function AdminPrinters() {
   const [formTemplate, setFormTemplate] = useState('receipt');
   const [formNickname, setFormNickname] = useState('');
 
-  // Test print state
-  const [testTemplate, setTestTemplate] = useState('receipt');
 
   const baseUrl = import.meta.env.VITE_SUPABASE_URL;
   const storageBase = `${baseUrl}/storage/v1/object/public/printer-client`;
