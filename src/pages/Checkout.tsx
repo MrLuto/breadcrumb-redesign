@@ -1143,7 +1143,7 @@ const Checkout = () => {
                                   <Calendar
                                     mode="single"
                                     selected={field.value}
-                                    onSelect={field.onChange}
+                                    onSelect={(date) => date && field.onChange(date)}
                                     disabled={disabledDays}
                                     locale={nl}
                                     initialFocus
