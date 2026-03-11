@@ -164,7 +164,7 @@ const Checkout = () => {
     const closingMinutes = closeH * 60 + closeM;
     
     const now = new Date();
-    const minPrepTime = currentZone?.min_preparation_time_minutes ?? shopSettings?.min_preparation_time_minutes ?? 60;
+    const minPrepTime = shopSettings?.min_preparation_time_minutes ?? 60;
     const earliest = addMinutes(now, minPrepTime);
     const earliestMinutes = earliest.getHours() * 60 + earliest.getMinutes();
     
