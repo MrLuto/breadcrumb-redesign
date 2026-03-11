@@ -47,6 +47,7 @@ export default function AdminPrinters() {
   const [formCopies, setFormCopies] = useState(1);
   const [formActive, setFormActive] = useState(true);
   const [formTemplate, setFormTemplate] = useState('receipt');
+  const [formNickname, setFormNickname] = useState('');
 
   // Test print state
   const [testTemplate, setTestTemplate] = useState('receipt');
