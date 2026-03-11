@@ -128,27 +128,6 @@ export default function AdminPrinters() {
     }
   };
 
-  const fetchTestHtml = async (): Promise<string> => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error('Not authenticated');
-    const res = await fetch(
-      `${baseUrl}/functions/v1/generate-print-html?test=true&template=${testTemplate}`,
-      { headers: { 'Authorization': `Bearer ${session.access_token}` } }
-    );
-    if (!res.ok) throw new Error('Fetch failed');
-    return res.text();
-  };
-
-  const handleTestPreview = async () => {
-    try {
-      const html = await fetchTestHtml();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch {
-      toast({ title: 'Preview laden mislukt', variant: 'destructive' });
-    }
-  };
 
   const isOnline = (lastSeen: string | null) => {
     if (!lastSeen) return false;
