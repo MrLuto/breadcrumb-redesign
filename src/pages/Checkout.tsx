@@ -288,6 +288,49 @@ const Checkout = () => {
     }
   }, [closedDays, openingHours, findFirstAvailableDate]);
 
+  // When ASAP is active, keep date and time at earliest available
+  useEffect(() => {
+    if (watchedDeliveryAsap) {
+      const currentDate = form.getValues('delivery_date');
+      const firstAvailable = findFirstAvailableDate;
+      
+      // Always set to first available date
+      if (!currentDate || currentDate.getTime() !== firstAvailable.getTime()) {
+        form.setValue('delivery_date', firstAvailable);
+      }
+      
+      // Calculate earliest time for this date
+      if (openingHours && firstAvailable) {
+        const dayOfWeek = firstAvailable.getDay();
+        const dayHours = openingHours.find((h) => h.day_of_week === dayOfWeek);
+        
+        if (dayHours && !dayHours.is_closed) {
+          const [openH, openM] = dayHours.open_time.split(':').map(Number);
+          const openInMinutes = openH * 60 + openM;
+          
+          const minPrepTime = shopSettings?.min_preparation_time_minutes ?? 60;
+          let earliestMinutes: number;
+          
+          if (isToday(firstAvailable)) {
+            const now = new Date();
+            const earliest = addMinutes(now, minPrepTime);
+            const nowMinutes = earliest.getHours() * 60 + earliest.getMinutes();
+            // Round up to next quarter
+            const rounded = Math.ceil(nowMinutes / 15) * 15;
+            earliestMinutes = Math.max(rounded, Math.ceil(openInMinutes / 15) * 15);
+          } else {
+            earliestMinutes = Math.ceil(openInMinutes / 15) * 15;
+          }
+          
+          const h = Math.floor(earliestMinutes / 60);
+          const m = earliestMinutes % 60;
+          const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+          form.setValue('delivery_time', timeStr);
+        }
+      }
+    }
+  }, [watchedDeliveryAsap, findFirstAvailableDate, openingHours, shopSettings]);
+
   // Auto-fill form from profile
   useEffect(() => {
     if (profile) {
