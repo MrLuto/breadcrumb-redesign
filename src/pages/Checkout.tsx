@@ -204,7 +204,7 @@ const Checkout = () => {
     
     // Fallback to tomorrow if no open day found
     return addDays(startOfDay(new Date()), 1);
-  }, [closedDays, openingHours, shopSettings, currentZone]);
+  }, [closedDays, openingHours, shopSettings]);
 
   // Default delivery date is first available date
   const defaultDeliveryDate = findFirstAvailableDate;
