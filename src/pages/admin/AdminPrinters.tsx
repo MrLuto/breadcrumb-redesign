@@ -113,24 +113,18 @@ export default function AdminPrinters() {
 
   const handleSendTestPrint = async (clientId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Not authenticated');
+      const { error } = await supabase.functions.invoke('request-test-print', {
+        body: { client_id: clientId, template: testTemplate },
+      });
 
-      const res = await fetch(
-        `${baseUrl}/functions/v1/request-test-print`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ client_id: clientId, template: testTemplate }),
-        }
-      );
-      if (!res.ok) throw new Error('Request failed');
+      if (error) throw error;
       toast({ title: 'Test print verstuurd naar printer' });
-    } catch {
-      toast({ title: 'Test print versturen mislukt', variant: 'destructive' });
+    } catch (error) {
+      toast({
+        title: 'Test print versturen mislukt',
+        description: error instanceof Error ? error.message : 'Onbekende fout',
+        variant: 'destructive',
+      });
     }
   };
 
