@@ -302,7 +302,8 @@ export default function AdminPrinters() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{client.desktop_name}</div>
+                        <div className="font-medium">{client.nickname || client.desktop_name}</div>
+                        {client.nickname && <div className="text-xs text-muted-foreground">{client.desktop_name}</div>}
                         <div className="text-xs text-muted-foreground font-mono">{client.machine_id.slice(0, 12)}...</div>
                       </TableCell>
                       <TableCell>{client.printer_name || <span className="text-muted-foreground">Standaard</span>}</TableCell>
