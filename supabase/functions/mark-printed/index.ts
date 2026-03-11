@@ -5,17 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-print-key",
 };
 
-const TEST_PRINT_ORDER_PREFIX = "test-print:";
-
-function parseTestPrintOrderId(orderId: string) {
-  if (!orderId.startsWith(TEST_PRINT_ORDER_PREFIX)) {
-    return null;
-  }
-
-  const [, clientId] = orderId.split(":");
-  return clientId ? { clientId } : null;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,34 +35,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const testPrintJob = parseTestPrintOrderId(order_id);
-    if (testPrintJob) {
-      const { error } = await supabase
-        .from("print_clients")
-        .update({ test_print_requested_at: null })
-        .eq("id", testPrintJob.clientId);
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { data: order, error: fetchError } = await supabase
       .from("orders")
-      .select("print_count")
+      .select("print_count, order_number")
       .eq("id", order_id)
       .single();
 
     if (fetchError) throw fetchError;
+
+    // Test orders (order_number starts with TEST-) get cancelled after printing
+    const isTestOrder = order.order_number?.startsWith("TEST-");
 
     const { error: updateError } = await supabase
       .from("orders")
       .update({
         printed_at: new Date().toISOString(),
         print_count: (order.print_count || 0) + 1,
-        order_status: "confirmed",
+        order_status: isTestOrder ? "cancelled" : "confirmed",
       })
       .eq("id", order_id);
 

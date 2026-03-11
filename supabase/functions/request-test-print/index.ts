@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Require admin auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -40,7 +39,6 @@ Deno.serve(async (req) => {
 
     const userId = user.id;
 
-    // Verify admin role using service role client
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -63,17 +61,69 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { error: updateError } = await adminSupabase
+    // Fetch the printer client info for labeling
+    const { data: client, error: clientError } = await adminSupabase
       .from("print_clients")
-      .update({
-        test_print_requested_at: new Date().toISOString(),
-        test_print_template: template || "receipt",
+      .select("nickname, desktop_name")
+      .eq("id", client_id)
+      .single();
+
+    if (clientError || !client) {
+      return new Response(JSON.stringify({ error: "Printer not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const printerLabel = client.nickname || client.desktop_name;
+    const now = new Date();
+    const orderNumber = `TEST-${now.getTime()}`;
+
+    // Insert a real test order into the orders table
+    const { data: order, error: orderError } = await adminSupabase
+      .from("orders")
+      .insert({
+        order_number: orderNumber,
+        company_name: "Test Print",
+        contact_person: printerLabel,
+        customer_type: "business",
+        phone: "",
+        email: "test@testprint.local",
+        order_type: "pickup",
+        delivery_address: "",
+        postcode: "0000 AA",
+        city: "Test",
+        delivery_date: now.toISOString().slice(0, 10),
+        delivery_time: null,
+        delivery_asap: false,
+        subtotal: 0,
+        delivery_cost: 0,
+        total: 0,
+        payment_method: "direct",
+        payment_status: "paid",
+        order_status: "new",
+        notes: `Testprint voor ${printerLabel} (template: ${template || "receipt"})`,
       })
-      .eq("id", client_id);
+      .select("id")
+      .single();
 
-    if (updateError) throw updateError;
+    if (orderError) throw orderError;
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Insert a test order item
+    const { error: itemError } = await adminSupabase
+      .from("order_items")
+      .insert({
+        order_id: order.id,
+        product_name: "Testpagina printer",
+        quantity: 1,
+        unit_price: 0,
+        total_price: 0,
+        notes: template ? `Template: ${template}` : "Testafdruk",
+      });
+
+    if (itemError) throw itemError;
+
+    return new Response(JSON.stringify({ success: true, order_id: order.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
