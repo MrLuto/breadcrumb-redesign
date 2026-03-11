@@ -258,18 +258,34 @@ const Checkout = () => {
     }
   }, [watchedCustomerType]);
 
-  // Update delivery date to first available when closed days are loaded
+  // Update delivery date to first available when closed days or opening hours are loaded
   useEffect(() => {
-    if (closedDays) {
-      const currentDate = form.getValues('delivery_date');
-      if (currentDate && closedDays) {
+    const currentDate = form.getValues('delivery_date');
+    if (currentDate) {
+      let needsUpdate = false;
+      
+      // Check closed_days
+      if (closedDays) {
         const { isClosed } = isDateClosed(currentDate, closedDays);
-        if (isClosed) {
-          form.setValue('delivery_date', findFirstAvailableDate);
-        }
+        if (isClosed) needsUpdate = true;
+      }
+      
+      // Check opening_hours
+      if (!needsUpdate && isDayClosedViaOpeningHours(currentDate)) {
+        needsUpdate = true;
+      }
+      
+      // Check if today still has time
+      if (!needsUpdate && isToday(currentDate) && !hasSufficientTimeToday(currentDate)) {
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        form.setValue('delivery_date', findFirstAvailableDate);
+        form.setValue('delivery_time', ''); // Reset time so it gets recalculated
       }
     }
-  }, [closedDays, findFirstAvailableDate]);
+  }, [closedDays, openingHours, findFirstAvailableDate]);
 
   // Auto-fill form from profile
   useEffect(() => {
