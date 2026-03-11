@@ -554,6 +554,17 @@ function generateTestHtml(template: string): string {
   return generateReceiptHtml(testOrder);
 }
 
+const TEST_PRINT_ORDER_PREFIX = "test-print:";
+
+function parseTestPrintOrderId(orderId: string | null) {
+  if (!orderId?.startsWith(TEST_PRINT_ORDER_PREFIX)) {
+    return null;
+  }
+
+  const [, clientId] = orderId.split(":");
+  return clientId ? { clientId } : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
