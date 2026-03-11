@@ -39,7 +39,7 @@ import { useCustomerProfile } from '@/hooks/useCustomerProfile';
 import { useProducts } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User, UserPlus, XCircle } from 'lucide-react';
+import { CalendarIcon, Loader2, ShoppingBag, ArrowLeft, MapPin, Truck, AlertCircle, User, UserPlus, XCircle, Zap } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useActiveDeliveryZones, getDeliveryZoneForPostcode } from '@/hooks/useDeliveryZones';
@@ -241,6 +241,7 @@ const Checkout = () => {
   const watchedCustomerType = form.watch('customer_type');
   const watchedDeliveryDate = form.watch('delivery_date');
   const watchedDeliveryTime = form.watch('delivery_time') || '';
+  const watchedDeliveryAsap = form.watch('delivery_asap');
 
   // Update payment method when customer type changes
   useEffect(() => {
@@ -286,6 +287,49 @@ const Checkout = () => {
       }
     }
   }, [closedDays, openingHours, findFirstAvailableDate]);
+
+  // When ASAP is active, keep date and time at earliest available
+  useEffect(() => {
+    if (watchedDeliveryAsap) {
+      const currentDate = form.getValues('delivery_date');
+      const firstAvailable = findFirstAvailableDate;
+      
+      // Always set to first available date
+      if (!currentDate || currentDate.getTime() !== firstAvailable.getTime()) {
+        form.setValue('delivery_date', firstAvailable);
+      }
+      
+      // Calculate earliest time for this date
+      if (openingHours && firstAvailable) {
+        const dayOfWeek = firstAvailable.getDay();
+        const dayHours = openingHours.find((h) => h.day_of_week === dayOfWeek);
+        
+        if (dayHours && !dayHours.is_closed) {
+          const [openH, openM] = dayHours.open_time.split(':').map(Number);
+          const openInMinutes = openH * 60 + openM;
+          
+          const minPrepTime = shopSettings?.min_preparation_time_minutes ?? 60;
+          let earliestMinutes: number;
+          
+          if (isToday(firstAvailable)) {
+            const now = new Date();
+            const earliest = addMinutes(now, minPrepTime);
+            const nowMinutes = earliest.getHours() * 60 + earliest.getMinutes();
+            // Round up to next quarter
+            const rounded = Math.ceil(nowMinutes / 15) * 15;
+            earliestMinutes = Math.max(rounded, Math.ceil(openInMinutes / 15) * 15);
+          } else {
+            earliestMinutes = Math.ceil(openInMinutes / 15) * 15;
+          }
+          
+          const h = Math.floor(earliestMinutes / 60);
+          const m = earliestMinutes % 60;
+          const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+          form.setValue('delivery_time', timeStr);
+        }
+      }
+    }
+  }, [watchedDeliveryAsap, findFirstAvailableDate, openingHours, shopSettings]);
 
   // Auto-fill form from profile
   useEffect(() => {
@@ -1004,61 +1048,127 @@ const Checkout = () => {
                     <h2 className="text-xl font-semibold mb-4">
                       {watchedOrderType === 'pickup' ? 'Afhaaldatum & tijd' : 'Bezorgdatum & tijd'}
                     </h2>
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="delivery_date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Datum *</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      'w-full pl-3 text-left font-normal',
-                                      !field.value && 'text-muted-foreground'
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, 'PPP', { locale: nl })
-                                    ) : (
-                                      <span>Kies een datum</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={disabledDays}
-                                  locale={nl}
-                                  initialFocus
-                                  className="pointer-events-auto"
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div>
-                        <FormLabel className="mb-2 block">Tijd *</FormLabel>
-                        <DeliveryTimeInput
-                          selectedDate={watchedDeliveryDate}
-                          deliveryTime={watchedDeliveryTime}
-                          minPrepTimeMinutes={currentZone?.min_preparation_time_minutes ?? shopSettings?.min_preparation_time_minutes ?? 60}
-                          onTimeChange={(time) => form.setValue('delivery_time', time)}
-                          onDateChange={(date) => form.setValue('delivery_date', date)}
-                          error={timeError || undefined}
-                          openingHours={openingHours}
-                        />
+
+                    {/* ASAP Toggle */}
+                    <FormField
+                      control={form.control}
+                      name="delivery_asap"
+                      render={({ field }) => (
+                        <FormItem className="mb-6">
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                field.onChange(true);
+                                // Set date and time to earliest available
+                                form.setValue('delivery_date', findFirstAvailableDate);
+                                form.setValue('delivery_time', '');
+                              }}
+                              className={cn(
+                                'flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all',
+                                field.value
+                                  ? 'border-primary bg-primary/5 text-primary'
+                                  : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                              )}
+                            >
+                              <Zap className="h-4 w-4" />
+                              Zo snel mogelijk
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => field.onChange(false)}
+                              className={cn(
+                                'flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all',
+                                !field.value
+                                  ? 'border-primary bg-primary/5 text-primary'
+                                  : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                              )}
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                              Kies datum & tijd
+                            </button>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* ASAP info banner */}
+                    {watchedDeliveryAsap && (
+                      <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                        <Zap className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-primary">
+                            {watchedOrderType === 'pickup' ? 'Zo snel mogelijk afhalen' : 'Zo snel mogelijk bezorgen'}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {isToday(findFirstAvailableDate) ? (
+                              <>Verwachte tijd: <span className="font-semibold text-foreground">{watchedDeliveryTime || '...'}</span> (vandaag)</>
+                            ) : (
+                              <>Eerstvolgende beschikbare dag: <span className="font-semibold text-foreground">{format(findFirstAvailableDate, 'EEEE d MMMM', { locale: nl })}</span> om <span className="font-semibold text-foreground">{watchedDeliveryTime || '...'}</span></>
+                            )}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Manual date & time pickers */}
+                    {!watchedDeliveryAsap && (
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="delivery_date"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Datum *</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      className={cn(
+                                        'w-full pl-3 text-left font-normal',
+                                        !field.value && 'text-muted-foreground'
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, 'PPP', { locale: nl })
+                                      ) : (
+                                        <span>Kies een datum</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={disabledDays}
+                                    locale={nl}
+                                    initialFocus
+                                    className="pointer-events-auto"
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div>
+                          <FormLabel className="mb-2 block">Tijd *</FormLabel>
+                          <DeliveryTimeInput
+                            selectedDate={watchedDeliveryDate}
+                            deliveryTime={watchedDeliveryTime}
+                            minPrepTimeMinutes={currentZone?.min_preparation_time_minutes ?? shopSettings?.min_preparation_time_minutes ?? 60}
+                            onTimeChange={(time) => form.setValue('delivery_time', time)}
+                            onDateChange={(date) => form.setValue('delivery_date', date)}
+                            error={timeError || undefined}
+                            openingHours={openingHours}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Payment Method */}
