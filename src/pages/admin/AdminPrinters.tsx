@@ -241,7 +241,7 @@ export default function AdminPrinters() {
                         disabled={!client.is_active}
                       >
                         <Send className="h-3 w-3 mr-1" />
-                        {client.desktop_name}
+                        {client.nickname || client.desktop_name}
                       </Button>
                     ))}
                   </div>
