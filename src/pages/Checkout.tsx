@@ -241,6 +241,7 @@ const Checkout = () => {
   const watchedCustomerType = form.watch('customer_type');
   const watchedDeliveryDate = form.watch('delivery_date');
   const watchedDeliveryTime = form.watch('delivery_time') || '';
+  const watchedDeliveryAsap = form.watch('delivery_asap');
 
   // Update payment method when customer type changes
   useEffect(() => {
