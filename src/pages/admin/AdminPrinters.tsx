@@ -145,8 +145,7 @@ export default function AdminPrinters() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
@@ -157,7 +156,7 @@ export default function AdminPrinters() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {downloads.map((d) => (
                   <Button key={d.file} variant="outline" asChild className="justify-start">
                     <a href={`${storageBase}/${d.file}`} download>
@@ -170,59 +169,6 @@ export default function AdminPrinters() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Test Print
-              </CardTitle>
-              <CardDescription>
-                Bekijk of print een voorbeeld met testdata.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label>Template</Label>
-                <Select value={testTemplate} onValueChange={setTestTemplate}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(templateLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleTestPreview}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
-              </div>
-              {clients && clients.length > 0 && (
-                <div className="space-y-2 pt-2 border-t">
-                  <Label>Verstuur naar printer</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {clients.map((client) => (
-                      <Button
-                        key={client.id}
-                        size="sm"
-                        variant={isOnline(client.last_seen_at) ? "default" : "secondary"}
-                        onClick={() => handleSendTestPrint(client.id)}
-                        disabled={!client.is_active}
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        {client.nickname || client.desktop_name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
         <Card>
           <CardHeader>
