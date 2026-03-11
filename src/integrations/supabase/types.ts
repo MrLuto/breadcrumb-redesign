@@ -614,6 +614,7 @@ export type Database = {
           last_seen_at: string | null
           machine_id: string
           margin_mm: number
+          nickname: string | null
           paper_width_mm: number
           poll_interval_seconds: number
           print_template: string
@@ -633,6 +634,7 @@ export type Database = {
           last_seen_at?: string | null
           machine_id: string
           margin_mm?: number
+          nickname?: string | null
           paper_width_mm?: number
           poll_interval_seconds?: number
           print_template?: string
@@ -652,6 +654,7 @@ export type Database = {
           last_seen_at?: string | null
           machine_id?: string
           margin_mm?: number
+          nickname?: string | null
           paper_width_mm?: number
           poll_interval_seconds?: number
           print_template?: string
