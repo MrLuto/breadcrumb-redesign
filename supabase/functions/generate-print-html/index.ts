@@ -621,10 +621,38 @@ Deno.serve(async (req) => {
     const orderId = url.searchParams.get("order_id");
     const template = url.searchParams.get("template") || "receipt";
     const isTest = url.searchParams.get("test") === "true";
+    const testPrintJob = parseTestPrintOrderId(orderId);
 
     // Test mode: return sample HTML without needing an order
     if (isTest) {
       const html = generateTestHtml(template);
+      return new Response(html, {
+        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    if (testPrintJob) {
+      const { data: client, error: clientError } = await supabase
+        .from("print_clients")
+        .select("test_print_template")
+        .eq("id", testPrintJob.clientId)
+        .maybeSingle();
+
+      if (clientError) throw clientError;
+
+      if (!client) {
+        return new Response(JSON.stringify({ error: "Test print not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const html = generateTestHtml(client.test_print_template || template);
       return new Response(html, {
         headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
@@ -636,11 +664,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const { data: order, error } = await supabase
       .from("orders")

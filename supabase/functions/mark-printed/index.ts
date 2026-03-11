@@ -5,13 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-print-key",
 };
 
+const TEST_PRINT_ORDER_PREFIX = "test-print:";
+
+function parseTestPrintOrderId(orderId: string) {
+  if (!orderId.startsWith(TEST_PRINT_ORDER_PREFIX)) {
+    return null;
+  }
+
+  const [, clientId] = orderId.split(":");
+  return clientId ? { clientId } : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify API key
     const apiKey = req.headers.get("x-print-key");
     const expectedKey = Deno.env.get("PRINT_API_KEY");
 
@@ -33,10 +43,23 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Get current print_count
+    const testPrintJob = parseTestPrintOrderId(order_id);
+    if (testPrintJob) {
+      const { error } = await supabase
+        .from("print_clients")
+        .update({ test_print_requested_at: null })
+        .eq("id", testPrintJob.clientId);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: order, error: fetchError } = await supabase
       .from("orders")
       .select("print_count")
@@ -45,7 +68,6 @@ Deno.serve(async (req) => {
 
     if (fetchError) throw fetchError;
 
-    // Update order
     const { error: updateError } = await supabase
       .from("orders")
       .update({
