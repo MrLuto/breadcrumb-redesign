@@ -1,0 +1,1 @@
+ALTER TABLE public.print_clients ADD COLUMN nickname text NULL DEFAULT NULL;

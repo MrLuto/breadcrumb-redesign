@@ -47,6 +47,7 @@ export default function AdminPrinters() {
   const [formCopies, setFormCopies] = useState(1);
   const [formActive, setFormActive] = useState(true);
   const [formTemplate, setFormTemplate] = useState('receipt');
+  const [formNickname, setFormNickname] = useState('');
 
   // Test print state
   const [testTemplate, setTestTemplate] = useState('receipt');
@@ -73,6 +74,7 @@ export default function AdminPrinters() {
     setFormCopies(client.copies);
     setFormActive(client.is_active);
     setFormTemplate(client.print_template || 'receipt');
+    setFormNickname(client.nickname || '');
   };
 
   const handleSave = async () => {
@@ -88,6 +90,7 @@ export default function AdminPrinters() {
         copies: formCopies,
         is_active: formActive,
         print_template: formTemplate,
+        nickname: formNickname || null,
       });
       toast({ title: 'Instellingen opgeslagen' });
       setEditClient(null);
@@ -238,7 +241,7 @@ export default function AdminPrinters() {
                         disabled={!client.is_active}
                       >
                         <Send className="h-3 w-3 mr-1" />
-                        {client.desktop_name}
+                        {client.nickname || client.desktop_name}
                       </Button>
                     ))}
                   </div>
@@ -299,7 +302,8 @@ export default function AdminPrinters() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{client.desktop_name}</div>
+                        <div className="font-medium">{client.nickname || client.desktop_name}</div>
+                        {client.nickname && <div className="text-xs text-muted-foreground">{client.desktop_name}</div>}
                         <div className="text-xs text-muted-foreground font-mono">{client.machine_id.slice(0, 12)}...</div>
                       </TableCell>
                       <TableCell>{client.printer_name || <span className="text-muted-foreground">Standaard</span>}</TableCell>
@@ -346,6 +350,11 @@ export default function AdminPrinters() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nickname</Label>
+              <Input value={formNickname} onChange={(e) => setFormNickname(e.target.value)} placeholder="Bijv. Keuken, Balie, Kantoor" />
+            </div>
+
             <div className="flex items-center justify-between">
               <Label>Actief</Label>
               <Switch checked={formActive} onCheckedChange={setFormActive} />
