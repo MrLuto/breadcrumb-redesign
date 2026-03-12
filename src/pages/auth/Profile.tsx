@@ -39,6 +39,8 @@ import { Loader2, User, Package, LogOut, Save, ChevronDown, MapPin, Phone, Mail,
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { CustomerTypeToggle } from '@/components/checkout/CustomerTypeToggle';
+import { useCart } from '@/hooks/useCart';
+import { supabase } from '@/integrations/supabase/client';
 
 const profileSchema = z.object({
   customer_type: z.enum(['private', 'business']),
