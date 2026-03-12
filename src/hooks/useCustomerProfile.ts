@@ -100,7 +100,7 @@ export function useCustomerOrders() {
         .from('orders')
         .select(`
           *,
-          order_items (*)
+          order_items (*, order_item_options (*))
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
