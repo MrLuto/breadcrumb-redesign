@@ -210,9 +210,11 @@ Deno.serve(async (req) => {
     // Check for authenticated user
     const authHeader = req.headers.get('authorization');
     let isAuthenticated = false;
+    let authenticatedUserId: string | null = null;
     if (authHeader) {
       const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
       isAuthenticated = !!user;
+      authenticatedUserId = user?.id || null;
     }
 
     // Rate limiting
@@ -588,6 +590,7 @@ Deno.serve(async (req) => {
         total,
         order_status: 'new',
         payment_status: 'pending',
+        user_id: authenticatedUserId,
       })
       .select()
       .single();
