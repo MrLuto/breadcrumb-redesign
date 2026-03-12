@@ -281,6 +281,21 @@ function OrderCard({ order, formatPrice }: { order: any; formatPrice: (p: number
               </div>
             )}
           </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full"
+            onClick={handleReorder}
+            disabled={reordering}
+          >
+            {reordering ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Opnieuw bestellen
+          </Button>
         </div>
       )}
     </div>
