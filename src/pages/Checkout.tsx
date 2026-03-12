@@ -786,7 +786,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Contact Info */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 md:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">
                       {watchedCustomerType === 'business' ? 'Bedrijfsgegevens' : 'Contactgegevens'}
                     </h2>
