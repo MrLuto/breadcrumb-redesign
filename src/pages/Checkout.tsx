@@ -902,7 +902,7 @@ const Checkout = () => {
 
                   {/* Billing Address for Business */}
                   {watchedCustomerType === 'business' && (
-                    <div className="bg-card rounded-xl p-6 shadow-card">
+                    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                       <h2 className="text-xl font-semibold mb-4">Facturatieadres</h2>
                       <FormField
                         control={form.control}
