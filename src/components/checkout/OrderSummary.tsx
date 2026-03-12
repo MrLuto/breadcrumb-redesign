@@ -35,7 +35,7 @@ export const OrderSummary = ({
   formatPrice,
 }: OrderSummaryProps) => {
   return (
-    <div className="bg-card rounded-xl p-6 shadow-card sticky top-24">
+    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card sticky top-24">
       <h2 className="text-xl font-semibold mb-4">Besteloverzicht</h2>
       
       <div className="space-y-3 mb-4">
