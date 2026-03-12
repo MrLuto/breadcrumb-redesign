@@ -1172,7 +1172,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Payment Method */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 md:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Betaalmethode</h2>
                     <FormField
                       control={form.control}
