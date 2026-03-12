@@ -99,14 +99,17 @@ const Header = () => {
             <CartSheet />
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="lg:hidden p-2 text-foreground"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Menu"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile cart + menu button */}
+          <div className="lg:hidden flex items-center gap-2">
+            <CartSheet />
+            <button
+              className="p-2 text-foreground"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
@@ -156,10 +159,6 @@ const Header = () => {
                     </Link>
                   )
                 )}
-                
-                <div className="mt-4" onClick={() => setIsMenuOpen(false)}>
-                  <CartSheet />
-                </div>
               </div>
             </motion.div>
           )}
