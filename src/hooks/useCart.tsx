@@ -19,6 +19,7 @@ interface CartContextType {
   removeItem: (cartItemKey: string) => void;
   updateQuantity: (cartItemKey: string, quantity: number) => void;
   updateNotes: (cartItemKey: string, notes: string) => void;
+  updateItemOptions: (oldCartItemKey: string, product: Product, quantity: number, notes?: string, selectedOptions?: SelectedOption[]) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -119,6 +120,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateItemOptions = (oldCartItemKey: string, product: Product, quantity: number, notes?: string, selectedOptions?: SelectedOption[]) => {
+    const newCartItemKey = generateCartItemKey(product.id, selectedOptions);
+    setItems((prev) => {
+      // Remove old item
+      const filtered = prev.filter((item) => item.cartItemKey !== oldCartItemKey);
+      // Check if new key already exists (merge quantities)
+      const existingIndex = filtered.findIndex((item) => item.cartItemKey === newCartItemKey);
+      if (existingIndex >= 0) {
+        const updated = [...filtered];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + quantity,
+        };
+        return updated;
+      }
+      return [...filtered, { product, quantity, notes, selectedOptions, cartItemKey: newCartItemKey }];
+    });
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -138,6 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         updateQuantity,
         updateNotes,
+        updateItemOptions,
         clearCart,
         totalItems,
         subtotal,
