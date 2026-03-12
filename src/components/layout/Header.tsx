@@ -159,10 +159,6 @@ const Header = () => {
                     </Link>
                   )
                 )}
-                
-                <div className="mt-4" onClick={() => setIsMenuOpen(false)}>
-                  <CartSheet />
-                </div>
               </div>
             </motion.div>
           )}
