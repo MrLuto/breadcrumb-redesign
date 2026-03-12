@@ -516,56 +516,7 @@ export default function Profile() {
                 ) : (
                   <div className="space-y-4">
                     {orders?.map((order: any) => (
-                      <div key={order.id} className="border rounded-lg p-4">
-                        <div className="flex flex-wrap justify-between items-start gap-4 mb-3">
-                          <div>
-                            <p className="font-medium">{order.order_number}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {format(new Date(order.created_at), 'PPP', { locale: nl })}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant={
-                              order.order_status === 'delivered' ? 'default' :
-                              order.order_status === 'cancelled' ? 'destructive' : 'secondary'
-                            }>
-                              {order.order_status === 'new' && 'Nieuw'}
-                              {order.order_status === 'confirmed' && 'Bevestigd'}
-                              {order.order_status === 'preparing' && 'In voorbereiding'}
-                              {order.order_status === 'out_for_delivery' && 'Onderweg'}
-                              {order.order_status === 'delivered' && 'Bezorgd'}
-                              {order.order_status === 'cancelled' && 'Geannuleerd'}
-                            </Badge>
-                            <p className="font-semibold mt-1">{formatPrice(order.total)}</p>
-                          </div>
-                        </div>
-
-                        {/* Order items */}
-                        <div className="space-y-1 mb-3">
-                          {order.order_items?.map((item: any) => {
-                            const options = item.order_item_options?.map((o: any) => o.option_name).join(', ');
-                            return (
-                              <div key={item.id} className="flex justify-between text-sm">
-                                <div className="flex-1 min-w-0">
-                                  <span>{item.quantity}× {item.product_name}</span>
-                                  {options && (
-                                    <span className="text-muted-foreground ml-1">({options})</span>
-                                  )}
-                                  {item.notes && (
-                                    <p className="text-xs text-muted-foreground italic">{item.notes}</p>
-                                  )}
-                                </div>
-                                <span className="ml-2 shrink-0">{formatPrice(item.total_price)}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <Separator className="my-2" />
-                        <div className="text-sm text-muted-foreground">
-                          {order.order_type === 'pickup' ? 'Afhalen' : 'Bezorgen'} op {format(new Date(order.delivery_date), 'PP', { locale: nl })}
-                        </div>
-                      </div>
+                      <OrderCard key={order.id} order={order} formatPrice={formatPrice} />
                     ))}
                   </div>
                 )}
