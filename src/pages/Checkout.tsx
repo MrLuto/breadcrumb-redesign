@@ -852,7 +852,7 @@ const Checkout = () => {
 
                   {/* Address / Postcode - only show for delivery */}
                   {watchedOrderType === 'delivery' && (
-                    <div className="bg-card rounded-xl p-6 shadow-card">
+                    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                       <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
                       <div className="space-y-4">
                         <FormField
