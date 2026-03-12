@@ -93,9 +93,9 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
 
           {/* Quantity & Add to Cart */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {!hasOptions && (
-              <div className="flex items-center border rounded-md">
+              <div className="flex items-center border rounded-md shrink-0">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -127,7 +127,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <Button
               onClick={handleAddToCart}
               disabled={added}
-              className="flex-1"
+              className="flex-1 min-w-0 whitespace-normal sm:whitespace-nowrap text-center leading-tight"
               variant={added ? 'secondary' : 'default'}
             >
               {added ? (
