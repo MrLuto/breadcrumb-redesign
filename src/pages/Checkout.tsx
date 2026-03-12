@@ -681,7 +681,7 @@ const Checkout = () => {
 
   return (
     <Layout>
-      <div className="container py-8 md:py-12 px-4 sm:px-6 overflow-x-hidden">
+      <div className="container py-8 md:py-12 px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
