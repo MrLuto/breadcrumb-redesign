@@ -98,6 +98,78 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
 
 function OrderCard({ order, formatPrice }: { order: any; formatPrice: (p: number) => string }) {
   const [expanded, setExpanded] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const { addItem } = useCart();
+  const navigate = useNavigate();
+
+  const handleReorder = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setReordering(true);
+    try {
+      // Get product IDs from order items
+      const productIds = order.order_items
+        ?.map((item: any) => item.product_id)
+        .filter(Boolean) as string[];
+
+      // Fetch current products from DB to get up-to-date prices
+      const { data: products } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', productIds);
+
+      const productMap = new Map(products?.map((p: any) => [p.id, p]) || []);
+      let addedCount = 0;
+      let unavailableItems: string[] = [];
+
+      for (const item of order.order_items || []) {
+        const product = productMap.get(item.product_id);
+        if (!product) {
+          unavailableItems.push(item.product_name);
+          continue;
+        }
+        if (!product.is_available) {
+          unavailableItems.push(item.product_name);
+          continue;
+        }
+
+        // Map order_item_options back to SelectedOption format
+        const selectedOptions = item.order_item_options?.map((opt: any) => ({
+          optionId: opt.id, // use a placeholder; the key generation uses optionId
+          optionName: opt.option_name,
+          optionGroupName: opt.option_group_name,
+          priceAdjustment: Number(opt.price_adjustment) || 0,
+        })) || [];
+
+        addItem(product, item.quantity, item.notes || undefined, selectedOptions.length > 0 ? selectedOptions : undefined);
+        addedCount++;
+      }
+
+      if (unavailableItems.length > 0) {
+        toast({
+          title: 'Niet alle producten toegevoegd',
+          description: `${unavailableItems.join(', ')} ${unavailableItems.length === 1 ? 'is' : 'zijn'} niet meer beschikbaar.`,
+          variant: 'destructive',
+        });
+      }
+
+      if (addedCount > 0) {
+        toast({
+          title: 'Producten toegevoegd',
+          description: `${addedCount} product(en) zijn aan je winkelwagen toegevoegd.`,
+        });
+        navigate('/checkout');
+      }
+    } catch (err) {
+      console.error('Reorder error:', err);
+      toast({
+        title: 'Fout',
+        description: 'Kon bestelling niet opnieuw plaatsen.',
+        variant: 'destructive',
+      });
+    } finally {
+      setReordering(false);
+    }
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
