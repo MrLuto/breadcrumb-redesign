@@ -735,7 +735,7 @@ const Checkout = () => {
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
                   {/* Login/Register Block for Guests */}
                   {!user && (
-                    <div className="bg-card rounded-xl p-6 shadow-card border-2 border-primary/20">
+                    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card border-2 border-primary/20">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-5 w-5 text-primary" />
@@ -766,7 +766,7 @@ const Checkout = () => {
                   )}
 
                   {/* Customer Type */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Klanttype</h2>
                     <FormField
                       control={form.control}
@@ -786,7 +786,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Contact Info */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">
                       {watchedCustomerType === 'business' ? 'Bedrijfsgegevens' : 'Contactgegevens'}
                     </h2>
@@ -852,7 +852,7 @@ const Checkout = () => {
 
                   {/* Address / Postcode - only show for delivery */}
                   {watchedOrderType === 'delivery' && (
-                    <div className="bg-card rounded-xl p-6 shadow-card">
+                    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                       <h2 className="text-xl font-semibold mb-4">Bezorgadres</h2>
                       <div className="space-y-4">
                         <FormField
@@ -902,7 +902,7 @@ const Checkout = () => {
 
                   {/* Billing Address for Business */}
                   {watchedCustomerType === 'business' && (
-                    <div className="bg-card rounded-xl p-6 shadow-card">
+                    <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                       <h2 className="text-xl font-semibold mb-4">Facturatieadres</h2>
                       <FormField
                         control={form.control}
@@ -972,7 +972,7 @@ const Checkout = () => {
                   )}
 
                   {/* Order Type */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Bezorgen of afhalen</h2>
                     <FormField
                       control={form.control}
@@ -1044,7 +1044,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Date & Time */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">
                       {watchedOrderType === 'pickup' ? 'Afhaaldatum & tijd' : 'Bezorgdatum & tijd'}
                     </h2>
@@ -1055,7 +1055,7 @@ const Checkout = () => {
                       name="delivery_asap"
                       render={({ field }) => (
                         <FormItem className="mb-6">
-                          <div className="flex gap-3">
+                          <div className="flex flex-col sm:flex-row gap-3">
                             <button
                               type="button"
                               onClick={() => {
@@ -1172,7 +1172,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Payment Method */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Betaalmethode</h2>
                     <FormField
                       control={form.control}
@@ -1205,7 +1205,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Notes */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 sm:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">Opmerkingen</h2>
                     <FormField
                       control={form.control}
