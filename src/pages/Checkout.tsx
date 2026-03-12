@@ -1055,7 +1055,7 @@ const Checkout = () => {
                       name="delivery_asap"
                       render={({ field }) => (
                         <FormItem className="mb-6">
-                          <div className="flex gap-3">
+                          <div className="flex flex-col sm:flex-row gap-3">
                             <button
                               type="button"
                               onClick={() => {
@@ -1113,7 +1113,7 @@ const Checkout = () => {
 
                     {/* Manual date & time pickers */}
                     {!watchedDeliveryAsap && (
-                      <div className="grid sm:grid-cols-2 gap-6">
+                      <div className="grid gap-6">
                         <FormField
                           control={form.control}
                           name="delivery_date"
