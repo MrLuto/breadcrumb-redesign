@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2, Search, Mail, Phone, Building2, User } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Mail, Phone, Building2, User, Package } from 'lucide-react';
 import { 
   useCompanies, 
   useCreateCompany, 
@@ -21,8 +21,11 @@ import {
   Company 
 } from '@/hooks/useCompanies';
 import { useAllCustomerProfiles, type CustomerProfile } from '@/hooks/useCustomerProfiles';
+import { useOrders, ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS } from '@/hooks/useOrders';
 import { CompanyDialog } from '@/components/admin/CompanyDialog';
 import { DeleteConfirmDialog } from '@/components/admin/DeleteConfirmDialog';
+import { CustomerOrdersDialog } from '@/components/admin/CustomerOrdersDialog';
+import { OrderDetailDialog } from '@/components/admin/OrderDetailDialog';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -41,12 +44,21 @@ export default function AdminCompanies() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerProfile | null>(null);
+  const [customerOrdersOpen, setCustomerOrdersOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [orderDetailOpen, setOrderDetailOpen] = useState(false);
 
   const { data: customers, isLoading: customersLoading } = useAllCustomerProfiles();
   const { data: companies, isLoading: companiesLoading } = useCompanies();
+  const { data: allOrders, isLoading: ordersLoading } = useOrders();
   const createCompany = useCreateCompany();
   const updateCompany = useUpdateCompany();
   const deleteCompany = useDeleteCompany();
+
+  const openOrders = allOrders?.filter(o => 
+    o.order_status !== 'delivered' && o.order_status !== 'cancelled'
+  ) || [];
 
   const filteredCustomers = customers?.filter((customer) => {
     const matchesType = customerTypeFilter === 'all' || customer.customer_type === customerTypeFilter;
@@ -66,35 +78,18 @@ export default function AdminCompanies() {
     company.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateCompany = () => {
-    setSelectedCompany(null);
-    setDialogOpen(true);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(price);
 
-  const handleEditCompany = (company: Company) => {
-    setSelectedCompany(company);
-    setDialogOpen(true);
-  };
-
-  const handleDeleteCompany = (company: Company) => {
-    setSelectedCompany(company);
-    setDeleteDialogOpen(true);
-  };
-
+  const handleCreateCompany = () => { setSelectedCompany(null); setDialogOpen(true); };
+  const handleEditCompany = (company: Company) => { setSelectedCompany(company); setDialogOpen(true); };
+  const handleDeleteCompany = (company: Company) => { setSelectedCompany(company); setDeleteDialogOpen(true); };
   const handleSubmitCompany = (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
-    if (selectedCompany) {
-      updateCompany.mutate({ id: selectedCompany.id, ...data });
-    } else {
-      createCompany.mutate(data);
-    }
+    if (selectedCompany) { updateCompany.mutate({ id: selectedCompany.id, ...data }); }
+    else { createCompany.mutate(data); }
   };
-
   const handleConfirmDelete = () => {
-    if (selectedCompany) {
-      deleteCompany.mutate(selectedCompany.id);
-      setDeleteDialogOpen(false);
-      setSelectedCompany(null);
-    }
+    if (selectedCompany) { deleteCompany.mutate(selectedCompany.id); setDeleteDialogOpen(false); setSelectedCompany(null); }
   };
 
   return (
@@ -109,6 +104,14 @@ export default function AdminCompanies() {
           <TabsList>
             <TabsTrigger value="customers">Klanten</TabsTrigger>
             <TabsTrigger value="companies">Bedrijven</TabsTrigger>
+            <TabsTrigger value="open-orders" className="flex items-center gap-1.5">
+              Open bestellingen
+              {openOrders.length > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-[20px] px-1 text-xs">
+                  {openOrders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Customers Tab */}
@@ -116,36 +119,15 @@ export default function AdminCompanies() {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Zoek op naam, email, plaats..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Zoek op naam, email, plaats..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               <div className="flex gap-1">
-                <Button
-                  variant={customerTypeFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCustomerTypeFilter('all')}
-                >
-                  Alle
+                <Button variant={customerTypeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setCustomerTypeFilter('all')}>Alle</Button>
+                <Button variant={customerTypeFilter === 'private' ? 'default' : 'outline'} size="sm" onClick={() => setCustomerTypeFilter('private')}>
+                  <User className="h-3.5 w-3.5 mr-1" />Particulier
                 </Button>
-                <Button
-                  variant={customerTypeFilter === 'private' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCustomerTypeFilter('private')}
-                >
-                  <User className="h-3.5 w-3.5 mr-1" />
-                  Particulier
-                </Button>
-                <Button
-                  variant={customerTypeFilter === 'business' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCustomerTypeFilter('business')}
-                >
-                  <Building2 className="h-3.5 w-3.5 mr-1" />
-                  Zakelijk
+                <Button variant={customerTypeFilter === 'business' ? 'default' : 'outline'} size="sm" onClick={() => setCustomerTypeFilter('business')}>
+                  <Building2 className="h-3.5 w-3.5 mr-1" />Zakelijk
                 </Button>
               </div>
             </div>
@@ -160,44 +142,29 @@ export default function AdminCompanies() {
                     <TableHead>Adres</TableHead>
                     <TableHead>Betaalvoorkeur</TableHead>
                     <TableHead>Aangemeld</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {customersLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        Laden...
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center py-8">Laden...</TableCell></TableRow>
                   ) : filteredCustomers?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        Geen klanten gevonden
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Geen klanten gevonden</TableCell></TableRow>
                   ) : (
                     filteredCustomers?.map((customer) => (
-                      <TableRow key={customer.id}>
+                      <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedCustomer(customer); setCustomerOrdersOpen(true); }}>
                         <TableCell>
                           <div className="font-medium">
-                            {customer.customer_type === 'business'
-                              ? customer.company_name || customer.contact_person || '—'
-                              : customer.contact_person || '—'}
+                            {customer.customer_type === 'business' ? customer.company_name || customer.contact_person || '—' : customer.contact_person || '—'}
                           </div>
                           {customer.customer_type === 'business' && customer.contact_person && customer.company_name && (
                             <div className="text-sm text-muted-foreground">{customer.contact_person}</div>
                           )}
-                          {customer.department && (
-                            <div className="text-xs text-muted-foreground">{customer.department}</div>
-                          )}
+                          {customer.department && <div className="text-xs text-muted-foreground">{customer.department}</div>}
                         </TableCell>
                         <TableCell>
                           <Badge variant={customer.customer_type === 'business' ? 'default' : 'secondary'}>
-                            {customer.customer_type === 'business' ? (
-                              <><Building2 className="h-3 w-3 mr-1" />Zakelijk</>
-                            ) : (
-                              <><User className="h-3 w-3 mr-1" />Particulier</>
-                            )}
+                            {customer.customer_type === 'business' ? <><Building2 className="h-3 w-3 mr-1" />Zakelijk</> : <><User className="h-3 w-3 mr-1" />Particulier</>}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -205,17 +172,13 @@ export default function AdminCompanies() {
                             {customer.email && (
                               <div className="flex items-center gap-1 text-sm">
                                 <Mail className="h-3 w-3 text-muted-foreground" />
-                                <a href={`mailto:${customer.email}`} className="hover:underline truncate max-w-[180px]">
-                                  {customer.email}
-                                </a>
+                                <span className="truncate max-w-[180px]">{customer.email}</span>
                               </div>
                             )}
                             {customer.phone && (
                               <div className="flex items-center gap-1 text-sm">
                                 <Phone className="h-3 w-3 text-muted-foreground" />
-                                <a href={`tel:${customer.phone}`} className="hover:underline">
-                                  {customer.phone}
-                                </a>
+                                <span>{customer.phone}</span>
                               </div>
                             )}
                           </div>
@@ -224,27 +187,22 @@ export default function AdminCompanies() {
                           {customer.delivery_address ? (
                             <div className="text-sm">
                               <div>{customer.delivery_address}</div>
-                              <div className="text-muted-foreground">
-                                {customer.postcode} {customer.city}
-                              </div>
+                              <div className="text-muted-foreground">{customer.postcode} {customer.city}</div>
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell>
                           {customer.preferred_payment_method ? (
-                            <Badge variant="outline">
-                              {PAYMENT_METHOD_LABELS[customer.preferred_payment_method] || customer.preferred_payment_method}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                            <Badge variant="outline">{PAYMENT_METHOD_LABELS[customer.preferred_payment_method] || customer.preferred_payment_method}</Badge>
+                          ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-muted-foreground">
                             {customer.created_at ? format(new Date(customer.created_at), 'PP', { locale: nl }) : '—'}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <Package className="h-4 w-4 text-muted-foreground" />
                         </TableCell>
                       </TableRow>
                     ))
@@ -252,10 +210,7 @@ export default function AdminCompanies() {
                 </TableBody>
               </Table>
             </div>
-
-            <div className="text-sm text-muted-foreground">
-              {filteredCustomers?.length || 0} klant(en) gevonden
-            </div>
+            <div className="text-sm text-muted-foreground">{filteredCustomers?.length || 0} klant(en) gevonden</div>
           </TabsContent>
 
           {/* Companies Tab */}
@@ -263,19 +218,10 @@ export default function AdminCompanies() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Zoek op naam, email of plaats..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Zoek op naam, email of plaats..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
-              <Button onClick={handleCreateCompany}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuw bedrijf
-              </Button>
+              <Button onClick={handleCreateCompany}><Plus className="h-4 w-4 mr-2" />Nieuw bedrijf</Button>
             </div>
-
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
@@ -289,83 +235,34 @@ export default function AdminCompanies() {
                 </TableHeader>
                 <TableBody>
                   {companiesLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        Laden...
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8">Laden...</TableCell></TableRow>
                   ) : filteredCompanies?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        Geen bedrijven gevonden
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Geen bedrijven gevonden</TableCell></TableRow>
                   ) : (
                     filteredCompanies?.map((company) => (
                       <TableRow key={company.id}>
                         <TableCell>
                           <div className="font-medium">{company.name}</div>
-                          {company.notes && (
-                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {company.notes}
-                            </div>
-                          )}
+                          {company.notes && <div className="text-sm text-muted-foreground truncate max-w-[200px]">{company.notes}</div>}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3 text-muted-foreground" />
-                              <a href={`mailto:${company.email}`} className="hover:underline">
-                                {company.email}
-                              </a>
-                            </div>
-                            {company.phone && (
-                              <div className="flex items-center gap-1 text-sm">
-                                <Phone className="h-3 w-3 text-muted-foreground" />
-                                <a href={`tel:${company.phone}`} className="hover:underline">
-                                  {company.phone}
-                                </a>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1 text-sm"><Mail className="h-3 w-3 text-muted-foreground" /><a href={`mailto:${company.email}`} className="hover:underline">{company.email}</a></div>
+                            {company.phone && <div className="flex items-center gap-1 text-sm"><Phone className="h-3 w-3 text-muted-foreground" /><a href={`tel:${company.phone}`} className="hover:underline">{company.phone}</a></div>}
                           </div>
                         </TableCell>
                         <TableCell>
                           {company.address ? (
-                            <div className="text-sm">
-                              <div>{company.address}</div>
-                              <div className="text-muted-foreground">
-                                {company.postcode} {company.city}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                            <div className="text-sm"><div>{company.address}</div><div className="text-muted-foreground">{company.postcode} {company.city}</div></div>
+                          ) : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell>
-                          {company.preferred_payment_method ? (
-                            <Badge variant="secondary">
-                              {PAYMENT_METHOD_LABELS[company.preferred_payment_method]}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {company.preferred_payment_method ? <Badge variant="secondary">{PAYMENT_METHOD_LABELS[company.preferred_payment_method]}</Badge> : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditCompany(company)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteCompany(company)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEditCompany(company)}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteCompany(company)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -375,24 +272,58 @@ export default function AdminCompanies() {
               </Table>
             </div>
           </TabsContent>
+
+          {/* Open Orders Tab */}
+          <TabsContent value="open-orders" className="space-y-4">
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bestelnummer</TableHead>
+                    <TableHead>Klant</TableHead>
+                    <TableHead>Bezorgdatum</TableHead>
+                    <TableHead>Totaal</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Betaling</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ordersLoading ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8">Laden...</TableCell></TableRow>
+                  ) : openOrders.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Geen openstaande bestellingen</TableCell></TableRow>
+                  ) : (
+                    openOrders.map((order) => {
+                      const orderStatus = ORDER_STATUSES.find(s => s.value === order.order_status);
+                      const paymentStatus = PAYMENT_STATUSES.find(s => s.value === order.payment_status);
+                      return (
+                        <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedOrder(order); setOrderDetailOpen(true); }}>
+                          <TableCell className="font-medium">{order.order_number}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{order.company_name}</div>
+                            <div className="text-sm text-muted-foreground">{order.contact_person}</div>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(order.delivery_date), 'PP', { locale: nl })}
+                            {order.delivery_time && <div className="text-sm text-muted-foreground">{order.delivery_time}</div>}
+                          </TableCell>
+                          <TableCell>{formatPrice(order.total)}</TableCell>
+                          <TableCell><Badge className={`${orderStatus?.color} text-white`}>{orderStatus?.label}</Badge></TableCell>
+                          <TableCell><Badge className={`${paymentStatus?.color} text-white`}>{paymentStatus?.label}</Badge></TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
         </Tabs>
 
-        {/* Company Dialog */}
-        <CompanyDialog
-          company={selectedCompany}
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSubmit={handleSubmitCompany}
-        />
-
-        {/* Delete Confirm Dialog */}
-        <DeleteConfirmDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onConfirm={handleConfirmDelete}
-          title="Bedrijf verwijderen"
-          description={`Weet je zeker dat je ${selectedCompany?.name} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`}
-        />
+        <CompanyDialog company={selectedCompany} open={dialogOpen} onOpenChange={setDialogOpen} onSubmit={handleSubmitCompany} />
+        <DeleteConfirmDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} onConfirm={handleConfirmDelete} title="Bedrijf verwijderen" description={`Weet je zeker dat je ${selectedCompany?.name} wilt verwijderen?`} />
+        <CustomerOrdersDialog customer={selectedCustomer} open={customerOrdersOpen} onOpenChange={setCustomerOrdersOpen} />
+        <OrderDetailDialog order={selectedOrder} open={orderDetailOpen} onOpenChange={setOrderDetailOpen} />
       </div>
     </AdminLayout>
   );
