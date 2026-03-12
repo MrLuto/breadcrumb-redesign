@@ -158,6 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         updateQuantity,
         updateNotes,
+        updateItemOptions,
         clearCart,
         totalItems,
         subtotal,
