@@ -1044,7 +1044,7 @@ const Checkout = () => {
                   </div>
 
                   {/* Date & Time */}
-                  <div className="bg-card rounded-xl p-6 shadow-card">
+                  <div className="bg-card rounded-xl p-4 md:p-6 shadow-card">
                     <h2 className="text-xl font-semibold mb-4">
                       {watchedOrderType === 'pickup' ? 'Afhaaldatum & tijd' : 'Bezorgdatum & tijd'}
                     </h2>
