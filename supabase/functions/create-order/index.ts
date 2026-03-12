@@ -590,6 +590,7 @@ Deno.serve(async (req) => {
         total,
         order_status: 'new',
         payment_status: 'pending',
+        user_id: authenticatedUserId,
       })
       .select()
       .single();
