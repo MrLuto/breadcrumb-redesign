@@ -35,7 +35,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomerProfile, useUpdateCustomerProfile, useCustomerOrders } from '@/hooks/useCustomerProfile';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, User, Package, LogOut, Save } from 'lucide-react';
+import { Loader2, User, Package, LogOut, Save, ChevronDown, MapPin, Phone, Mail, Clock, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { CustomerTypeToggle } from '@/components/checkout/CustomerTypeToggle';
