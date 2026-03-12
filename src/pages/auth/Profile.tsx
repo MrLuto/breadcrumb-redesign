@@ -538,9 +538,31 @@ export default function Profile() {
                             <p className="font-semibold mt-1">{formatPrice(order.total)}</p>
                           </div>
                         </div>
+
+                        {/* Order items */}
+                        <div className="space-y-1 mb-3">
+                          {order.order_items?.map((item: any) => {
+                            const options = item.order_item_options?.map((o: any) => o.option_name).join(', ');
+                            return (
+                              <div key={item.id} className="flex justify-between text-sm">
+                                <div className="flex-1 min-w-0">
+                                  <span>{item.quantity}× {item.product_name}</span>
+                                  {options && (
+                                    <span className="text-muted-foreground ml-1">({options})</span>
+                                  )}
+                                  {item.notes && (
+                                    <p className="text-xs text-muted-foreground italic">{item.notes}</p>
+                                  )}
+                                </div>
+                                <span className="ml-2 shrink-0">{formatPrice(item.total_price)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <Separator className="my-2" />
                         <div className="text-sm text-muted-foreground">
-                          {order.order_items?.length} product(en) • 
-                          {order.order_type === 'pickup' ? ' Afhalen' : ' Bezorgen'} op {format(new Date(order.delivery_date), 'PP', { locale: nl })}
+                          {order.order_type === 'pickup' ? 'Afhalen' : 'Bezorgen'} op {format(new Date(order.delivery_date), 'PP', { locale: nl })}
                         </div>
                       </div>
                     ))}
