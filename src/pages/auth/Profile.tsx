@@ -69,6 +69,150 @@ const PAYMENT_METHODS = [
   { value: 'cash', label: 'Contant' },
 ];
 
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  new: 'Nieuw',
+  confirmed: 'Bevestigd',
+  preparing: 'In voorbereiding',
+  out_for_delivery: 'Onderweg',
+  delivered: 'Bezorgd',
+  cancelled: 'Geannuleerd',
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  ideal: 'iDEAL',
+  pin: 'PIN',
+  cash: 'Contant',
+  invoice: 'Factuur',
+  monthly_invoice: 'Maandfactuur',
+  direct: 'Direct',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Niet betaald',
+  paid: 'Betaald',
+  invoiced: 'Gefactureerd',
+  refunded: 'Terugbetaald',
+};
+
+function OrderCard({ order, formatPrice }: { order: any; formatPrice: (p: number) => string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Clickable summary row */}
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-4 text-left hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex flex-wrap justify-between items-start gap-2">
+          <div>
+            <p className="font-medium">{order.order_number}</p>
+            <p className="text-sm text-muted-foreground">
+              {format(new Date(order.created_at), 'PPP', { locale: nl })}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <Badge variant={
+                order.order_status === 'delivered' ? 'default' :
+                order.order_status === 'cancelled' ? 'destructive' : 'secondary'
+              }>
+                {ORDER_STATUS_LABELS[order.order_status] || order.order_status}
+              </Badge>
+              <p className="font-semibold mt-1">{formatPrice(order.total)}</p>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {order.order_items?.length} product(en) • {order.order_type === 'pickup' ? 'Afhalen' : 'Bezorgen'}
+        </p>
+      </button>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-4 border-t">
+          {/* Order items */}
+          <div className="pt-3 space-y-2">
+            <p className="text-sm font-medium">Producten</p>
+            {order.order_items?.map((item: any) => {
+              const options = item.order_item_options?.map((o: any) => o.option_name).join(', ');
+              return (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <div className="flex-1 min-w-0">
+                    <span>{item.quantity}× {item.product_name}</span>
+                    {options && (
+                      <span className="text-muted-foreground ml-1">({options})</span>
+                    )}
+                    {item.notes && (
+                      <p className="text-xs text-muted-foreground italic">{item.notes}</p>
+                    )}
+                  </div>
+                  <span className="ml-2 shrink-0">{formatPrice(item.total_price)}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <Separator />
+
+          {/* Price breakdown */}
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotaal</span>
+              <span>{formatPrice(order.subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Bezorgkosten</span>
+              <span>{order.delivery_cost > 0 ? formatPrice(order.delivery_cost) : 'Gratis'}</span>
+            </div>
+            <div className="flex justify-between font-semibold">
+              <span>Totaal</span>
+              <span>{formatPrice(order.total)}</span>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Delivery & payment info */}
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-start gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <span>
+                {order.order_type === 'pickup' ? 'Afhalen' : 'Bezorgen'} op{' '}
+                {format(new Date(order.delivery_date), 'PP', { locale: nl })}
+                {order.delivery_time && ` om ${order.delivery_time}`}
+                {order.delivery_asap && ' (zo snel mogelijk)'}
+              </span>
+            </div>
+            {order.order_type !== 'pickup' && (
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <span>{order.delivery_address}, {order.postcode} {order.city}</span>
+              </div>
+            )}
+            <div className="flex items-start gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <span>
+                {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method}
+                {' — '}
+                {PAYMENT_STATUS_LABELS[order.payment_status] || order.payment_status}
+              </span>
+            </div>
+            {order.notes && (
+              <div className="flex items-start gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <span className="italic">{order.notes}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading, signOut } = useAuth();
