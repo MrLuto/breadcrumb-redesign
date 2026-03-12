@@ -732,7 +732,7 @@ const Checkout = () => {
             {/* Checkout Form */}
             <div className="lg:col-span-2">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 md:space-y-8">
                   {/* Login/Register Block for Guests */}
                   {!user && (
                     <div className="bg-card rounded-xl p-4 md:p-6 shadow-card border-2 border-primary/20">
