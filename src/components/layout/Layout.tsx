@@ -13,7 +13,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen flex flex-col">
       <ClosedTodayBanner />
       <Header />
-      <main className="flex-1 pt-[108px] md:pt-[116px]">
+      <main className="flex-1 pt-[108px] md:pt-[116px] overflow-x-hidden">
         {children}
       </main>
       <Footer />
