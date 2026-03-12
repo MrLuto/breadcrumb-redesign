@@ -1113,7 +1113,7 @@ const Checkout = () => {
 
                     {/* Manual date & time pickers */}
                     {!watchedDeliveryAsap && (
-                      <div className="grid sm:grid-cols-2 gap-6">
+                      <div className="grid gap-6">
                         <FormField
                           control={form.control}
                           name="delivery_date"
