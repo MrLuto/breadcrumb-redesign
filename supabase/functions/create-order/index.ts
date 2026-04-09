@@ -254,17 +254,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate minimum delivery date (must be tomorrow or later)
+    // Validate minimum delivery date (must be today or later)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const deliveryDateCheck = new Date(formData.delivery_date);
     deliveryDateCheck.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (deliveryDateCheck < tomorrow) {
+    if (deliveryDateCheck < today) {
       return new Response(
-        JSON.stringify({ error: 'Bezorgdatum moet minimaal morgen zijn' }),
+        JSON.stringify({ error: 'Bezorgdatum mag niet in het verleden liggen' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
