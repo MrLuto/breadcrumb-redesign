@@ -115,11 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }).join('');
 
-    const emailResponse = await resend.emails.send({
-      from: "FrisVers Broodjes <frisvers@sites.byluto.nl>",
-      to: [data.customerEmail],
-      subject: `Bevestiging bestelling ${data.orderNumber}`,
-      html: `
+    const emailHtml = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -240,8 +236,30 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         </body>
         </html>
-      `,
+      `;
+
+    // Send to customer
+    const emailResponse = await resend.emails.send({
+      from: "FrisVers Broodjes <frisvers@sites.byluto.nl>",
+      to: [data.customerEmail],
+      subject: `Bevestiging bestelling ${data.orderNumber}`,
+      html: emailHtml,
     });
+
+    console.log("Order confirmation email sent to customer:", emailResponse);
+
+    // Send copy to shop owner
+    try {
+      const shopCopyResponse = await resend.emails.send({
+        from: "FrisVers Broodjes <frisvers@sites.byluto.nl>",
+        to: ["info@frisversshop.nl"],
+        subject: `Nieuwe bestelling ${data.orderNumber} - ${data.customerName}`,
+        html: emailHtml,
+      });
+      console.log("Order confirmation copy sent to shop:", shopCopyResponse);
+    } catch (shopEmailError: any) {
+      console.error("Failed to send shop copy (non-fatal):", shopEmailError.message);
+    }
 
     console.log("Order confirmation email sent successfully:", emailResponse);
 
