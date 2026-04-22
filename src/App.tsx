@@ -57,6 +57,7 @@ const App = () => (
                 <Route path="/betaling/:orderId" element={<PaymentReturn />} />
                 <Route path="/over-ons" element={<OverOns />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/algemene-voorwaarden" element={<AlgemeneVoorwaarden />} />
                 
                 {/* Auth routes */}
                 <Route path="/login" element={<Login />} />
