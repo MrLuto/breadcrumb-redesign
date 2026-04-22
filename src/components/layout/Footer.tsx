@@ -147,9 +147,6 @@ const Footer = () => {
                   info@frisversshop.nl
                 </a>
               </li>
-              <li className="text-secondary-foreground/80 text-sm pt-1">
-                KvK: 81443625
-              </li>
             </ul>
           </div>
 
