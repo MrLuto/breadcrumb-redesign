@@ -16,6 +16,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentReturn from "./pages/PaymentReturn";
 import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
+import AlgemeneVoorwaarden from "./pages/AlgemeneVoorwaarden";
 import NotFound from "./pages/NotFound";
 
 // Auth pages
