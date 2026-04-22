@@ -191,10 +191,13 @@ const Footer = () => {
       <div className="border-t border-secondary-foreground/20">
         <div className="container py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-secondary-foreground/70">
           <p>
-            © {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden. · KvK 81443625
+            © {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden. · KvK 81443625 ·{" "}
+            <Link to="/algemene-voorwaarden" className="hover:text-primary transition-colors underline">
+              Algemene voorwaarden
+            </Link>
             <a href="https://www.byluto.nl/" target="_blank">
               {" "}
-              Powered ByLuto
+              · Powered ByLuto
             </a>
           </p>
         </div>
