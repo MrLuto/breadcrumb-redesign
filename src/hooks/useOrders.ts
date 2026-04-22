@@ -42,6 +42,12 @@ export const PAYMENT_METHODS: { value: string; label: string }[] = [
   { value: 'monthly_invoice', label: 'Maandfactuur' },
 ];
 
+// Hide orders for which iDEAL payment never completed (still pending).
+// They reappear automatically once the Pay.nl webhook marks them as paid.
+export function isPendingIdealOrder(order: Pick<Order, 'payment_method' | 'payment_status'>) {
+  return order.payment_method === 'ideal' && order.payment_status === 'pending';
+}
+
 export function useOrders() {
   return useQuery({
     queryKey: ['orders'],
@@ -52,7 +58,7 @@ export function useOrders() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as OrderWithItems[];
+      return (data as OrderWithItems[]).filter((o) => !isPendingIdealOrder(o));
     },
   });
 }

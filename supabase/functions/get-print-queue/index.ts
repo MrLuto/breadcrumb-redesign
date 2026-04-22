@@ -35,7 +35,13 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    const formattedOrders = (orders || []).map((order: any) => ({
+    // Skip iDEAL orders that have not been paid yet — they should not print
+    // until the Pay.nl webhook updates payment_status to 'paid'.
+    const printableOrders = (orders || []).filter(
+      (o: any) => !(o.payment_method === "ideal" && o.payment_status === "pending"),
+    );
+
+    const formattedOrders = printableOrders.map((order: any) => ({
       id: order.id,
       order_number: order.order_number,
       created_at: order.created_at,

@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS, type OrderWithItems } from '@/hooks/useOrders';
+import { ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS, isPendingIdealOrder, type OrderWithItems } from '@/hooks/useOrders';
 import type { CustomerProfile } from '@/hooks/useCustomerProfiles';
 
 interface CustomerOrdersDialogProps {
@@ -115,7 +115,7 @@ export function CustomerOrdersDialog({ customer, open, onOpenChange }: CustomerO
         .eq('user_id', customer.user_id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as OrderWithItems[];
+      return (data as OrderWithItems[]).filter((o) => !isPendingIdealOrder(o));
     },
     enabled: !!customer?.user_id && open,
   });
