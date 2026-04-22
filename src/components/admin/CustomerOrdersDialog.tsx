@@ -115,7 +115,7 @@ export function CustomerOrdersDialog({ customer, open, onOpenChange }: CustomerO
         .eq('user_id', customer.user_id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as OrderWithItems[];
+      return (data as OrderWithItems[]).filter((o) => !isPendingIdealOrder(o));
     },
     enabled: !!customer?.user_id && open,
   });
