@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS, type OrderWithItems } from '@/hooks/useOrders';
+import { ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS, isPendingIdealOrder, type OrderWithItems } from '@/hooks/useOrders';
 import type { CustomerProfile } from '@/hooks/useCustomerProfiles';
 
 interface CustomerOrdersDialogProps {
