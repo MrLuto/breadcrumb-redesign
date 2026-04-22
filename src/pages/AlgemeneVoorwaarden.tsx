@@ -5,13 +5,94 @@ const AlgemeneVoorwaarden = () => {
     <Layout>
       <div className="container max-w-4xl py-12 px-4 sm:px-6">
         <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
-          Algemene Voorwaarden
+          Algemene Voorwaarden Fris Versshop VOF
         </h1>
         <p className="text-muted-foreground mb-10">
-          FrisVersshop Gouda · KvK 81443625
+          Versie 1.0 – 22-04-2026 · KvK 81443625
         </p>
 
         <article className="prose prose-neutral max-w-none space-y-10">
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Artikel 1 – Definities</h2>
+            <p>In deze algemene voorwaarden wordt verstaan onder:</p>
+            <ol className="list-decimal pl-6 space-y-2 mt-2">
+              <li>
+                <strong>Fris Versshop VOF</strong>: de vennootschap onder firma gevestigd
+                te Gouda, ingeschreven bij de Kamer van Koophandel onder nummer 81443625,
+                hierna te noemen: “Verkoper”.
+              </li>
+              <li>
+                <strong>Klant</strong>: iedere natuurlijke persoon of rechtspersoon die
+                producten afneemt van Verkoper.
+              </li>
+              <li>
+                <strong>Overeenkomst</strong>: iedere overeenkomst tussen Verkoper en
+                Klant met betrekking tot levering van producten.
+              </li>
+              <li>
+                <strong>Producten</strong>: alle door Verkoper aangeboden en geleverde
+                goederen.
+              </li>
+              <li>
+                <strong>Verzamelfactuur</strong>: maandelijkse factuur waarop alle op
+                rekening verrichte leveringen in de betreffende maand zijn opgenomen.
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Artikel 2 – Toepasselijkheid</h2>
+            <ol className="list-decimal pl-6 space-y-2">
+              <li>
+                Deze algemene voorwaarden zijn van toepassing op alle aanbiedingen,
+                offertes, bestellingen, overeenkomsten en leveringen van Verkoper.
+              </li>
+              <li>
+                Afwijkingen van deze voorwaarden zijn alleen geldig indien schriftelijk
+                overeengekomen.
+              </li>
+              <li>
+                Eventuele algemene voorwaarden van Klant worden uitdrukkelijk van de hand
+                gewezen, tenzij schriftelijk anders overeengekomen.
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">
+              Artikel 3 – Aanbiedingen en Overeenkomsten
+            </h2>
+            <ol className="list-decimal pl-6 space-y-2">
+              <li>
+                Alle aanbiedingen en prijsopgaven van Verkoper zijn vrijblijvend, tenzij
+                uitdrukkelijk anders vermeld.
+              </li>
+              <li>
+                Een overeenkomst komt tot stand na aanvaarding van een bestelling door
+                Verkoper.
+              </li>
+              <li>
+                Kennelijke fouten of vergissingen in aanbiedingen, prijzen of communicatie
+                binden Verkoper niet.
+              </li>
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Artikel 4 – Prijzen</h2>
+            <ol className="list-decimal pl-6 space-y-2">
+              <li>Alle prijzen zijn in euro’s en inclusief btw, tenzij anders vermeld.</li>
+              <li>
+                Verkoper behoudt zich het recht voor prijzen te wijzigen als gevolg van
+                kostprijsverhogingen, overheidsmaatregelen of marktomstandigheden.
+              </li>
+              <li>
+                Voor lopende overeenkomsten geldt de overeengekomen prijs, tenzij
+                prijsaanpassingen wettelijk zijn toegestaan.
+              </li>
+            </ol>
+          </section>
+
           <section>
             <h2 className="text-2xl font-semibold mb-4">Artikel 5 – Betaling</h2>
 
