@@ -31,9 +31,18 @@ Deno.serve(async (req) => {
       .select("*, order_items(*, order_item_options(*))")
       .eq("order_status", "new")
       .is("printed_at", null)
+      // Skip iDEAL orders that have not been paid yet — they should not print
+      // until the Pay.nl webhook updates payment_status to 'paid'.
+      .not("and(payment_method.eq.ideal,payment_status.eq.pending)", "is", null)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
+
+    // Belt-and-suspenders: also filter in JS in case the PostgREST filter syntax
+    // above is interpreted differently by the client.
+    const filteredOrders = (orders || []).filter(
+      (o: any) => !(o.payment_method === "ideal" && o.payment_status === "pending"),
+    );
 
     const formattedOrders = (orders || []).map((order: any) => ({
       id: order.id,
