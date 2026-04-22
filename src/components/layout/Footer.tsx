@@ -147,9 +147,6 @@ const Footer = () => {
                   info@frisversshop.nl
                 </a>
               </li>
-              <li className="text-secondary-foreground/80 text-sm pt-1">
-                KvK: 81443625
-              </li>
             </ul>
           </div>
 
@@ -194,7 +191,7 @@ const Footer = () => {
       <div className="border-t border-secondary-foreground/20">
         <div className="container py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-secondary-foreground/70">
           <p>
-            © {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden.
+            © {new Date().getFullYear()} FrisVersshop Gouda. Alle rechten voorbehouden. · KvK 81443625
             <a href="https://www.byluto.nl/" target="_blank">
               {" "}
               Powered ByLuto
