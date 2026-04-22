@@ -16,6 +16,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentReturn from "./pages/PaymentReturn";
 import OverOns from "./pages/OverOns";
 import Contact from "./pages/Contact";
+import AlgemeneVoorwaarden from "./pages/AlgemeneVoorwaarden";
 import NotFound from "./pages/NotFound";
 
 // Auth pages
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/betaling/:orderId" element={<PaymentReturn />} />
                 <Route path="/over-ons" element={<OverOns />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/algemene-voorwaarden" element={<AlgemeneVoorwaarden />} />
                 
                 {/* Auth routes */}
                 <Route path="/login" element={<Login />} />
