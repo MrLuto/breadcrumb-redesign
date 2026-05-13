@@ -51,7 +51,8 @@ const Footer = () => {
   const getClosedDayForDate = (date: Date) => {
     if (!closedDays) return null;
 
-    const dateString = date.toISOString().split("T")[0];
+    // Use local date (not UTC) to avoid timezone shift
+    const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const dayOfWeek = date.getDay();
 
     for (const closedDay of closedDays) {
