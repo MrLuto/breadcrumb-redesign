@@ -80,7 +80,8 @@ const Contact = () => {
     const isSpecialClosed = (dayOfWeek: number) => {
       if (!closedDays) return false;
       const weekDate = getRelevantDate(dayOfWeek);
-      const dateString = weekDate.toISOString().split('T')[0];
+      // Use local date (not UTC) to avoid timezone shift
+      const dateString = `${weekDate.getFullYear()}-${String(weekDate.getMonth() + 1).padStart(2, '0')}-${String(weekDate.getDate()).padStart(2, '0')}`;
       
       return closedDays.some(cd => 
         cd.recurrence_type === 'none' && cd.date === dateString
